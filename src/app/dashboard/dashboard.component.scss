@@ -1,0 +1,168 @@
+ion-content {
+    --background: #f0f0f0;
+  }
+  
+  .status-overview {
+    text-align: right;
+  }
+  
+  .info-box {
+    background-color: white;
+    margin: 10px;
+    padding: 10px;
+    border-radius: 5px;
+    text-align: center;
+  }
+  
+  .room-card {
+    background-color: white;
+    margin: 10px;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .sala ul {
+    padding-left: 20px;
+  }
+  
+  h2 {
+    color: #007bff;
+    margin-bottom: 5px;
+  }
+  
+  p {
+    color: #555;
+  }
+  
+  ul li {
+    list-style: none;
+    padding: 5px 0;
+    border-bottom: 1px solid #ddd;
+  }
+  
+  .info-box {
+    text-align: center;
+    font-family: Arial, sans-serif;
+    margin-bottom: 20px;
+  }
+  
+  .info-box p {
+    font-size: 18px;
+    font-weight: normal;
+    margin: 0;
+  }
+  
+  .info-box h3 {
+    font-size: 36px;
+    font-weight: bold;
+    margin: 0;
+  }
+  
+  .status-summary {
+    text-align: center;
+    font-family: Arial, sans-serif;
+  }
+  
+  .patients-today {
+    text-align: center;
+    margin-bottom: 10px;
+  }
+  
+  .today-box p, .today-box h1{
+    background-color: #82d982;
+    padding: 0px;
+    margin: 0;
+    color: white;
+  }
+  
+  .status-box {
+    margin-bottom: 10px;
+  }
+  
+  .holding-box, .surgery-box, .recovery-box, .feedback-box {
+    background-color: white;
+    border: 2px solid #a6d1f0;
+    padding: 0px;
+    border-radius: 8px;
+  }
+  
+  .holding-box h2, .surgery-box h2, .recovery-box h2{
+    font-size: 75px;
+    margin: 0;
+    font-weight: bold;
+  }
+
+  .holding-box #holding{
+    font-size: 20px;
+    margin: 0;
+    font-weight: bold;
+  }
+
+  .surgery-box #surgery{
+    font-size: 20px;
+    margin: 0;
+    font-weight: bold;
+  }
+
+  .recovery-box #recovery{
+    font-size: 20px;
+    margin: 0;
+    font-weight: bold;
+  }
+
+  .feedback-box #feedback{
+    font-size: 20px;
+    margin: 0;
+    font-weight: bold;
+  }
+
+  
+  
+  .feedback-box h2 {
+    font-size: 30px;
+    color: orange;
+  }
+
+  .feedback-box #feedbackCount {
+    font-size: 30px;
+    font-weight: bold;
+  }
+  
+  .feedback-box p {
+    margin: 0;
+    font-size: 14px;
+  }
+
+  .room-card {
+    background-color: white;
+    border: 2px solid #d0e8f2; /* Cambiar el color del borde */
+    border-radius: 8px;
+    padding: 10px;
+    margin: 0px 0px 0px 0px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .room-name h3 {
+    font-size: 24px;
+    font-weight: bold;
+    color: #007bff;
+    margin-bottom: 6px;
+  }
+  
+  .room-card-details div {
+    font-size: 14px;
+    margin-bottom: 5px;
+    text-align: left; /* Asegura que el texto esté alineado a la izquierda */
+  }
+  
+  .room-card-details a {
+    font-weight: bold;
+  }
+
+
+  ion-card {
+    min-height: 215px;  /* Altura mínima para todas las tarjetas */
+    max-height: 215px;  /* Altura máxima para todas las tarjetas */
+    overflow-y: auto;   /* Habilitar el scroll si hay más contenido */
+  }

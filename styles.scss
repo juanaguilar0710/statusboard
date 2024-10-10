@@ -1,0 +1,38 @@
+/* Clase base para todos los Toasts */
+.custom-ToastBase {
+    min-width: 15%;
+    max-width: 30%;
+    width: auto;
+    height: auto;
+    padding: 20px;
+    text-align: left;
+    top: 20px !important;
+    right: 10px !important;
+    position: fixed !important;
+    font-size: 1.3em;
+    border-radius: 20px !important;
+    overflow: hidden;
+    color: white;
+}
+
+/* Específicos por tipo de Toast */
+.custom-SuccessToast {
+    @extend .custom-ToastBase;
+    background-color: #28a745; /* Color verde para éxito */
+}
+
+.custom-InfoToast {
+    @extend .custom-ToastBase;
+    background-color: #17a2b8; /* Color azul para información */
+}
+
+.custom-WarningToast {
+    @extend .custom-ToastBase;
+    background-color: #ffc107; /* Color amarillo para advertencias */
+    color: black; /* Color negro para el texto en advertencias */
+}
+
+.custom-ErrorToast {
+    @extend .custom-ToastBase;
+    background-color: #c94040; /* Color rojo para error */
+}

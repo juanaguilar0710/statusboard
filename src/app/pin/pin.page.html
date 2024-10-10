@@ -1,0 +1,108 @@
+<ion-content [fullscreen]="true">
+  <div *ngIf="!this.loading" class="d-flex align-items-center flex-column justify-content-between" style="height: 100%;">
+    <div>
+      <img class="logo" src="assets/logos/StatusBoard_Black.png" alt="logo" (click)="headerClicked()" style="margin-top: 15px;" />
+      <div style="position: absolute; top: 15px; left: 15px; text-align: center;">       
+        <img *ngIf="this.image_url !== '' " [src]="this.image_url" width="200px" />
+        <h4 *ngIf="this.branch_name !== '' " class="info">{{this.branch_name}}</h4>
+        <h4 *ngIf="this.waitingRoom_name !== '' " class="info">{{this.waitingRoom_name}}</h4>
+      </div>
+      <div style="position: absolute; top: 15px; right: 15px; text-align: center;">
+        <div class="my-3">
+          <span [ngClass]="{'online' : networkStatus === 'ONLINE', 'offline' : networkStatus === 'OFFLINE'}">
+            <b>{{networkStatus}}</b>
+          </span>
+          <br/>
+          <b>Last Update: </b><span>{{lastsync}}</span>
+        </div>
+      </div>
+    </div>
+    <div class="whitNumbers">
+
+      <div class="text-center">
+        <h1><b>{{loading ? 'Loading...' : 'Welcome'}}</b></h1>
+        <h5>{{loading ? 'Trying to log you in...' : 'Please enter your Pin Code'}}</h5>
+      </div>
+
+      <ion-grid>
+        <div class="text-center" *ngIf="!loading">
+          <ion-icon size="large" [name]="pin.length>0 ? 'radio-button-on-outline' : 'radio-button-off-outline'"></ion-icon>
+          <ion-icon size="large" [name]="pin.length>1 ? 'radio-button-on-outline' : 'radio-button-off-outline'"></ion-icon>
+          <ion-icon size="large" [name]="pin.length>2 ? 'radio-button-on-outline' : 'radio-button-off-outline'"></ion-icon>
+          <ion-icon size="large" [name]="pin.length>3 ? 'radio-button-on-outline' : 'radio-button-off-outline'"></ion-icon>
+          <ion-icon size="large" [name]="pin.length>4 ? 'radio-button-on-outline' : 'radio-button-off-outline'"></ion-icon>
+          <ion-icon size="large" [name]="pin.length>5 ? 'radio-button-on-outline' : 'radio-button-off-outline'"></ion-icon>
+        </div>
+        <div class="text-center" *ngIf="loading">
+          <ion-spinner class="dot" color="dark"></ion-spinner>
+          <ion-spinner class="dot" color="dark"></ion-spinner>
+          <ion-spinner class="dot" color="dark"></ion-spinner>
+          <ion-spinner class="dot" color="dark"></ion-spinner>
+          <ion-spinner class="dot" color="dark"></ion-spinner>
+          <ion-spinner class="dot" color="dark"></ion-spinner>
+        </div>
+      </ion-grid>
+      <ion-grid>
+        <ion-row>
+          <ion-col>
+            <ion-button [disabled]="loading" class="number" shape="round" (click)="handleInput('1')">1</ion-button>
+          </ion-col>
+          <ion-col>
+            <ion-button [disabled]="loading" class="number" shape="round" (click)="handleInput('2')">2</ion-button>
+          </ion-col>
+          <ion-col>
+            <ion-button [disabled]="loading" class="number" shape="round" (click)="handleInput('3')">3</ion-button>
+          </ion-col>
+        </ion-row>
+        <ion-row>
+          <ion-col>
+            <ion-button [disabled]="loading" class="number" shape="round" (click)="handleInput('4')">4</ion-button>
+          </ion-col>
+          <ion-col>
+            <ion-button [disabled]="loading" class="number" shape="round" (click)="handleInput('5')">5</ion-button>
+          </ion-col>
+          <ion-col>
+            <ion-button [disabled]="loading" class="number" shape="round" (click)="handleInput('6')">6</ion-button>
+          </ion-col>
+        </ion-row>
+        <ion-row>
+          <ion-col>
+            <ion-button [disabled]="loading" class="number" shape="round" (click)="handleInput('7')">7</ion-button>
+          </ion-col>
+          <ion-col>
+            <ion-button [disabled]="loading" class="number" shape="round" (click)="handleInput('8')">8</ion-button>
+          </ion-col>
+          <ion-col>
+            <ion-button [disabled]="loading" class="number" shape="round" (click)="handleInput('9')">9</ion-button>
+          </ion-col>
+        </ion-row>
+        <ion-row>
+          <ion-col>
+            <ion-icon name="backspace-outline" size="large" (click)="handleInput('clear')"></ion-icon>
+          </ion-col>
+          <ion-col>
+            <ion-button [disabled]="loading" class="number" shape="round" (click)="handleInput('0')">0</ion-button>
+          </ion-col>
+          <ion-col>
+          </ion-col>
+        </ion-row>
+      </ion-grid>
+    </div>
+    <div style="margin-bottom: 15px;">
+      <img class="logo" src="assets/logos/DTouchmedia_Black.png" alt="logo" />
+    </div>
+    <div style="position: absolute; bottom: 5px; left: 15px;">
+      <h6 class="info">Version: {{version}}</h6>
+    </div>
+  </div>
+
+
+  <div class="overlay" style="margin-top: 10px;" *ngIf="this.loading">
+    <div class="loader">
+       <div class="spinner spinner-bubble spinner-bubble-primary me-3"></div>
+    </div>
+    <h6>{{this.image_url ? 'Verifying your credentials...' : 'Preparing your experience...'}}</h6>
+  </div>
+
+
+</ion-content>

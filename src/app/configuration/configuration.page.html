@@ -1,0 +1,45 @@
+<ion-content [fullscreen]="true">
+  <div class="d-flex align-items-center flex-column justify-content-between" style="height: 100%;">
+    <div>
+      <img class="logo" src="assets/logos/StatusBoard_Black.png" alt="logo" style="margin-top: 15px;" />
+    </div>
+    <div style="min-width: 300px; max-width: 400px;">
+      <form [formGroup]="form">
+        <div class="text-center">
+          <h1><b>Configuration Mode</b></h1>
+          <span>Please select Branch Name and Waiting Room:</span>
+        </div>
+        <br />
+        <br />
+            <ion-select fill="outline" aria-label="Branches" formControlName="branch" interface="popover" placeholder="Select Branch">
+              <ion-select-option [value]="branch" *ngFor="let branch of branches">{{branch.name}}</ion-select-option>
+            </ion-select>
+          <br/>
+            <ion-select fill="outline" aria-label="Waiting Rooms" formControlName="waitingRoom" interface="popover" placeholder="Select Waiting Room">
+              <ion-select-option [value]="room" *ngFor="let room of waiting_rooms">{{room.name}}</ion-select-option>
+            </ion-select>
+          <br/>
+            <ion-input fill="outline" label="Station Location" formControlName="stationName" label-placement="floating"
+              errorText="Station Location is Required"></ion-input>
+          <br />
+            <ion-select fill="outline" aria-label="Application" formControlName="aplication" interface="popover" placeholder="Application" (ionChange)="onApplicationChange($event)">
+              <ion-select-option value=1>Tablet</ion-select-option>
+              <ion-select-option value=2>Dashboard</ion-select-option>        
+            </ion-select>
+          <br *ngIf="selectedApplication === '2'"/>
+          <ion-select *ngIf="selectedApplication === '2'"  multiple="true" formControlName="statuses" fill="outline" aria-label="Status to Show" interface="popover" placeholder="Status to Show" (ionChange)="onStatusChange($event)">
+            <ion-select-option [value]="status.id" *ngFor="let status of statuses">{{status.name}}</ion-select-option>              
+          </ion-select>
+          <br *ngIf="selectedApplication === '2'"/>
+            <ion-input *ngIf="this.selectedApplication === '2'" fill="outline" [value]="formattedTime" placeholder="HH:MM - HH:MM" (ionFocus)="openTimeRangePicker()"></ion-input>
+          
+        <br />
+        <ion-button class="w-100" color="primary" size="large" [disabled]="form.invalid"
+          (click)="save()">SAVE</ion-button>
+      </form>
+    </div>
+    <div>
+      <img class="logo" src="assets/logos/DTouchmedia_Black.png" alt="logo" style="margin-bottom: 15px;"/>
+    </div>
+  </div>
+</ion-content>

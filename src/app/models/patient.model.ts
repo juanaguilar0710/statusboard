@@ -1,0 +1,61 @@
+export class PatientModel {
+    id?: number;
+    comment_custom: string;
+    status_name: string;
+    prefers_sms: boolean = true;
+    prefers_email: boolean;
+    is_fast_track: boolean;
+    has_note: boolean;
+    charge: number;
+    status_Id: number;
+    fullName: string;
+    age: number;
+    gender: string;
+    phone: string;
+    surgeon_id: number | null;
+    surgeon_name: string;
+    recovery_room: string;
+    anesthesiologist_id: number | null;
+    anesthesiologist_name: string;
+    procedure_id: number | null;
+    procedure_name: string;
+    operating_room_id: number | null;
+    companion_name: string;
+    surgery_date: string;
+    note: string;
+    procedure_time: string;
+    status: any;
+    branch_Id?: number;
+    waiting_area_Id?: number;
+
+    constructor(obj: any) {
+        this.id = obj.id;
+        this.comment_custom = obj.comment_custom;
+        this.status_name = obj.status_name;
+        this.prefers_sms = obj.prefers_sms || true;
+        this.prefers_email = obj.prefers_email;
+        this.is_fast_track = obj.is_fast_track;
+        this.has_note = obj.has_note;
+        this.charge = obj.charge;
+        this.status_Id = obj.status_Id;
+        this.fullName = obj.fullName;
+        this.age = obj.age;
+        this.gender = obj.gender;
+        this.phone = obj.phone;
+        this.surgeon_id = obj.surgeon_id;
+        this.surgeon_name = obj.surgeon_name;
+        this.recovery_room = obj.recovery_room;
+        this.anesthesiologist_id = obj.anesthesiologist_id;
+        this.anesthesiologist_name = obj.anesthesiologist_name;
+        this.procedure_id = obj.procedure_id;
+        this.procedure_name = obj.procedure_name;
+        this.operating_room_id = obj.operating_room_id;
+        this.companion_name = obj.companion_name;
+        this.surgery_date = obj.surgery_date;
+        this.note = obj.note;
+        this.procedure_time = obj.procedure_time;
+        this.status = obj.status;
+        this.branch_Id = obj.branch_Id;
+        this.waiting_area_Id = obj.waiting_area_Id;
+    }
+}

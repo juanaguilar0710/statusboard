@@ -1,0 +1,162 @@
+/*
+ * App Global CSS
+ * ----------------------------------------------------------------------------
+ * Put style rules here that you want to apply globally. These styles are for
+ * the entire app and not just one component. Additionally, this file can be
+ * used as an entry point to import other CSS/Sass files to be included in the
+ * output CSS.
+ * For more information on global stylesheets, visit the documentation:
+ * https://ionicframework.com/docs/layout/global-stylesheets
+ */
+
+/* Core CSS required for Ionic components to work properly */
+@import "@ionic/angular/css/core.css";
+
+/* Basic CSS for apps built with Ionic */
+@import "@ionic/angular/css/normalize.css";
+@import "@ionic/angular/css/structure.css";
+@import "@ionic/angular/css/typography.css";
+@import '@ionic/angular/css/display.css';
+
+/* Optional CSS utils that can be commented out */
+@import "@ionic/angular/css/padding.css";
+@import "@ionic/angular/css/float-elements.css";
+@import "@ionic/angular/css/text-alignment.css";
+@import "@ionic/angular/css/text-transformation.css";
+@import "@ionic/angular/css/flex-utils.css";
+
+
+.ion-valid {
+    --highlight-color-valid: #007AFF;
+}
+
+img.logo {
+    width: 250px;
+    aspect-ratio: 3 / 1;
+}
+
+ion-modal.new-patient {
+    --height: 65%;
+    --width: 70% !important;
+    --min-width: 70% !important;
+}
+
+ion-modal.confirmNextRoomModal {
+    --height: 25%;
+}
+
+ion-modal.logout-modal {
+    --height: 30%;
+}
+
+.wider-popover
+{
+  --width: 95% !important;
+  --max-width: 600px !important;
+}
+
+ion-select::part(container) {
+    width: 100% !important;
+    --width: 100% !important;
+}
+
+ion-button {
+    --min-height: 65px;
+    min-height: 65px;
+}
+
+ion-button.w-100 {
+    min-height: 90px;
+}
+
+ion-input {
+    min-height: 65px !important;
+}
+
+.wider-popover ion-radio {
+    font-size: 34px !important;
+}
+
+.native-wrapper, .bigger-text {
+    font-size: 24px !important;
+}
+
+.action-sheet-cancel {
+    --background: red !important;
+    --color: white !important;
+}
+
+.my-label {
+    font-size: 1.5rem !important;
+    font-weight: 600 !important;
+}
+
+.label, .label-value {
+    font-size: 30px !important;
+}
+
+ion-alert.confirm-room
+{
+    --width: 90% !important;
+ --font-size: 30px !important;
+}
+
+ion-alert.confirm-room h2
+{
+    font-size: 30px !important;
+}
+
+ion-alert.confirm-room .alert-message
+{
+    color: black !important;
+    font-size: 24px !important;
+}
+
+app-next-to-surgery {
+    overflow-y: scroll !important;
+}
+
+  .confirm-room .alert-button-group {
+    padding: 8px;
+    position: absolute !important;
+    bottom: 0 !important;
+  }
+
+  button.alert-button.alert-button-confirm {
+    background-color: var(--ion-color-primary);
+    color: var(--ion-color-success-contrast);
+    width: 120px;
+    height: 70px;
+  }
+
+  button.alert-button.alert-button-cancel {
+    background-color: var(--ion-color-danger);
+    color: var(--ion-color-success-contrast);
+    width: 120px;
+    height: 70px;
+  }
+
+  .alert-button-inner.sc-ion-alert-md {
+    -ms-flex-pack: center;
+    justify-content: center !important;
+}
+
+  .md button.alert-button.alert-button-confirm {
+    border-radius: 4px;
+  }
+
+  .confirm-room .alert-head {
+    border-bottom: 1px solid #cecece;
+    margin-bottom: 15px;
+  }
+
+    .confirm-room .alert-wrapper {
+        min-width: 550px;
+        min-height: 250px;
+    }
+
+    .searchable-component-modal {
+        align-items: flex-start;
+        --height: 80%;
+        --width: 60%;
+    }

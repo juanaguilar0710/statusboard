@@ -1,0 +1,75 @@
+<ion-content>
+  <ion-row>
+    <ion-col>
+      <div class="w-100" *ngIf="type !== 'next_to_surgery'">
+        <ion-item>
+          <!-- <ion-input placeholder="Type here..." aria-label="Search" #searchInput (input)="onInputChange()"
+            (keyup.enter)="update()"></ion-input> -->
+        </ion-item>
+      </div>
+      <div class="resultContainer">
+        <ion-list *ngIf="type === 'comment'">
+          <form [formGroup]="form">
+            <ion-radio-group formControlName="value" (ngModelChange)="dataSelected()">
+              <ion-item *ngFor="let item of data;" [ngClass]="{'selected-item': form.controls['value'].value === item}">
+                <ion-radio [value]="item" label-placement="start">
+                  {{item.short_description}}
+                </ion-radio>
+              </ion-item>
+            </ion-radio-group>
+          </form>
+        </ion-list>
+        <ion-list
+          *ngIf="type === 'surgeon' || type === 'operating_room' || type === 'procedure' || type === 'next_to_surgery'">
+          <form [formGroup]="form">
+            <ion-radio-group formControlName="value" (ngModelChange)="dataSelected()">
+              <ion-item *ngFor="let item of data;" [ngClass]="{'selected-item': form.controls['value'].value === item}">
+                <ion-radio [value]="item" label-placement="start">
+                  {{ item.name }}
+                </ion-radio>
+              </ion-item>
+            </ion-radio-group>
+          </form>
+        </ion-list>
+        <ion-list *ngIf="type === 'time'">
+          <form [formGroup]="form">
+            <ion-radio-group formControlName="value" (ngModelChange)="dataSelected()">
+              <ion-item *ngFor="let item of data;" [ngClass]="{'selected-item': form.controls['value'].value === item.value}">
+                <ion-radio [value]="item.value" label-placement="start">
+                  {{item.display}}
+                </ion-radio>
+              </ion-item>
+            </ion-radio-group>
+          </form>
+        </ion-list>
+        <ion-list *ngIf="type === 'recovery_room'">
+          <form [formGroup]="form">
+            <ion-radio-group formControlName="value" (ngModelChange)="dataSelected()">
+              <ion-item *ngFor="let item of data;" [ngClass]="{'selected-item': form.controls['value'].value === item}">
+                <ion-radio [value]="item" label-placement="start">
+                  {{item}}
+                </ion-radio>
+              </ion-item>
+            </ion-radio-group>
+          </form>
+        </ion-list>
+      </div>
+    </ion-col>
+  </ion-row>
+</ion-content>
+<ion-footer>
+  <ion-toolbar>
+    <ion-row>
+      <ion-col>
+        <div class="d-flex justify-content-center">
+          <ion-button color="danger" class="w-100 mx-4 classButton" size="large" (click)="closeModal()">
+            <span style="color: #fff;">Cancel</span>
+          </ion-button>
+          <ion-button color="success" class="w-100 mx-4 classButton" size="large" (click)="update()">
+            <span style="color: #fff;">Confirm</span>
+          </ion-button>
+        </div>
+      </ion-col>
+    </ion-row>
+  </ion-toolbar>
+</ion-footer>

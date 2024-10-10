@@ -1,0 +1,153 @@
+@import "../../theme/variables.scss";
+
+$background: #a6a6a6;
+
+ion-button.number {
+--border-radius: 50%;
+  width: 85px;
+  height: 85px;
+  border-radius: 75px;
+  font-size: 38px;
+  font-weight: 600;
+}
+
+ion-button.number:active {
+  --background: #535353;
+  --background-hover: #535353;
+  --background-activated: #535353;
+  --background-focused: #535353;
+  --color: white;
+  --box-shadow: 0 0px 15px 0px rgb(34 34 34)
+}
+
+ion-button {
+    --background: #a6a6a6;
+    --background-hover: #a6a6a6;
+    --background-activated: #a6a6a6;
+    --background-focused: #a6a6a6;
+    --color: white;
+    --box-shadow: 0 2px 6px 0 rgba(48, 48, 48, 0.25);  
+  }
+
+ion-col {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.dot {
+  margin: 0px 2px;
+}
+
+.info {
+  color: #0d6efd
+}
+
+.online {
+  color: #00cd00;
+}
+
+.offline {
+  color: red;
+}
+
+.black {
+  color: black;
+  background-color: red;
+}
+
+// ion-spinner {
+//   transform: scale(3);
+// }
+
+
+
+/* loading */
+.loader {
+  position: relative;
+  width: 164px;
+  height: 164px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column; /* Para que los elementos hijos se alineen verticalmente */
+}
+
+.loader::before , .loader::after {
+  content: '';
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  background-color: #fff;
+  left: 50%;
+  top: 50%;
+  animation: rotate 1s ease-in infinite;
+  transform: translate(-50%, -50%);
+}
+
+.loader::after {
+  width: 20px;
+  height: 20px;
+  background-color: #0093ff;
+  animation: rotate 1s ease-in infinite, moveY 1s ease-in infinite;
+}
+
+h6 {
+  color: white; /* Asegura que el texto sea visible */
+  margin-top: 20px; /* Ajusta el margen superior para dar espacio entre el spinner y el texto */
+  text-align: center;
+  font-size: 25px;
+}
+
+/* Keyframes para las animaciones */
+@keyframes moveY {
+  0%, 100% { top: 10%; }
+  45%, 55% { top: 59%; }
+  60% { top: 40%; }
+}
+
+@keyframes rotate {
+  0% { transform: translate(-50%, -100%) rotate(0deg) scale(1, 1); }
+  25% { transform: translate(-50%, 0%) rotate(180deg) scale(1, 1); }
+  45%, 55% { transform: translate(-50%, 100%) rotate(180deg) scale(3, 0.5); }
+  60% { transform: translate(-50%, 100%) rotate(180deg) scale(1, 1); }
+  75% { transform: translate(-50%, 0%) rotate(270deg) scale(1, 1); }
+  100% { transform: translate(-50%, -100%) rotate(360deg) scale(1, 1); }
+}
+
+/* Overlay */
+.overlay {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.76);
+  z-index: 9999;
+  flex-direction: column; /* Asegura que el contenido esté alineado en columna */
+}
+
+/* fin loading */
+
+.whitNumbers{
+  min-width: 350px; 
+  max-width: 400px;
+}
+
+@media only screen and (max-width: 1334px) and (max-height: 728px) {
+
+  ion-button.number {
+      width: 70px;
+      height: 70px;
+      font-size: 30px;
+    }
+
+    .whitNumbers{
+      min-width: 300px; 
+      max-width: 400px;
+    }
+
+}

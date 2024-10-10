@@ -1,0 +1,36 @@
+<ion-content [fullscreen]="true">
+  <div class="d-flex flex-column justify-content-between h-100 text-center">
+    <div>
+      <img class="img-fluid logo" src="assets/logos/StatusBoard_Black.png" alt="logo" />
+    </div>
+    <div class="container">
+      <div class="row justify-content-center">
+        <div class="col-12 col-md-8 col-lg-6">
+          <form [formGroup]="form">
+            <div>
+              <h1><b>Welcome</b></h1>
+              <span>Please login with admin account</span>
+            </div>
+            <br />
+            <ion-input tabindex="1" label="Username" formControlName="username" label-placement="floating" fill="outline"
+              errorText="Username required" [readonly]="loading" [disabled]="loading"></ion-input>
+            <br />
+            <ion-input tabindex="2" label="Password" formControlName="password" label-placement="floating" fill="outline"
+              [type]="showPassword ? 'text' : 'password'" errorText="Password required" (keyup.enter)="login()"
+              [readonly]="loading" [disabled]="loading"></ion-input>
+            <br />
+            <ion-input tabindex="3" label="2FA Code"  label-placement="floating" fill="outline"
+              errorText="Code is required" (keyup.enter)="login()"
+              [readonly]="loading" [disabled]="true"></ion-input>
+              <br/>
+            <ion-button class="w-100" color="primary" size="large" [disabled]="form.invalid || loading"
+              (click)="login()"><ion-spinner name="dots" *ngIf="loading"></ion-spinner>{{loading ? '' : 'LOGIN'}}</ion-button>
+          </form>
+        </div>
+      </div>
+    </div>
+    <div>
+      <img class="img-fluid logo" src="assets/logos/DTouchmedia_Black.png" alt="logo" />
+    </div>
+  </div>
+</ion-content>

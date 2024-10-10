@@ -1,0 +1,213 @@
+@import "../../theme/variables.scss";
+
+.visitor {
+  color: #0d6efd;
+}
+
+.banner-header {
+  height: 60px;
+  background-color: #0d6efd;
+  color: white;
+  border-radius: 7px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 32px;
+}
+
+.cards-container {
+  height: 160px;
+  width: 300px;
+  min-width: 300px;
+  margin: 5px;
+  border-radius: 7px;
+  font-size: 28px;
+}
+
+.age {
+  text-align: right;
+  margin-right: 10px;
+}
+
+ion-select-popover {
+  --width: 500px !important;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-weight: 600;
+}
+
+// ion-item.custom {
+//   max-width: 320px;
+// }
+
+ion-item::part(native) {
+  height: 30px !important;
+}
+
+ion-row {
+  max-height: 55px !important;
+}
+
+form {
+  max-width: 80%;
+  margin: 0 auto;
+}
+
+ion-spinner {
+  transform: scale(3);
+}
+
+.patient-name,
+.age {
+  font-size: 42px;
+}
+
+.action-sheet-cancel {
+  --background: red !important;
+  --color: white !important;
+}
+
+ion-input {
+  font-size: 24px;
+}
+
+.resultContainer {
+  display: block;
+  overflow: scroll;
+  height: -moz-fit-content;
+  height: fit-content;
+  max-height: 300px;
+  width: 100%;
+  background-color: white;
+  position: relative;
+  top: 0;
+  z-index: 9999999;
+  box-shadow: 1px 1px 10px 5px rgba(82, 82, 82, 0.75);
+  -webkit-box-shadow: 1px 1px 10px 5px rgba(82, 82, 82, 0.75);
+  -moz-box-shadow: 1px 1px 10px 5px rgba(82, 82, 82, 0.75);
+}
+
+.resultContainer.hidden {
+  display: none !important;
+}
+
+.resultContainer ion-radio {
+  font-size: 28px;
+}
+
+.disabled {
+  pointer-events: none;
+  color: #c2c2c2;
+}
+
+.classButton{
+  width: 100% !important; 
+  height: 90px;
+  color: #fff !important;
+}
+
+.rowButton{
+  margin-top: 0px;
+}
+
+@media only screen and (min-width: 1334px) and (max-width: 1500px) and (min-height: 728px) and (max-height: 761px){
+  .cards-container {
+    height: 75px;
+    width: 195px;
+    min-width: 195px;
+    margin: 5px;
+    border-radius: 7px;
+    font-size: 22px;
+  }
+
+  .banner-header {
+    height: 40px;
+    background-color: #0d6efd;
+    color: white;
+    border-radius: 7px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 14px;
+  }
+
+  .patient-name,
+    .age {
+      font-size: 30px;
+    }
+
+    ion-row {
+      max-height: 47px !important;
+    }
+
+    .classButton{
+      width: 100% !important; 
+      height: 70px;
+      color: #fff !important;
+      min-height: 40px !important;
+    }
+
+    h4{
+      font-size: 1.3rem;
+    }
+
+    .rowButton{
+      margin-top: -10px !important;
+    }
+
+
+}
+
+@media only screen and (min-width: 1280px) and (max-width: 1333px) and (max-height: 800px) {
+  .cards-container {
+    height: 95px;
+    width: 195px;
+    min-width: 195px;
+    margin: 5px;
+    border-radius: 7px;
+    font-size: 22px;
+  }
+
+  .banner-header {
+    height: 50px;
+    background-color: #0d6efd;
+    color: white;
+    border-radius: 7px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 18px;
+  }
+
+  .patient-name,
+    .age {
+      font-size: 30px;
+    }
+
+    ion-row {
+      max-height: 47px !important;
+    }
+
+    .classButton{
+      width: 100% !important; 
+      height: 70px;
+      color: #fff !important;
+      min-height: 40px !important;
+    }
+
+    h4{
+      font-size: 1.3rem;
+    }
+
+    .rowButton{
+      margin-top: -10px !important;
+    }
+
+
+}

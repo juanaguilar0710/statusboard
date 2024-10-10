@@ -1,0 +1,9 @@
+<form [formGroup]="form">
+  <div class="p-3" style="cursor: pointer;">
+    <div (click)="toggle()">Yesterday<br/>Patients</div>
+    <div class="on-off-toggle">
+      <input style="cursor: pointer;" formControlName="value" class="on-off-toggle__input" type="checkbox" id="toggle" (input)="toggle()" />
+      <label for="toggle" class="on-off-toggle__slider"></label>
+    </div>
+  </div>
+</form>

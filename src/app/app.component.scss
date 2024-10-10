@@ -1,0 +1,39 @@
+.screensaver-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 9999;
+  overflow: hidden; /* Asegura que el video no se salga del contenedor */
+}
+
+.screensaver-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5); /* Capa semitransparente (50% opacidad negra) */
+  z-index: 1; /* Capa sobre el video */
+}
+
+.screensaver-video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: white;
+  object-fit: cover; 
+  z-index: 0; /* Coloca el video debajo de la capa semitransparente */
+}
+
+.screensaver-container.active {
+  display: block;
+}
+
+.screensaver-container {
+  display: none;
+}

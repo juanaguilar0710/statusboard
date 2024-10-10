@@ -1,0 +1,7 @@
+{
+  "name": "Status Board",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "angular"
+}

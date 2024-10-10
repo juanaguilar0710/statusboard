@@ -1,0 +1,558 @@
+@import "../../theme/variables.scss";
+
+.patient-container {
+  border: 2px solid #cecece;
+  margin: 10px 0;
+  border-radius: 10px;
+}
+
+.name-container {
+  //width: 350px;
+  height: 220px;
+  //min-width: 350px;
+  background-color: #0d6efd;
+  padding: 5px;
+  border-radius: 7px;
+  color: white;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  //align-items: center;
+}
+
+.name-container.yesterday {
+  background-color: #ff1723 !important;
+}
+
+.identifierId {
+  font-size: 30px;
+  position: absolute;
+  top: 0;
+}
+
+.identifier, .age {
+  font-size: 30px;
+  position: absolute;
+  top: 0;
+  right: 5px;
+}
+.age {
+  top: auto;
+  bottom: 5px;
+  color: white;
+}
+
+.request {
+  color: #0d6efd;
+}
+
+.banner-header {
+  height: 85px;
+  background-color: #0d6efd;
+  margin: 22px 2px 0px 2px;
+  color: white;
+  border-radius: 7px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.note {
+  color: #0d6efd;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.circle {
+  --border-radius: 50%;
+  width: 45px;
+  height: 45px;
+  border-radius: 50px;
+  text-align: center;
+  justify-content: center;
+  align-items: center;
+  color: white;
+  font-size: 28px;
+  font-weight: bold;
+  margin: 5px 5px;
+  min-width: 85px;
+  min-height: 85px;
+  max-width: 85px;
+  max-height: 85px;
+}
+
+.circleBorder{
+  position: absolute; 
+  top: -19px; 
+  left: -22px; 
+  width: 100%; 
+  height: 100%; 
+  border: 3px solid red; 
+  border-radius: 50%;
+}
+
+.circle-blue {
+  background-color: #0d6efd;
+}
+
+.circle-red {
+  background-color: #ff1723;
+}
+
+form {
+  height: 100%;
+  width: 550px;
+  margin: 0 auto;
+}
+
+.label {
+  font-size: 24px !important;
+  font-weight: bold;
+  margin: 0;
+  padding: 0;
+  line-height: normal;
+}
+
+.label-value {
+  font-size: 24px !important;
+}
+
+.elipsis {
+  overflow: hidden;
+  text-wrap: nowrap;
+  text-overflow: ellipsis;
+  width: 100%;
+  padding: 0;
+  position: relative;
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.patient-name {
+  font-size: 32px;
+  font-weight: bold;
+  margin-left: 5px;
+  text-align: left;
+}
+
+.room-cards {
+  height: fit-content;
+  border-radius: 10px;
+  width: 95%;
+  margin: 15px auto;
+  cursor: pointer;
+}
+
+.room-name {
+  text-transform: uppercase;
+}
+
+.room-card-details {
+  padding: 0 10px 10px 10px;
+}
+
+.room-edit-icon {
+  float: right;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+ion-radio::part(container) {
+  width: 30px;
+  height: 30px;
+
+  border-radius: 8px;
+  border: 2px solid #ddd;
+}
+
+ion-radio::part(mark) {
+  background: none;
+  transition: none;
+  transform: none;
+  border-radius: 0;
+}
+
+ion-radio.radio-checked::part(container) {
+  background: #0d6efd;
+  border-color: transparent;
+}
+
+ion-radio.radio-checked::part(mark) {
+  width: 6px;
+  height: 10px;
+
+  border-width: 0px 2px 2px 0px;
+  border-style: solid;
+  border-color: #fff;
+
+  transform: rotate(45deg);
+}
+
+h1 {
+  margin: 0 !important;
+  font-weight: bold;
+}
+
+
+.header-filter {
+  width: calc(100% - 350px);
+}
+
+#wrapper {
+  width: 100%;
+  background-color: #fff;
+}
+
+#patient-wrapper {
+  position: fixed;
+  width: calc(100% - 350px);
+  height: 100vh;
+  left: 0;
+  right: 0;
+  overflow-y: scroll;
+  background-color: white;
+  padding-bottom: 200px;
+}
+
+#work-teams-wrapper {
+  margin: 0 0 0 calc(100% - 350px);
+  padding: 0 0 100px 0;
+  position: fixed;
+  left: 0;
+  top: 0;
+  height: 100vh;
+}
+
+.operating_room_name {
+  position: absolute;
+  right: 10px;
+}
+
+.online {
+  color: #00cd00;
+}
+
+.offline {
+  color: red;
+}
+
+.colId{
+  overflow-y: scroll; 
+  height: 80vh; 
+  padding-bottom: 1px;
+}
+
+.lineRedPhone{
+  position: absolute; 
+  top: 50%; 
+  left: -15px; 
+  width: 165%; 
+  height: 3px; 
+  background-color: red; 
+  transform: rotate(130deg); 
+  transform-origin: center;
+}
+
+.buttons{
+  width: -webkit-fill-available; 
+  height: 70px;
+  margin-top: 10px; 
+  font-size: 20px;
+}
+
+.controlRight{
+  overflow-y: scroll; 
+  height: 65vh; 
+  padding-bottom: 100px; 
+  margin-top: 10px;
+}
+
+.logo{
+  margin-left: 20px; 
+  margin-right: 20px; 
+  width: 250px; 
+  text-align: center;
+}
+
+.surgeryCancel{
+  color: red;
+}
+
+@media only screen and (min-width: 1334px) and (max-width: 1500px) and (min-height: 728px) and (max-height: 761px){
+ 
+  .label {
+    font-size: 20px !important;
+    font-weight: bold;
+    margin: 0;
+    padding: 0;
+    line-height: normal;
+  }
+
+  .label-value {
+    font-size: 20px !important;
+  }
+
+  h1 {
+    margin: 0 !important;
+    font-weight: bold;
+    font-size: 2.0rem;
+  }
+
+  .patient-container {
+    border: 2px solid #cecece;
+    margin: 10px 0;
+    border-radius: 10px;
+    height: 187px;
+  }
+
+  .patient-name {
+    font-size: 23px;
+    font-weight: bold;
+    margin-left: 5px;
+    text-align: left;
+  }
+
+  .colId{
+    overflow-y: scroll; 
+    height: 74.5vh; 
+    padding-bottom: 1px;
+  }
+
+  .circle {
+    --border-radius: 50%;
+    width: 45px;
+    height: 45px;
+    border-radius: 50px;
+    text-align: center;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    font-size: 28px;
+    font-weight: bold;
+    margin: 5px 5px;
+    min-width: 61px;
+    min-height: 61px;
+    max-width: 61px;
+    max-height: 61px;
+    box-shadow: none !important;
+  } 
+
+
+  .lineRedPhone{
+    position: absolute; 
+    top: 30%; 
+    left: -15px; 
+    width: 113%; 
+    height: 3px; 
+    background-color: red; 
+    transform: rotate(130deg); 
+    transform-origin: center;
+  }
+
+  .callPosition{
+    color: red; 
+    font-size: 40px; 
+    position: absolute; 
+    top: -5px; 
+    left: -3px;
+  }
+
+  .buttons{
+    width: -webkit-fill-available; 
+    height: 50px;
+    margin-bottom: 0px;
+    font-size: 17px;
+  }
+
+  .controlRight{
+    overflow-y: scroll; 
+    height: 55.1vh; 
+    padding-bottom: 100px; 
+  }
+
+  .age {
+    padding-right: 5px;
+  }
+
+  .identifier, .age {
+    font-size: 25px;
+    padding-right: 5px;
+    margin-right: 0px;
+  }
+
+  .logo{
+    margin-left: 0px; 
+    margin-right: 20px; 
+    width: 250px; 
+    text-align: center;
+  }
+
+  .logonone{
+    display: none;
+  }
+
+  .filternonelogo{    
+      flex: 0 0 calc(calc(9 / var(--ion-grid-columns, 12))* 100%) !important;
+      width: calc(calc(9 / var(--ion-grid-columns, 12))* 100%) !important;
+      max-width: calc(calc(9 / var(--ion-grid-columns, 12))* 100%) !important;  
+  }
+
+  .visitCancel{
+    min-height: 184px;
+  }
+
+  .surgeryCancel{
+    color: red;
+    margin-top: 9% !important;
+  }
+
+  ion-col {
+    .name-container {
+      height: 100%; /* Ajusta la altura a lo que necesites */
+      overflow: hidden; /* Esto previene que el contenido se salga si es más alto */
+    }
+  }
+
+
+}
+
+
+@media only screen and (min-width: 1280px) and (max-width: 1333px) and (max-height: 800px) {
+ 
+  .label {
+    font-size: 20px !important;
+    font-weight: bold;
+    margin: 0;
+    padding: 0;
+    line-height: normal;
+  }
+
+  .label-value {
+    font-size: 20px !important;
+  }
+
+  h1 {
+    margin: 0 !important;
+    font-weight: bold;
+    font-size: 2.0rem;
+  }
+
+  .patient-container {
+    border: 2px solid #cecece;
+    margin: 10px 0;
+    border-radius: 10px;
+    height: 187px;
+  }
+
+  .patient-name {
+    font-size: 23px;
+    font-weight: bold;
+    margin-left: 5px;
+    text-align: left;
+  }
+
+  .colId{
+    overflow-y: scroll; 
+    height: 74.5vh; 
+    padding-bottom: 1px;
+  }
+
+  .circle {
+    --border-radius: 50%;
+    width: 45px;
+    height: 45px;
+    border-radius: 50px;
+    text-align: center;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    font-size: 28px;
+    font-weight: bold;
+    margin: 5px 5px;
+    min-width: 61px;
+    min-height: 61px;
+    max-width: 61px;
+    max-height: 61px;
+    box-shadow: none !important;
+  } 
+
+
+  .lineRedPhone{
+    position: absolute; 
+    top: 30%; 
+    left: -15px; 
+    width: 113%; 
+    height: 3px; 
+    background-color: red; 
+    transform: rotate(130deg); 
+    transform-origin: center;
+  }
+
+  .callPosition{
+    color: red; 
+    font-size: 40px; 
+    position: absolute; 
+    top: -5px; 
+    left: -3px;
+  }
+
+  .buttons{
+    width: -webkit-fill-available; 
+    height: 50px;
+    margin-bottom: 0px;
+    font-size: 17px;
+  }
+
+  .controlRight{
+    overflow-y: scroll; 
+    height: 55.1vh; 
+    padding-bottom: 100px; 
+  }
+
+  .age {
+    padding-right: 5px;
+  }
+
+  .identifier, .age {
+    font-size: 25px;
+    padding-right: 5px;
+    margin-right: 0px;
+  }
+
+  .logo{
+    margin-left: 0px; 
+    margin-right: 10px; 
+    width: 250px; 
+    text-align: center;
+  }
+
+  .logonone{
+    //display: none;
+  }
+
+  .filternonelogo{    
+      // flex: 0 0 calc(calc(9 / var(--ion-grid-columns, 12))* 100%) !important;
+      // width: calc(calc(9 / var(--ion-grid-columns, 12))* 100%) !important;
+      // max-width: calc(calc(9 / var(--ion-grid-columns, 12))* 100%) !important;  
+  }
+
+  .visitCancel{
+    min-height: 184px;
+  }
+
+  .surgeryCancel{
+    color: red;
+    margin-top: 9% !important;
+  }
+
+  ion-col {
+    .name-container {
+      height: 100%; /* Ajusta la altura a lo que necesites */
+      overflow: hidden; /* Esto previene que el contenido se salga si es más alto */
+    }
+  }
+
+
+}

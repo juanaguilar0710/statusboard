@@ -1,0 +1,243 @@
+<ion-content [fullscreen]="true" slot="fixed" id="update-container">
+  <div style="height: 45px; font-size: 34px;" class="text-center w-100">
+    Patient Info
+  </div>
+  <div class="banner-header">
+    <div class="d-flex justify-content-between w-100">
+      <div class="w-25">&nbsp;</div>
+      <div class="patient-name">{{patient.fullName}}</div>
+      <div class="age w-25">{{patient.age}} years</div>
+    </div>
+  </div>
+  <!-- <div *ngIf="loading" class="text-center w-100 d-flex justify-content-center align-items-center flex-column"
+    style="height: 100%;">
+    <h2>Actualizando Información</h2>
+    <br />
+    <ion-spinner class="dot" color="dark"></ion-spinner>
+  </div> -->
+  <form [formGroup]="form">
+    <div class="m-3">
+      <div>
+        <!-- <h4>Patient Status:</h4> -->
+      </div>
+      <div *ngIf="!loading">
+        <div class="d-flex overflow-auto">
+          <div *ngFor="let status of statuses"
+            class="cards-container text-center d-flex justify-content-center align-items-center"
+            [style]="{'background-color': status.colorHex, 'color': status.textColor}" [ngClass]="{'disabled' : status.disabled}"role="button" [id]="'status'+status.id"
+            (click)="updateStatus(status)">{{status.name}}</div>
+        </div>
+      </div>
+      <div class="d-flex align-items-end my-3">
+        <div class="w-100">
+          <ion-row>
+            <ion-col>
+              <div class="d-flex">
+                <div>
+                  <h4>Request:</h4>
+                </div>
+                <ion-item class="w-100">
+                  <ion-input [id]="'searchCommentsInput'" [readonly]="true" aria-label="Request" formControlName="comment_custom" #searchCommentsInput (ionFocus)="openSearchableComponentOnModal('comment')"></ion-input>
+                </ion-item>
+              </div>
+            </ion-col>
+            </ion-row>
+        </div>
+        <ion-button id="add-request" class="mt-2 bigger-text" fill="outline" expand="block" (click)="openSearchableComponentOnModal('comment')">Add
+          Request</ion-button>
+        <ion-button class="mt-2 bigger-text" color="danger" fill="outline" expand="block" (click)="clearRequest()">Clear
+          Request</ion-button>
+      </div>
+      <div class="my-2">
+        <ion-grid>
+          <!-- Operating Room and Visitor Companion -->
+          <ion-row>
+            <ion-col>
+              <div class="d-flex">
+                <div class="text-nowrap d-flex justify-content-start align-items-end">
+                  <h4>Full Name:</h4>
+                </div>
+                <div class="w-100 justify-content-end">
+                  <ion-item>
+                    <ion-input aria-label="Full Name" formControlName="fullName"></ion-input>
+                  </ion-item>
+                </div>
+              </div>
+            </ion-col>
+            <ion-col style="padding-left: 50px;">
+              
+            </ion-col>
+          </ion-row>
+          <ion-row>
+            <ion-col>
+              <div class="d-flex">
+                <div class="text-nowrap d-flex justify-content-start align-items-end">
+                  <h4>Operating Room:</h4>
+                </div>
+                <div class="w-100 justify-content-end">
+                  <ion-item>
+                    <ion-input [readonly]="true" aria-label="Operating Room" formControlName="operating_room_name" (ionFocus)="openSearchableComponentOnModal('operating_room')"></ion-input>
+                    <ion-icon (click)="openSearchableComponentOnModal('operating_room')" name="search" slot="end"></ion-icon>
+                  </ion-item>
+                </div>
+              </div>
+            </ion-col>
+            <ion-col style="padding-left: 50px;">
+              <div>
+                <h4 class="visitor">Visitor Companion</h4>
+              </div>
+            </ion-col>
+          </ion-row>
+          <!-- Surgeon and Companion Name -->
+          <ion-row>
+            <ion-col>
+              <div class="d-flex">
+                <div class="text-nowrap d-flex justify-content-start align-items-end">
+                  <h4>Surgeon:</h4>
+                </div>
+                <div class="w-100 justify-content-end">
+                  <ion-item>
+                    <ion-input aria-label="Surgeon Name" [readonly]="true" formControlName="surgeon_name"></ion-input>
+                    <ion-icon (click)="openSearchableComponentOnModal('surgeon')" name="search" slot="end"></ion-icon>
+                  </ion-item>
+                </div>
+              </div>
+            </ion-col>
+            <ion-col style="padding-left: 50px;">
+              <div class="d-flex">
+                <div class="text-nowrap d-flex justify-content-start align-items-end">
+                  <h4>Name:</h4>
+                </div>
+                <div class="w-100 justify-content-end">
+                  <ion-item>
+                    <ion-input aria-label="Name" [maxlength]="50" formControlName="companion_name"></ion-input>
+                  </ion-item>
+                </div>
+              </div>
+            </ion-col>
+          </ion-row>
+          <ion-row>
+            <ion-col>
+              <div class="d-flex">
+                <div class="text-nowrap d-flex justify-content-start align-items-end">
+                  <h4>Procedure:</h4>
+                </div>
+                <div class="w-100 justify-content-end">
+                  <ion-item>
+                    <ion-input aria-label="Procedures" formControlName="procedure_name"></ion-input>
+                    <!-- <ion-input aria-label="Procedures" [readonly]="true" formControlName="procedure_name" (ionFocus)="openSearchableComponentOnModal('procedure')"></ion-input> -->
+                  </ion-item>
+                </div>
+              </div>
+            </ion-col>
+            <ion-col style="padding-left: 50px;">
+              <div class="d-flex">
+                <div class="text-nowrap d-flex justify-content-start align-items-end">
+                  <h4>Phone:</h4>
+                </div>
+                <div class="w-100 justify-content-end">
+                  <ion-item>
+                    <ion-input aria-label="Telephone" [maxlength]="13" type="tel" formControlName="phone"></ion-input>
+                  </ion-item>
+                </div>
+              </div>
+            </ion-col>
+          </ion-row>
+          <ion-row>
+            <ion-col>
+              <div class="d-flex">
+                <div class="text-nowrap d-flex justify-content-start align-items-end">
+                  <h4>Procedure Time:</h4>
+                </div>
+                <div class="w-100 justify-content-end">
+                  <ion-item>
+                    <ion-input [readonly]="true" aria-label="Procedure Time" formControlName="procedure_time" ></ion-input>
+                    <ion-icon (click)="openSearchableComponentOnModal('time')" name="search" slot="end"></ion-icon>
+                  </ion-item>
+                </div>
+              </div>
+            </ion-col>
+            <ion-col style="padding-left: 50px;">
+              <div class="d-flex">
+                <div class="text-nowrap d-flex justify-content-start align-items-end">
+                  <h4>Note:</h4>
+                </div>
+                <div class="w-100 justify-content-end">
+                  <ion-item>
+                    <ion-input aria-label="Note" [maxlength]="150" formControlName="note"></ion-input>
+                  </ion-item>
+                </div>
+              </div>
+            </ion-col>
+          </ion-row>
+          <ion-row>
+            <ion-col>
+              <div class="d-flex">
+                <div class="text-nowrap d-flex justify-content-start align-items-end">
+                  <h4>Recovery Room:</h4>
+                </div>
+                <div class="w-100 justify-content-end">
+                  <ion-item>
+                    <ion-input aria-label="Recovery Room" formControlName="recovery_room"></ion-input>
+                    <ion-icon (click)="openSearchableComponentOnModal('recovery_room')" name="search" slot="end"></ion-icon>
+                  </ion-item>
+                </div>
+              </div>
+            </ion-col>
+            <ion-col style="padding-left: 50px;">
+            </ion-col>
+          </ion-row>
+          <br />
+          
+        </ion-grid>
+      </div>
+    </div>
+  </form>
+
+          <ion-row class="rowButton">
+            <ion-col>
+              <div class="d-flex justify-content-center">
+                <ion-button color="danger" class="w-100 mx-4 classButton" size="large" id="cancel-surgery-modal">
+                  <span *ngIf="!patient.visit_canceled_at">Surgery Canceled</span>
+                  <span *ngIf="patient.visit_canceled_at">Enable Surgery</span>
+                </ion-button>
+                <ion-button color="primary" class="w-100 mx-4 classButton" size="large" (click)="openSearchableComponentOnModal('next_to_surgery')">
+                  Next To Surgery
+                </ion-button>
+              </div>
+            </ion-col>
+            <ion-col>
+              <div class="d-flex justify-content-center">
+                <ion-button color="danger" class="w-100 mx-4 classButton" size="large" (click)="cancel()">
+                  <span>Cancel</span>
+                </ion-button>
+                <ion-button color="success" class="w-100 mx-4 classButton" size="large" (click)="updatePatient()">
+                  <span style="color: white;">Update</span>
+                </ion-button>
+              </div>
+            </ion-col>
+          </ion-row>
+
+
+
+
+</ion-content>
+
+<ion-modal #modalCancelSurgery trigger="cancel-surgery-modal" class="logout-modal" style="height: 900px;">
+  <ng-template>
+    <ion-content class="ion-padding">
+      <div class="text-center">
+        <h1>{{patient.visit_canceled_at ? 'Do you want to enable this surgery?' : 'Are you sure you want to cancel this surgery?'}}</h1>
+      </div>
+      <br />
+      <div class="d-flex">
+        <div class="flex-fill" style="padding: 0 10px;">
+          <ion-button class="w-100 classButton" color="danger" (click)="noCancel()">No</ion-button>
+        </div>
+        <div class="flex-fill" style="padding: 0 10px;">
+          <ion-button class="w-100 classButton" color="primary" (click)="yesCancel()">Yes</ion-button>
+        </div>
+      </div>
+    </ion-content>
+  </ng-template>
+</ion-modal>

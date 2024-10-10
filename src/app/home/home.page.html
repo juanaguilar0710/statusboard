@@ -1,0 +1,194 @@
+<ion-content style="overflow: hidden;">
+  <ion-progress-bar *ngIf="updating" type="indeterminate"></ion-progress-bar>
+
+  <ion-grid>
+    <ion-row>
+      <ion-col size="2" class="logonone">
+        <div class="logo">
+          <img [src]="requestsService.config.branch.image_url ?? 'assets/logos/logotipo_placeholder.png'" width="150px" />
+        </div>
+      </ion-col>
+
+      <ion-col size="7" class="filternonelogo">
+        <div class="align-items-center">
+          <div class="d-inline-flex align-items-center">
+            <app-toggle (toggleEmitter)="toggleYesterday($event)"></app-toggle>
+            <!-- <h3>Filter:</h3> -->
+            <div class="align-items-center">
+              <ion-button class="circle circle-blue" color="undefined"
+                [ngClass]="{'circle-red' : (filtering && filteredLetter === letter || viewYesterdaysPatients)}" *ngFor="let letter of letters"
+                (click)="filterPatients(letter)">
+                {{filtering && filteredLetter === letter ? 'X' : letter}}
+              </ion-button>
+            </div>
+          </div>
+        </div>
+      </ion-col>
+
+      <ion-col size="3">
+        <div class="text-center mt-4">
+          <h5 class="text-uppercase" *ngIf="this.username">{{this.username.user.username}}</h5>
+          <h6 class="text-uppercase">{{configuration?.waitingRoom?.name}}</h6>
+          <div class="my-3">
+            <span [ngClass]="{'online' : networkStatus === 'ONLINE', 'offline' : networkStatus === 'OFFLINE'}">
+              <b>{{networkStatus}}</b>
+            </span>
+            <br/>
+            <!-- <span class="mx-1"> - </span> -->
+            <b>Last Update: </b><span>{{lastsync}}</span>
+          </div>
+        </div>
+      </ion-col>
+
+    </ion-row>
+  </ion-grid>
+
+  <!-- <ion-button (click)="showResolution()">Mostrar Resolución</ion-button>
+<ion-label>{{ resolution }}</ion-label> -->
+
+  <ion-grid>
+    <ion-row>
+      <ion-col size="9" class="colId">
+        <div id="patient-container" *ngFor="let patient of patients; let i = index;" class="patient-container" role="button" (click)="goToUpdatePatient(patient, i)">
+          <ion-row>
+            <ion-col size="3">
+              <div [id]="'patient' + i" class="name-container p-3 rounded shadow-sm" [ngClass]="{'yesterday' : viewYesterdaysPatients}">
+                <div class="d-flex align-items-center justify-content-between">
+                  <div class="identifier badge {{!toogleselected ? 'bg-primary' : 'yesterday'}} text-white">ID: {{patient.identifier}}</div>
+                  <div class="age badge {{!toogleselected ? 'bg-primary' : 'yesterday'}} text-white">{{patient.age}}y</div>
+                  <span class="patient-name fw-bold ms-2">{{patient.fullName}}</span>
+                </div>
+              </div>
+            </ion-col>
+
+            <ion-col size="9" class="visitCancel">
+              <div class="w-100 pt-1" *ngIf="!patient.visit_canceled_at" style="min-width: 0;">
+                <h1 class="operating_room_name" style="color: #0d6efd;">{{patient.operating_room_name === 'None' ? '' : patient.operating_room_name}}</h1>
+                <ion-grid>
+                  <ion-row>
+                    <ion-col class="elipsis">
+                      <div class="elipsis">
+                        <h1>{{patient.status_name}}</h1>
+                        <div style="padding-top: 10px;">
+                          <div class="elipsis">
+                            <span class="label">Surgeon: </span>
+                            <span class="label-value">{{patient.surgeon?.name ?? patient.surgeon_name}}</span>
+                          </div>
+                          <div class="elipsis">
+                            <span class="label">Procedure: </span>
+                            <span class="label-value">{{patient.procedure_name}}</span>
+                          </div>
+                          <div class="elipsis">
+                            <span class="label">Procedure Time: </span>
+                            <span class="label-value">{{formatTime(patient.procedure_time)}}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </ion-col>
+                    <ion-col class="elipsis">
+                      <div class="elipsis">
+                        <div style="padding-top: 10px;">
+                          <h1>&nbsp;</h1>
+                          <div class="elipsis">
+                            <span class="label">Family Name: </span><span class="label-value">{{patient.companion_name}}</span>
+                          </div>
+                          
+                          
+                          <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                              <span class="label">Family Phone: </span>
+                              <span class="label-value">{{patient.phone_national_format}}</span>
+                            </div>
+                            <!-- Contenedor del ícono tachado -->
+                            <div class="icon-container" *ngIf="!patient.phone_national_format" style="position: relative; width: 50px; height: 50px; margin-right: 45px;">
+                              <!-- Ícono de teléfono -->
+                              <ion-icon name="call-outline" class="callPosition"></ion-icon>
+                              <!-- Círculo de prohibición -->
+                              <div class="circle circleBorder"></div>
+                              <!-- Línea de tachado -->
+                              <div class="line lineRedPhone" ></div>
+                            </div>
+                          </div>
+
+
+
+                          <div class="elipsis">
+                            <span class="label">Request: </span>
+                            <span class="label-value request">{{patient.comment_custom}}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </ion-col>                  
+                  </ion-row>
+                </ion-grid>
+              </div>
+    
+              <div class="d-inline-flex w-100 align-items-center justify-content-center" *ngIf="patient.visit_canceled_at"
+              (click)="goToUpdatePatient(patient, i)">
+              <h1 class="surgeryCancel">SURGERY CANCELLED</h1>
+              </div>
+    
+              <div *ngIf="!patients || patients?.length === 0" style="text-align: center; margin-top: 100px;">
+                <h1>No Patients Today</h1>
+              </div>
+    
+            </ion-col>    
+          </ion-row>
+        </div>
+      </ion-col>
+
+      <ion-col size="3">
+        <button id="logout-modal" class="btn btn-danger rounded-3 buttons">0:{{timeRemaining}} Logout</button>
+        
+        <button (click)="newPatient()" class="btn btn-primary rounded-3 buttons">+ New Patient</button>
+    
+        <div class="controlRight">
+          <div style="margin: 10px 10px 10px 10px; padding: 5px 5px; background-color: #e8e8e8; border-radius: 10px;" *ngIf="patients && patients.length > 0">
+            <div class="text-center m-2">
+              <h3>WORK TEAMS</h3>
+            </div>
+            <div class="room-cards" (click)="editRoom(room, i)" *ngFor="let room of operatingRooms; let i = index"
+              [ngStyle]="{'background-color': room.color}" [dynamicTextColor]="room.color">
+              <div class="room-edit-icon">
+                <ion-icon name="create-outline"></ion-icon>
+              </div>
+              <div class="text-center room-name">
+                <h4>{{room.name}}</h4>
+              </div>
+              <div class="room-card-details">
+                <div><a style="font-weight: bold;">DR:</a> Cirujano</div>
+                <div><a style="font-weight: bold;">ORT:</a> Nombre empleado</div>
+                <div><a style="font-weight: bold;">RN:</a> Nombre empleado</div>
+                <div><a style="font-weight: bold;">RNA:</a> Nombre empleado</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+
+      </ion-col>
+    </ion-row>    
+  </ion-grid>
+
+
+  <ion-modal #modallogout trigger="logout-modal" class="logout-modal leo">
+    <ng-template class="jean">
+      <ion-content class="ion-padding pepe">
+        <div class="text-center">
+          <h1>Are you sure you want to logout?</h1>
+        </div>
+        <br />
+        <div class="d-flex">
+          <div class="flex-fill" style="padding: 0 10px;">
+            <button class="btn btn-danger rounded-3" style="width: -webkit-fill-available; height: 70px;margin-top: 10px; font-size: 20px;"(click)="cancel()">Cancel</button>
+          </div>
+
+          <div class="flex-fill" style="padding: 0 10px;">
+            <button class="btn btn-primary rounded-3" style="width: -webkit-fill-available; height: 70px;margin-top: 10px; font-size: 20px;" (click)="logout()">Logout</button>
+
+          </div>
+        </div>
+      </ion-content>
+    </ng-template>
+  </ion-modal>
+</ion-content>

@@ -1,0 +1,139 @@
+<ion-content [fullscreen]="true" slot="fixed" id="update-container">
+  <div style="height: 45px; font-size: 30px;" class="text-center w-100">
+    Operating Room
+  </div>
+  <div class="banner-header mx-3 px-2" [style]="{'background-color': room.color ?? '#007AFF'}">
+    <div class="d-flex justify-content-between align-items-center w-100" [dynamicTextColor]="room.color">
+      <div ngx-colors-trigger [hideTextInput]="true" [(ngModel)]="room.color">
+        <ion-icon name="color-palette"></ion-icon>
+      </div>
+      <div>{{room.name}}</div>
+      
+      <div>{{room.surg? room.surg : this.surgeon.full_name}}</div>
+    </div>
+  </div>
+  <ion-grid>
+    <!-- Operating Room and Visitor Companion -->
+    <ion-row>
+      <ion-col class="font-size">
+        Patient Assigned:
+      </ion-col>
+      <ion-col class="font-size">
+        Patient Available:
+      </ion-col>
+      <ion-col class="font-size">
+        Team Work:
+      </ion-col>
+    </ion-row>
+  </ion-grid>
+
+
+  <ion-grid>
+    <!-- Operating Room and Visitor Companion -->
+    <ion-row>
+
+      
+      <ion-col class="columnAvailable">
+        <div class="container-scroll objColumn">
+          <div *ngFor="let patient of assignedPatients; let i = index" class="d-flex justify-content-between align-items-center w-100">
+            <div class="fs-22 d-inline-flex">
+              <div class="mx-2 opd">OPD</div> 
+              <div class="mx-2 age">{{patient.age ?? '0'}}y</div>
+              <div class="mx-2 namePatient">{{patient.fullName}}</div>
+              <!-- <div class="mx-2">{{patient.procedure_name ?? 'Procedure'}}</div> -->
+            </div>
+            <div class="mx-2" (click)="moveToAvailable(i)">
+              <ion-icon style="color: red; font-size: 35px;" name="close-circle-outline"></ion-icon>
+            </div>
+          </div>
+        </div>
+      </ion-col>
+      
+      <ion-col class="columnAvailable">
+        <div class="container-scroll objColumn">
+          <div *ngFor="let patient of availablePatients; let i = index" class="d-flex justify-content-between align-items-center w-100 font-size-l">
+            <div class="fs-22 d-inline-flex">
+              <div class="mx-2 opd">OPD</div> 
+              <div class="mx-2 age">{{patient.age ?? '0'}}y</div>
+              <div class="mx-2 namePatient">{{patient.fullName}}</div>
+              <!-- <div class="mx-2">{{patient.procedure_name ?? 'Procedure'}}</div> -->
+            </div>
+            <div (click)="moveToAssigned(i)" class="align-items-center">
+              <ion-icon style="color: green; font-size: 35px;" name="add-circle-outline"></ion-icon>
+            </div>
+          </div>
+        </div>
+      </ion-col>
+
+
+           
+
+      <ion-col style="display: flex; flex-direction: column; min-width: 20%;">
+        <div class="container" >
+          <!-- Selectores -->
+          <div class="room-card-details">
+            <div class="room-card-row fs-22" style="display: flex; align-items: center; margin-bottom: 10px;">
+              <a style="font-weight: bold; min-width: 50px; font-size: 25px;">DR:</a>
+              <select [(ngModel)]="surgeonid" (change)="selectSurgeon()" class="dropdownSelect">
+                <option *ngFor="let item of surgeons.staff" [value]="item.id">{{ item.full_name }}</option>
+              </select>
+            </div>
+
+            <div class="room-card-row fs-22" style="display: flex; align-items: center; margin-bottom: 10px;">
+              <a style="font-weight: bold; min-width: 50px;font-size: 25px;">ORT:</a>
+              <select [(ngModel)]="ortid" (change)="selectOrt()" style="margin-left: 12px" class="dropdownSelect">
+                <option *ngFor="let item of ort.staff" [value]="item.id">{{ item.full_name }}</option>
+              </select>
+            </div>
+            <div class="room-card-row fs-22" style="display: flex; align-items: center; margin-bottom: 10px;">
+              <a style="font-weight: bold; min-width: 50px;font-size: 25px;">RN:</a>
+              <select [(ngModel)]="rnid" (change)="selectRn()" style="   margin-left: 20px" class="dropdownSelect">
+                <option *ngFor="let item of rn.staff" [value]="item.id">{{ item.full_name }}</option>
+              </select>
+            </div>
+            <div class="room-card-row fs-22" style="display: flex; align-items: center; margin-bottom: 10px;">
+              <a style="font-weight: bold; min-width: 50px;font-size: 25px;">RNA:</a>
+              <select [(ngModel)]="rnaid" (change)="selectRna()" style="   margin-left: 7px" class="dropdownSelect">
+                <option *ngFor="let item of rna.staff" [value]="item.id">{{ item.full_name }}</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      
+        <!-- Botones alineados en la parte inferior -->
+        <div class="d-flex justify-content-center" style="margin-top: auto;">
+          <ion-button color="danger" [disabled]="loading" class="mx-4" size="large" style="width: 200px; height: 40px;" (click)="cancel()">
+            <span style="color: #fff;">Cancel</span>
+          </ion-button>
+          <ion-button color="success" class="mx-4" [disabled]="loading" size="large" style="width: 200px; height: 40px;" (click)="update()">
+            <span style="color: #fff;">Update</span>
+          </ion-button>
+        </div>
+      </ion-col>
+    </ion-row>
+  </ion-grid> 
+
+
+
+
+
+
+
+  <!-- <ion-col>
+    <div class="d-flex justify-content-center">
+      <ion-button color="danger" [disabled]="loading" class="w-100 mx-4" size="large" style="width: 200px; height: 100px;"
+        (click)="cancel()">
+        <span style="color: #fff;">Cancel</span>
+      </ion-button>
+      <ion-button color="success" class="w-100 mx-4" [disabled]="loading" size="large" style="width: 200px; height: 100px;"
+        (click)="update()">
+        <span style="color: #fff;">Update</span>
+      </ion-button>
+    </div>
+  </ion-col> -->
+</ion-content>
+
+<!-- <div class="buttons">
+      <button (click)="cancel()">CANCEL</button>
+      <button (click)="update()">UPDATE</button>
+    </div> -->

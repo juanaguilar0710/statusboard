@@ -1,0 +1,34 @@
+<!-- modal-select.html -->
+<ion-header>
+  <ion-toolbar>
+    <ion-title>Seleccionar Opciones</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="dismiss()">Cerrar</ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <ion-list>
+    <ion-item>
+      <ion-label>Surg</ion-label>
+      <ion-select placeholder="Seleccionar Cirujano">
+        <ion-select-option value="cirujano1">Cirujano 1</ion-select-option>
+        <ion-select-option value="cirujano2">Cirujano 2</ion-select-option>
+        <ion-select-option value="cirujano3">Cirujano 3</ion-select-option>
+      </ion-select>
+    </ion-item>
+
+    <ion-item>
+      <ion-label>ORT</ion-label>
+      <ion-select placeholder="Seleccionar Empleado">
+        <ion-select-option value="empleado1">Nombre Empleado 1</ion-select-option>
+        <ion-select-option value="empleado2">Nombre Empleado 2</ion-select-option>
+        <ion-select-option value="empleado3">Nombre Empleado 3</ion-select-option>
+      </ion-select>
+    </ion-item>
+
+    <!-- Más selectores según sea necesario -->
+    
+  </ion-list>
+</ion-content>

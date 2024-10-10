@@ -1,0 +1,24 @@
+.resultContainer ion-radio {
+    font-size: 28px;
+}
+
+.resultContainer {
+    overflow: scroll;
+    height: -moz-fit-content;
+    height: fit-content;
+    max-height: calc(fit-content - 100px);
+    width: 100%;
+    background-color: white;
+}
+
+.selected-item {
+    border: 2px solid #3880ff; /* Color de borde cuando esté seleccionado */
+    border-radius: 8px;        /* Bordes redondeados para el efecto visual */
+  }
+
+  .classButton{
+    width: 100% !important; 
+    height: 70px;
+    color: #fff !important;
+    min-height: 40px !important;
+  }

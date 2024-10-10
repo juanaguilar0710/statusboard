@@ -1,0 +1,36 @@
+<div style="box-shadow: 5px 5px #007AFF;">
+  <div class="text-center" style="border-bottom: 1px solid #000000; ">
+    <h3 class="visitor">Operating Rooms</h3>
+  </div>
+  <div>
+    <ion-list>
+      <ion-item *ngFor="let operatingRoom of requestsService.operatingRooms" (click)="selectedRoom(operatingRoom)">
+        <ion-label class="bigger-text">{{operatingRoom.name}}</ion-label>
+      </ion-item>
+    </ion-list>
+  </div>
+</div>
+<!-- Confirm Modal -->
+<ion-modal #modalConfirmation>
+  <ng-template>
+    <ion-header>
+      <div class="text-center">
+        <h2>Confirm</h2>
+      </div>
+    </ion-header>
+    <ion-content>
+      <div class="text-center">
+        <h3>Are you sure you want to logout?</h3>
+      </div>
+      <br />
+      <div class="d-flex">
+        <div class="flex-fill" style="padding: 0 10px;">
+          <ion-button class="w-100" color="danger" (click)="cancel()">No</ion-button>
+        </div>
+        <div class="flex-fill" style="padding: 0 10px;">
+          <ion-button class="w-100" color="primary" (click)="confirm()">Yes</ion-button>
+        </div>
+      </div>
+    </ion-content>
+  </ng-template>
+</ion-modal>

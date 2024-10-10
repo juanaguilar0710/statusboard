@@ -1,0 +1,143 @@
+<ion-content>
+  <ion-grid>
+    <!-- Información general en la parte superior derecha -->
+    <ion-row class="status-overview" style="overflow-y: scroll; height: 90vh; padding-bottom: 1px;">
+
+      <ion-col size="9" size-md="9" size-lg="9">
+        <ion-grid>
+          <ion-row>
+            <ion-col size="10" size-md="9" size-lg="6" *ngFor="let room of getRoomsWithPatients()" >  
+              <ion-card style="width: 100%; border-radius: 15px 15px 1px 1px; margin-bottom: 0px; margin-top: 0px;">
+                <ion-card-header style="background-color: #b5d7f0;height: 40px;padding-top: 2px;padding-bottom: 0px;border-radius: 15px 15px 1px 1px;">
+                  <ion-card-title>
+                    <ion-row>
+                      <ion-col size="2" size-md="2" size-lg="2" style="text-align: left;font-size: 20px;font-weight: bold;">{{room.name}}</ion-col>
+                      <ion-col size="4" size-md="4" size-lg="3" style="text-align: left; font-size: 20px;font-weight: bold;">Dr.{{room.id}}</ion-col>
+                      <ion-col size="5" size-md="5" size-lg="6" style="text-align: end; padding-left: 20px;font-size: 20px;font-weight: bold;">Completed: 2/12</ion-col>                
+                    </ion-row>
+                  </ion-card-title>
+                </ion-card-header>
+                
+                <ion-card-content>
+                  <!-- Llama a la función en el archivo TS para filtrar los pacientes -->
+                  <div *ngFor="let patient of getPatientsGroup(room.name)">
+                    <ion-row>
+                      <ion-col size="2" style="text-align: left;font-size: 20px;">{{patient.age}}y</ion-col>
+                      <ion-col size="4" style="text-align: left;font-size: 20px;">{{patient.fullName}}</ion-col>
+                      <ion-col size="4" style="text-align: center;font-size: 20px;">{{patient.procedure_name}}</ion-col> 
+                      <ion-col size="2" style="text-align: end;font-size: 20px;">{{patient.operating_room_name}}</ion-col> 
+                    </ion-row>
+                  </div>
+
+                  <div *ngIf="getPatientsGroup(room.name).length === 0">
+                    <p style="text-align: center;">No patients</p>
+                  </div>
+                  
+                </ion-card-content>
+              </ion-card>                 
+            </ion-col> 
+  
+          </ion-row>
+
+          <ion-row style="align-items: center; padding-left: 20px;">
+            <!-- Online text with date -->
+            <ion-col size="4" style="text-align: left;">
+              <span style="color: green; font-weight: bold; font-size: 25px;">ONLINE:</span>
+              <span style="font-size: 25px;padding-left: 20px;">{{ currentDate | date: 'd/M/y h:mm a' : 'es' }}</span>
+            </ion-col>
+          
+            <!-- In Holding -->
+            <ion-col size="2" style="display: flex; align-items: center;">
+              <ion-icon name="star" style="font-size: 25px; color: black; margin-right: 5px;"></ion-icon>
+              <span style="font-size: 25px;">IN HOLDING</span>
+            </ion-col>
+          
+            <!-- In Surgery -->
+            <ion-col size="3" style="display: flex; align-items: center;">
+              <ion-icon name="ellipse" style="font-size: 25px; color: red; margin-right: 5px;"></ion-icon>
+              <span style="font-size: 25px;">IN SURGERY</span>
+            </ion-col>
+          
+            <!-- Next to Surgery -->
+            <ion-col size="3" style="display: flex; align-items: center;">
+              <ion-icon name="ellipse" style="font-size: 25px; color: blue; margin-right: 5px;"></ion-icon>
+              <span style="font-size: 25px;">NEXT to SURGERY</span>
+            </ion-col>
+          </ion-row>
+
+
+        </ion-grid>
+      </ion-col>
+
+      <ion-col size="3" size-md="3" size-lg="3">
+        <div class="info-box" style="height: fit-content;">
+          <ion-row>
+            <ion-col size="6" class="patients-today">
+              <p style="font-size: 16px;font-weight: bold;padding-top: 15px;">{{ currentDate | date: 'EEEE, d MMMM y' : 'es' }}</p>
+              <h3>{{ currentTime }}</h3>
+            </ion-col>
+            <ion-col size="6" class="patients-today">
+              <div class="today-box">
+                <p>TODAY</p>
+                <h1>{{ totalPatients }}</h1>
+                <p>PATIENTS</p>
+              </div>
+            </ion-col>
+          </ion-row>  
+  
+          <ion-row>
+            <ion-col size="6" class="status-box">
+              <div class="holding-box">
+                <p id="holding">HOLDING</p>
+                <h2>{{ holdingPatients }}</h2>
+              </div>
+            </ion-col>
+            <ion-col size="6" class="status-box">
+              <div class="surgery-box">
+                <p id="surgery">SURGERY</p>
+                <h2>{{ surgeryPatients }}</h2>
+              </div>
+            </ion-col>
+          </ion-row>
+  
+          <ion-row>
+            <ion-col size="6" class="status-box">
+              <div class="recovery-box">
+                <p id="recovery">RECOVERY</p>
+                <h2>{{ recoveryPatients }}</h2>
+              </div>
+            </ion-col>
+            <ion-col size="6" class="status-box">
+              <div class="feedback-box">
+                <p id="feedback">FEEDBACK</p>
+                <h2>⭐⭐⭐</h2>
+                <p id="feedbackCount">{{ feedbackCount }}</p>
+              </div>
+            </ion-col>
+          </ion-row> 
+        </div>
+
+        <ion-row>
+          <ion-col size="6" *ngFor="let room of getRoomsForCurrentPage()">
+          <!-- <ion-col size="6" *ngFor="let room of operatingRooms"> -->
+
+            <div class="room-card">
+              <div class="room-name text-center">
+                <h3>{{ room.name }}</h3>
+              </div>
+              <div class="room-card-details">
+                <div><a style="font-weight: bold;">DR:</a> Nombre empleado</div>
+                <div><a style="font-weight: bold;">RN:</a> Nombre empleado</div>
+                <div><a style="font-weight: bold;">RNA:</a> Nombre empleado</div>
+              </div>                 
+            </div>
+          </ion-col>                
+        </ion-row>
+
+      </ion-col>
+
+
+    </ion-row>
+  </ion-grid>
+</ion-content>
+
