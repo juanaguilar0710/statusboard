@@ -1,9 +1,9 @@
 export const environment = {
-  version: "1.4.0.14",
+  version: "1.4.0.15",
   production: false,
   locktimer: 600,
   resetPin: '182440',
-  maxInactivityTime: 2000,
+  maxInactivityTime: 20,
   timeSaveScreen: 1,
   broadcasting: {
     driver: 'pusher', // 'socket.io',
@@ -210,8 +210,8 @@ export const environment = {
   ],
 
 
-  //url: 'https://api.dtouchmedia.com',
-  url: 'https://api.dtouchmedia.dev',
+  url: 'https://api.dtouchmedia.com',
+  //url: 'https://api.dtouchmedia.dev',
   auth: '/auth',
   login: '/login',
   refresh: '/refresh',

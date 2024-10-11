@@ -37,6 +37,8 @@ export class DashboardComponent  implements AfterViewInit, OnInit {
   recoveryPatients = 16;
   feedbackCount = 18;
 
+  config:any;
+
   currentPage = 0;  // Página inicial
   roomsPerPage = 4; // Cuántas salas mostrar por página
   
@@ -86,8 +88,8 @@ export class DashboardComponent  implements AfterViewInit, OnInit {
 
     Preferences.get({ key: 'config' }).then((response: any) => {
       if (response.value) {
-        const config = (JSON.parse(response.value));
-        console.log('config', config);
+        this.config = (JSON.parse(response.value));
+        console.log('config', this.config);
         
       }
     })
@@ -95,16 +97,20 @@ export class DashboardComponent  implements AfterViewInit, OnInit {
     this.startCarousel();
   }
 
-
    // Filtra los pacientes por sala
    filterPatientsByRoom(roomName: string): any[] {
-    return this.patients.filter(patient => patient.operating_room_name === roomName);
+    return this.patients.filter(patient => 
+      patient.operating_room_name === roomName && 
+      this.config.statuses.includes(patient.status.id) // Filtra por los estados permitidos
+    );
   }
 
    // Obtiene solo las salas que tienen pacientes
   getRoomsWithPatients(): any[] {
     return this.operatingRooms.filter(room => {
       const patientsInRoom = this.filterPatientsByRoom(room.name);
+      console.log('patientsInRoom',patientsInRoom);
+      
       return patientsInRoom.length > 0;
     });
   }

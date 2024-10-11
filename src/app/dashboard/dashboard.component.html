@@ -12,7 +12,7 @@
                   <ion-card-title>
                     <ion-row>
                       <ion-col size="2" size-md="2" size-lg="2" style="text-align: left;font-size: 20px;font-weight: bold;">{{room.name}}</ion-col>
-                      <ion-col size="4" size-md="4" size-lg="3" style="text-align: left; font-size: 20px;font-weight: bold;">Dr.{{room.id}}</ion-col>
+                      <ion-col size="4" size-md="4" size-lg="3" style="text-align: left; font-size: 20px;font-weight: bold;"></ion-col><!-- Dr.{{room.id}}-->
                       <ion-col size="5" size-md="5" size-lg="6" style="text-align: end; padding-left: 20px;font-size: 20px;font-weight: bold;">Completed: 2/12</ion-col>                
                     </ion-row>
                   </ion-card-title>
@@ -39,33 +39,6 @@
   
           </ion-row>
 
-          <ion-row style="align-items: center; padding-left: 20px;">
-            <!-- Online text with date -->
-            <ion-col size="4" style="text-align: left;">
-              <span style="color: green; font-weight: bold; font-size: 25px;">ONLINE:</span>
-              <span style="font-size: 25px;padding-left: 20px;">{{ currentDate | date: 'd/M/y h:mm a' : 'es' }}</span>
-            </ion-col>
-          
-            <!-- In Holding -->
-            <ion-col size="2" style="display: flex; align-items: center;">
-              <ion-icon name="star" style="font-size: 25px; color: black; margin-right: 5px;"></ion-icon>
-              <span style="font-size: 25px;">IN HOLDING</span>
-            </ion-col>
-          
-            <!-- In Surgery -->
-            <ion-col size="3" style="display: flex; align-items: center;">
-              <ion-icon name="ellipse" style="font-size: 25px; color: red; margin-right: 5px;"></ion-icon>
-              <span style="font-size: 25px;">IN SURGERY</span>
-            </ion-col>
-          
-            <!-- Next to Surgery -->
-            <ion-col size="3" style="display: flex; align-items: center;">
-              <ion-icon name="ellipse" style="font-size: 25px; color: blue; margin-right: 5px;"></ion-icon>
-              <span style="font-size: 25px;">NEXT to SURGERY</span>
-            </ion-col>
-          </ion-row>
-
-
         </ion-grid>
       </ion-col>
 
@@ -86,28 +59,26 @@
           </ion-row>  
   
           <ion-row>
-            <ion-col size="6" class="status-box">
+            <ion-col size="3" class="status-box">
               <div class="holding-box">
                 <p id="holding">HOLDING</p>
                 <h2>{{ holdingPatients }}</h2>
               </div>
             </ion-col>
-            <ion-col size="6" class="status-box">
+            <ion-col size="3" class="status-box">
               <div class="surgery-box">
                 <p id="surgery">SURGERY</p>
                 <h2>{{ surgeryPatients }}</h2>
               </div>
             </ion-col>
-          </ion-row>
-  
-          <ion-row>
-            <ion-col size="6" class="status-box">
+          
+            <ion-col size="3" class="status-box">
               <div class="recovery-box">
                 <p id="recovery">RECOVERY</p>
                 <h2>{{ recoveryPatients }}</h2>
               </div>
             </ion-col>
-            <ion-col size="6" class="status-box">
+            <ion-col size="3" class="status-box">
               <div class="feedback-box">
                 <p id="feedback">FEEDBACK</p>
                 <h2>⭐⭐⭐</h2>
@@ -136,7 +107,34 @@
 
       </ion-col>
 
+      
 
+
+    </ion-row>
+    <ion-row style="align-items: center; padding-left: 20px;">
+      <!-- Online text with date -->
+      <ion-col size="3" style="text-align: left;">
+        <span style="color: green; font-weight: bold; font-size: 25px;">ONLINE:</span>
+        <span style="font-size: 25px;padding-left: 20px;">{{ currentDate | date: 'd/M/y h:mm a' : 'es' }}</span>
+      </ion-col>
+    
+      <!-- In Holding -->
+      <ion-col size="2" style="display: flex; align-items: center;">
+        <ion-icon name="star" style="font-size: 25px; color: black; margin-right: 5px;"></ion-icon>
+        <span style="font-size: 25px;">IN HOLDING</span>
+      </ion-col>
+    
+      <!-- In Surgery -->
+      <ion-col size="2" style="display: flex; align-items: center;">
+        <ion-icon name="ellipse" style="font-size: 25px; color: red; margin-right: 5px;"></ion-icon>
+        <span style="font-size: 25px;">IN SURGERY</span>
+      </ion-col>
+    
+      <!-- Next to Surgery -->
+      <ion-col size="3" style="display: flex; align-items: center;">
+        <ion-icon name="ellipse" style="font-size: 25px; color: blue; margin-right: 5px;"></ion-icon>
+        <span style="font-size: 25px;">NEXT to SURGERY</span>
+      </ion-col>
     </ion-row>
   </ion-grid>
 </ion-content>
