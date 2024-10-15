@@ -17,7 +17,7 @@ public class MainActivity extends BridgeActivity {
     Distribute.setUpdateTrack(UpdateTrack.PUBLIC);
     Distribute.setEnabledForDebuggableBuild(true);
     Distribute.setListener(new MyDistributeListener());
-    AppCenter.start(getApplication(), "51319bcf-52e4-4942-89e8-47e19529806e", Analytics.class, Crashes.class, Distribute.class);
+    AppCenter.start(getApplication(), "d0c67fcb-4607-424f-9ed6-8748ec96ea0e", Analytics.class, Crashes.class, Distribute.class);
     super.onCreate(savedInstanceState);
   }
 
