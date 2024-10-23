@@ -4,13 +4,18 @@ export const environment = {
   locktimer: 600,
   resetPin: '182440',
   maxInactivityTime: 2000,
-  timeSaveScreen: 1,
+  timeSaveScreen: 3,
+  currentPage: 0,
+  roomsPerPage: 6,
+  currentPageWhitPatients: 0,
+  roomsPerPageWhitPatients: 6,
   broadcasting: {
     driver: 'pusher', // 'socket.io',
     host: 'https://api.dtouchmedia.com'
   },
   pusher: {
-    key: '7c4e353eb51fce335b63',
+    //key: '7c4e353eb51fce335b63',
+    key: '6a496456cd95cbd717f4',    
     cluster: 'us2',
     forceTLS: true
   },
@@ -230,5 +235,6 @@ export const environment = {
   recoveryrooms: '/recovery-rooms',
   operatingroomsschedules: '/operating-rooms-schedules',
   operatingroomusers: '/operating-room-users',
-  patients: '/patients'
+  patients: '/patients',
+  waiting_room_id: 'waiting_room_id'
 };

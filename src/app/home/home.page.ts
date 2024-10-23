@@ -192,6 +192,7 @@ export class HomePage implements AfterViewInit, OnInit {
         });
   
         const channel = `branch.${this.requestsService.config.branch.id}.room.${this.requestsService.config.waitingRoom.id}`;
+        
         this.laravelEcho.channel(channel).listen('.patient.created', (e: any) => {
           if (this.networkStatus === "ONLINE" && !this.viewYesterdaysPatients) {             
             this.updatePatientList('created', e.patient);

@@ -13,15 +13,7 @@ ion-content {
     border-radius: 5px;
     text-align: center;
   }
-  
-  .room-card {
-    background-color: white;
-    margin: 10px;
-    padding: 15px;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  }
-  
+
   .sala ul {
     padding-left: 20px;
   }
@@ -44,7 +36,7 @@ ion-content {
   .info-box {
     text-align: center;
     font-family: Arial, sans-serif;
-    margin-bottom: 20px;
+    margin-bottom: 10px;
   }
   
   .info-box p {
@@ -64,15 +56,23 @@ ion-content {
     font-family: Arial, sans-serif;
   }
   
+  .patients-today-row {
+    justify-content: center; /* Centrará el contenido horizontalmente */
+    align-items: center; /* Centrará verticalmente si es necesario */
+  }
+  
   .patients-today {
     text-align: center;
     margin-bottom: 10px;
   }
   
-  .today-box p, .today-box h1{
-    background-color: #82d982;
-    padding: 0px;
-    margin: 0;
+  .today-box {
+    background-color: #7ed956;
+    padding: 0;
+    border-radius: 10px;
+    width: 100%; /* Ajusta el ancho del cuadro */
+    max-width: 200px; /* Puedes ajustar este valor si deseas limitar el tamaño del cuadro */
+    margin: 0 auto; /* Centra el cuadro dentro del ion-col */
     color: white;
   }
   
@@ -80,58 +80,23 @@ ion-content {
     margin-bottom: 10px;
   }
   
-  .holding-box, .surgery-box, .recovery-box, .feedback-box {
+  .holding-box, .surgery-box, .recovery-box, .completed-box {
     background-color: white;
     border: 2px solid #a6d1f0;
     padding: 0px;
     border-radius: 8px;
   }
   
-  .holding-box h2, .surgery-box h2, .recovery-box h2{
-    font-size: 40px;
+  .holding-box h2, .surgery-box h2, .recovery-box h2, .completed-box h2 {
+    font-size: 30px;
     margin: 0;
-    font-weight: bold;
-  }
-
-  .holding-box #holding{
-    font-size: 14px;
-    margin: 0;
-    font-weight: bold;
-  }
-
-  .surgery-box #surgery{
-    font-size: 14px;
-    margin: 0;
-    font-weight: bold;
-  }
-
-  .recovery-box #recovery{
-    font-size: 14px;
-    margin: 0;
-    font-weight: bold;
-  }
-
-  .feedback-box #feedback{
-    font-size: 14px;
-    margin: 0;
-    font-weight: bold;
-  }
-
-  
-  
-  .feedback-box h2 {
-    font-size: 12px;
-    color: orange;
-  }
-
-  .feedback-box #feedbackCount {
-    font-size: 20px;
     font-weight: bold;
   }
   
-  .feedback-box p {
+  .holding-box p, .surgery-box p, .recovery-box p, .completed-box p {
+    font-size: 16px;
     margin: 0;
-    font-size: 14px;
+    font-weight: bold;
   }
 
   .room-card {
@@ -151,7 +116,7 @@ ion-content {
   }
   
   .room-card-details div {
-    font-size: 14px;
+    font-size: 18px;
     margin-bottom: 5px;
     text-align: left; /* Asegura que el texto esté alineado a la izquierda */
   }
@@ -166,3 +131,13 @@ ion-content {
     max-height: auto;  /* Altura máxima para todas las tarjetas */
     overflow-y: auto;   /* Habilitar el scroll si hay más contenido */
   }
+
+
+    .surgery{
+      color: red;
+      font-weight: bold;
+    }
+    .nextSurgery{
+      color: blue;
+      font-weight: bold;
+    }

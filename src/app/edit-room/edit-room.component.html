@@ -9,7 +9,7 @@
       </div>
       <div>{{room.name}}</div>
       
-      <div>{{room.surg? room.surg : this.surgeon.full_name}}</div>
+      <!-- <div>{{room.surg? room.surg : this.surgeon.full_name}}</div> -->
     </div>
   </div>
   <ion-grid>
@@ -21,8 +21,9 @@
       <ion-col class="font-size">
         Patient Available:
       </ion-col>
-      <ion-col class="font-size">
+      <ion-col class="font-size ion-text-right" style="display: flex; justify-content: space-between; align-items: center;">
         Team Work:
+        <button ion-button (click)="addRole()" style="margin-left: auto;">+ Add</button>
       </ion-col>
     </ion-row>
   </ion-grid>
@@ -65,41 +66,49 @@
         </div>
       </ion-col>
 
-
-           
+          
 
       <ion-col style="display: flex; flex-direction: column; min-width: 20%;">
-        <div class="container" >
-          <!-- Selectores -->
-          <div class="room-card-details">
-            <div class="room-card-row fs-22" style="display: flex; align-items: center; margin-bottom: 10px;">
-              <a style="font-weight: bold; min-width: 50px; font-size: 25px;">DR:</a>
-              <select [(ngModel)]="surgeonid" (change)="selectSurgeon()" class="dropdownSelect">
-                <option *ngFor="let item of surgeons.staff" [value]="item.id">{{ item.full_name }}</option>
-              </select>
-            </div>
-
-            <div class="room-card-row fs-22" style="display: flex; align-items: center; margin-bottom: 10px;">
-              <a style="font-weight: bold; min-width: 50px;font-size: 25px;">ORT:</a>
-              <select [(ngModel)]="ortid" (change)="selectOrt()" style="margin-left: 12px" class="dropdownSelect">
-                <option *ngFor="let item of ort.staff" [value]="item.id">{{ item.full_name }}</option>
-              </select>
-            </div>
-            <div class="room-card-row fs-22" style="display: flex; align-items: center; margin-bottom: 10px;">
-              <a style="font-weight: bold; min-width: 50px;font-size: 25px;">RN:</a>
-              <select [(ngModel)]="rnid" (change)="selectRn()" style="   margin-left: 20px" class="dropdownSelect">
-                <option *ngFor="let item of rn.staff" [value]="item.id">{{ item.full_name }}</option>
-              </select>
-            </div>
-            <div class="room-card-row fs-22" style="display: flex; align-items: center; margin-bottom: 10px;">
-              <a style="font-weight: bold; min-width: 50px;font-size: 25px;">RNA:</a>
-              <select [(ngModel)]="rnaid" (change)="selectRna()" style="   margin-left: 7px" class="dropdownSelect">
-                <option *ngFor="let item of rna.staff" [value]="item.id">{{ item.full_name }}</option>
-              </select>
-            </div>
-          </div>
+     
+        <div class="container">
+          <ion-grid>
+            <form [formGroup]="roleForm">
+              <ion-row formArrayName="roles">
+                <ng-container *ngFor="let role of roles.controls; let i = index">
+                  <ion-row [formGroupName]="i" class="room-card-row fs-22" style="align-items: center; margin-bottom: 0px;">
+                    
+                    <!-- Selector de rol con ancho fijo -->
+                    <ion-col size="2">
+                      <select formControlName="roleType" (change)="onRoleChange(i)" placeholder="Select Role" style="width: 100%; min-width: 100px;">
+                        <option *ngFor="let user of allUsers" [value]="user.code">{{ user.code }}</option>
+                      </select>
+                    </ion-col>
+                    
+                    <!-- Selector de usuario filtrado con ancho fijo -->
+                    <ion-col size="8" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-left: 8%;">
+                      <select formControlName="selectedUser" placeholder="Select User" style="width: 100%; min-width: 200px;">
+                        <option *ngFor="let person of filteredUsers[i]" [value]="person.id">{{ person.full_name }}</option>
+                      </select>
+                    </ion-col>
+                    
+                    <!-- Ícono para eliminar con tamaño fijo -->
+                    <ion-col size="1" class="ion-text-center">
+                      <ion-icon (click)="removeRole(i)" name="trash" style="color: red; cursor: pointer; font-size: 1.5em;"></ion-icon>
+                    </ion-col>
+        
+                  </ion-row>
+                </ng-container>
+              </ion-row>
+            </form>
+          </ion-grid>
         </div>
-      
+
+
+
+
+
+
+
         <!-- Botones alineados en la parte inferior -->
         <div class="d-flex justify-content-center" style="margin-top: auto;">
           <ion-button color="danger" [disabled]="loading" class="mx-4" size="large" style="width: 200px; height: 40px;" (click)="cancel()">

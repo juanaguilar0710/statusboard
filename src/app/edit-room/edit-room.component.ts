@@ -5,13 +5,8 @@ import { LocaldataService } from '../api/localdata.service';
 import { RequestsService } from '../api/requests.service';
 import { Toast } from '@capacitor/toast';
 import { Storage } from '@ionic/storage-angular';
+import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
 
-export interface roles {
-  id: number,
-  person: {
-    id: number
-  }
-}
 
 @Component({
   selector: 'app-edit-room',
@@ -29,26 +24,17 @@ export class EditRoomComponent implements OnInit {
   patientsToUpdate: any[] = [];
   loading: boolean = false;
 
-  surgeons: any = [];
-  ort: any = [];
-  anesthesiologists: any[] = [];
-  rn: any = [];
-  rna: any = [];
+  roleForm!: FormGroup;
 
-  surgeon:any = 'Dr.lopez';
-  surgeonid = 0;
-  ortid = 0;
-  rnid = 0;
-  rnaid = 0;
-  
-  roles: roles = { id: 0, person: { id: 0 } };
-  rolesObj: any[] = [];
-
+  allUsers:any;
+  selectedRoles: any[] = [];
+  filteredUsers: any[] = [];
   
   constructor(private router: Router,
     private navController: NavController,
     private LocaldataService: LocaldataService,
     private storage: Storage,
+    private fb: FormBuilder,
     public requestsService: RequestsService
   ) {
     const navParams = this.router.getCurrentNavigation()?.extras?.state;
@@ -59,118 +45,107 @@ export class EditRoomComponent implements OnInit {
     }
 
   }
-  ngOnInit(): void {
-    this.getRoomUsers();
-    this.getOperatingRoomWithRolesUsers();
+  ngOnInit(): void { 
+    this.getAllUsersSelectsRolRoom();
+    this.roleForm = this.fb.group({
+      roles: this.fb.array([])  // Array dinámico de roles
+    });
   }
 
-  async getRoomUsers(){
-    this.loading = true;
-    this.storage.get('OperatingRoomWithUsers').then(resp => {
-      this.surgeons = resp.data.data.find((item:any) => item.id === 1);      
-      this.surgeons.staff.sort((a: any, b: any) => {return a.full_name.localeCompare(b.full_name);});
-      this.ort = resp.data.data.find((item:any) => item.id === 2);
-      this.rn = resp.data.data.find((item:any) => item.id === 4);
-      this.rna = resp.data.data.find((item:any) => item.id === 6);
-      this.anesthesiologists = resp.data.data.find((item:any) => item.id === 7);   
-      this.loading = false;    
-    },error => {
-      console.log(error); 
-      this.loading = false;     
-    })      
+  // Obtener el FormArray de roles
+  get roles(): FormArray {
+    return this.roleForm.get('roles') as FormArray;
   }
 
-  // async getRoomUsers(){
-  //   this.loading = true;
-  //   await this.requestsService.getOperatingRoomWithUsers(this.room.id).subscribe(resp => {      
-  //     this.surgeons = resp.data.data.find((item:any) => item.id === 1);      
-  //     this.surgeons.staff.sort((a: any, b: any) => {return a.full_name.localeCompare(b.full_name);});
+  // Añadir una nueva fila de selección de rol y usuario
+  addRole() {
+    const roleGroup = this.fb.group({
+      roleType: ['', Validators.required],  // FormControl para el tipo de rol
+      selectedUser: ['', Validators.required]  // FormControl para el usuario seleccionado
+    });
+    this.roles.push(roleGroup);  // Añadir el grupo al FormArray
+  }
 
-  //     this.ort = resp.data.data.find((item:any) => item.id === 2);
-  //     this.rn = resp.data.data.find((item:any) => item.id === 4);
-  //     this.rna = resp.data.data.find((item:any) => item.id === 6);
-  //     this.anesthesiologists = resp.data.data.find((item:any) => item.id === 7);   
-  //     this.loading = false;    
-  //   },error => {
-  //     console.log(error); 
-  //     this.loading = false;     
-  //   })
-  // }
+  // Eliminar una fila específica
+  removeRole(index: number) {
+    this.roles.removeAt(index);  // Remover el grupo del FormArray
+  }
 
-  getOperatingRoomWithRolesUsers() {
+  // Filtrar los usuarios cuando se selecciona un rol
+  onRoleChange(index: number) {
+    const selectedRole = this.roles.at(index).get('roleType')?.value;
+    const role = this.allUsers.find((r:any) => r.code === selectedRole);
+    if (role) {
+      this.filteredUsers[index] = role.persons;  // Filtrar los usuarios
+    } else {
+      this.filteredUsers[index] = [];
+    }
+  }
+
+  initializeRoles() {
+    if (this.allUsers && this.allUsers.length > 0) {
+      this.allUsers.forEach((role:any, index:any) => {
+        this.roles.push(
+          this.fb.group({
+            roleType: [role.code, Validators.required],  // Preseleccionar el rol
+            selectedUser: ['', Validators.required]  // Dejar el usuario vacío
+          })
+        );
+        this.filteredUsers.push([]);  // Inicializar el array para los usuarios filtrados vacío
+        
+        // Llamar a onRoleChange para cada fila recién creada
+        this.onRoleChange(index);
+      });
+    } else {
+      console.error('allUsers no está definido o no tiene roles disponibles.');
+    }
+  }
+
+  getAllUsersSelectsRolRoom() {
     this.loading = true;
-    this.requestsService.getOperatingRoomWithRolesUsers(this.room.id).subscribe(resp => {
-      
-      if (resp.data.data.roles.length > 0) {
-        const surgeon = resp.data.data.roles.find((item: any) => item.id === 1);
-        if (surgeon && surgeon.person) {
-          this.surgeonid = surgeon.person.id;
-          this.surgeon = surgeon.person;
-        }
-
-        const ort = resp.data.data.roles.find((item: any) => item.id === 2);
-        if (ort && ort.person) {
-          this.ortid = ort.person.id;
-        }
-
-        const rn = resp.data.data.roles.find((item: any) => item.id === 4);
-        if (rn && rn.person) {
-          this.rnid = rn.person.id;
-        }
-
-        const rna = resp.data.data.roles.find((item: any) => item.id === 6);
-        if (rna && rna.person) {
-          this.rnaid = rna.person.id;
-        }
-      }
-
+    this.requestsService.getOperatingRoomWithUsers(this.room.id).subscribe(resp => {
+      this.allUsers = resp.data.data;
+      this.getUsersAsociatedAtRolSelect();  
       this.loading = false;
     }, error => {
       console.log(error);
       this.loading = false;
     });
-}
+  }
 
-  selectSurgeon() {
-    this.surgeon = this.surgeons.staff.find((item: any) => item.id === +this.surgeonid);    
-    const newRole = { id: 1, person: { id: this.surgeonid } };    
-    const index = this.rolesObj.findIndex((role: any) => role.id === newRole.id);    
-    if (index !== -1) {
-        this.rolesObj[index] = { ...newRole };
-    } else {
-        this.rolesObj.push({ ...newRole });
-    }
-}
-
-selectOrt() {
-    const newRole = { id: 2, person: { id: this.ortid } };    
-    const index = this.rolesObj.findIndex((role: any) => role.id === newRole.id);    
-    if (index !== -1) {
-        this.rolesObj[index] = { ...newRole };
-    } else {
-        this.rolesObj.push({ ...newRole });
-    }
-}
-
-selectRn() {
-    const newRole = { id: 4, person: { id: this.rnid } };    
-    const index = this.rolesObj.findIndex((role: any) => role.id === newRole.id);    
-    if (index !== -1) {
-        this.rolesObj[index] = { ...newRole };
-    } else {
-        this.rolesObj.push({ ...newRole });
-    }
-}
-
-selectRna() {
-    const newRole = { id: 6, person: { id: this.rnaid } };    
-    const index = this.rolesObj.findIndex((role: any) => role.id === newRole.id);    
-    if (index !== -1) {
-        this.rolesObj[index] = { ...newRole };
-    } else {
-        this.rolesObj.push({ ...newRole });
-    }
-}
+  getUsersAsociatedAtRolSelect() {
+    this.loading = true;
+    this.requestsService.getOperatingRoomWithRolesUsers(this.room.id).subscribe(resp => {
+      this.roles.clear();
+      resp.data.data.roles.forEach((role:any) => {
+        const availableUsers = this.allUsers.find((item: any) => item.id === role.id)?.persons || [];
+        if (role.persons.length > 0) {
+          role.persons.forEach((person:any) => {
+            this.roles.push(
+              this.fb.group({
+                roleType: [role.code, Validators.required],  // Preseleccionar el rol
+                selectedUser: [person.id, Validators.required]  // Preseleccionar el usuario
+              })
+            );
+            this.filteredUsers.push(availableUsers);
+          });
+        } else {
+          this.roles.push(
+            this.fb.group({
+              roleType: [role.code, Validators.required],  // Preseleccionar el rol
+              selectedUser: ['', Validators.required]  // Sin usuario seleccionado
+            })
+          );  
+          this.filteredUsers.push(availableUsers);
+        }
+      });
+  
+      this.loading = false;
+    }, error => {
+      console.log(error);
+      this.loading = false;
+    });
+  }
 
   cancel() {
     this.navController.navigateForward(['/home'], { replaceUrl: true });
@@ -178,13 +153,38 @@ selectRna() {
 
   async update() {
     this.loading = true;
-    this.room.roles = this.rolesObj;
+   
+    const rolesMap:any = {};
 
-    console.log('this.room',this.room);
+    // Recorrer el FormArray roles
+    this.roles.controls.forEach((roleControl, index) => {
+      const roleType = roleControl.get('roleType')?.value;  // Obtener el código del rol seleccionado
+      const selectedUser = roleControl.get('selectedUser')?.value;  // Obtener el id del usuario seleccionado
+  
+      // Buscar el rol en allUsers por el código del rol para obtener el id
+      const role = this.allUsers.find((r:any) => r.code === roleType);
+  
+      if (role && selectedUser) {
+        // Si el rol ya existe en el objeto rolesMap, agregamos el usuario al array persons
+        if (rolesMap[role.id]) {
+          rolesMap[role.id].persons.push({ id: selectedUser });
+        } else {
+          // Si el rol no existe en rolesMap, lo creamos con el primer usuario
+          rolesMap[role.id] = {
+            id: role.id,
+            persons: [{ id: selectedUser }]
+          };
+        }
+      }
+    });
+  
+    // Convertir rolesMap en un array para enviarlo al servicio
+    const rolesToUpdate = Object.values(rolesMap);
+  
+    this.room.roles = rolesToUpdate;
 
-    
-
-    
+    console.log('Datos a enviar al servicio:',this.room);
+   
     
     const room = this.room;
     await this.requestsService.updateWaitingRoom(room).then(async (response: any) => {
