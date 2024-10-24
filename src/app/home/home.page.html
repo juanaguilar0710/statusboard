@@ -147,20 +147,27 @@
             <div class="text-center m-2">
               <h3>WORK TEAMS</h3>
             </div>
-            <div class="room-cards" (click)="editRoom(room, i)" *ngFor="let room of operatingRooms; let i = index"
+            <div class="room-cards" (click)="editRoom(room, i)" *ngFor="let room of operatingRooms; let i = index" 
               [ngStyle]="{'background-color': room.color}" [dynamicTextColor]="room.color">
+              
               <div class="room-edit-icon">
                 <ion-icon name="create-outline"></ion-icon>
               </div>
+              
               <div class="text-center room-name">
                 <h4>{{room.name}}</h4>
               </div>
+        
               <div class="room-card-details">
-                <div><a style="font-weight: bold;">DR:</a> Cirujano</div>
-                <div><a style="font-weight: bold;">ORT:</a> Nombre empleado</div>
-                <div><a style="font-weight: bold;">RN:</a> Nombre empleado</div>
-                <div><a style="font-weight: bold;">RNA:</a> Nombre empleado</div>
+                <div *ngFor="let role of room.roles">
+                  <div>
+                    <a style="font-weight: bold;">{{ role.code }}: </a>
+                    <!-- Usar el método getUserNames para obtener los nombres de los usuarios -->
+                    <span>{{ getUserNames(role) }}</span>
+                  </div>
+                </div>
               </div>
+              
             </div>
           </div>
         </div>

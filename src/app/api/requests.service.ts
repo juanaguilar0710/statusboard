@@ -85,11 +85,6 @@ export class RequestsService {
                     this.comments = response.data;
                 }
             });
-            await this.getOperatingRooms().then(async (response: any) => {
-                if (response.status === 200) {
-                    this.operatingRooms = response.data.data;
-                }
-            });
             await this.getBranchSurgeonsByWaitingRoom().then(async (response: any) => {
                 if (response.status === 200) {
                     this.surgeons = response.data;
@@ -114,11 +109,6 @@ export class RequestsService {
                     this.statuses = statuses;
                     if (this.statuses.length > 0)
                         Preferences.set({ key: 'statuses', value: JSON.stringify(this.statuses) });
-                }
-            });
-            await this.getOperatingRooms().then(async (response: any) => {
-                if (response.status === 200) {
-                    this.operatingRoomsSchedules = response.data;
                 }
             });
             resolve(true);
@@ -344,7 +334,7 @@ export class RequestsService {
     getOperatingRooms = async (): Promise<any> => {
         return new Promise(async (resolve, reject) => {
             const options = {
-                url: environment.url + environment.waitingRooms + '/' + this.config.waitingRoom.id + environment.operatingrooms,
+                url: environment.url + environment.waitingRooms + '/' + this.config.waitingRoom.id + '/operating-rooms-schedules',//environment.operatingrooms,
                 headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer ' + this.token },
             };
             try {

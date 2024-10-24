@@ -100,16 +100,17 @@
 
         <ion-row>
           <ion-col size="12" *ngFor="let room of getRoomsForCurrentPage()">
-          <!-- <ion-col size="6" *ngFor="let room of operatingRooms"> -->
-
             <div class="room-card">
               <div class="room-name text-center">
                 <h3>{{ room.name }}</h3>
               </div>
               <div class="room-card-details">
-                <div><a style="font-weight: bold;">DR:</a> Nombre empleado</div>
-                <div><a style="font-weight: bold;">RN:</a> Nombre empleado</div>
-                <div><a style="font-weight: bold;">RNA:</a> Nombre empleado</div>
+                <div *ngFor="let role of room.roles">
+                  <div>
+                    <a style="font-weight: bold;">{{ role.code }}:</a>
+                    <span>{{ getUserNames(role) }}</span>
+                  </div>
+                </div>
               </div>                 
             </div>
           </ion-col>                

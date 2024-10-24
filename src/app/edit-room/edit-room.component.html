@@ -122,27 +122,12 @@
     </ion-row>
   </ion-grid> 
 
-
-
-
-
-
-
-  <!-- <ion-col>
-    <div class="d-flex justify-content-center">
-      <ion-button color="danger" [disabled]="loading" class="w-100 mx-4" size="large" style="width: 200px; height: 100px;"
-        (click)="cancel()">
-        <span style="color: #fff;">Cancel</span>
-      </ion-button>
-      <ion-button color="success" class="w-100 mx-4" [disabled]="loading" size="large" style="width: 200px; height: 100px;"
-        (click)="update()">
-        <span style="color: #fff;">Update</span>
-      </ion-button>
+  <div class="overlay" style="margin-top: 10px;" *ngIf="this.loading">
+    <div class="loader">
+       <div class="spinner spinner-bubble spinner-bubble-primary me-3"></div>
     </div>
-  </ion-col> -->
+    <!-- <h6>{{this.image_url ? 'Verifying your credentials...' : 'Preparing your experience...'}}</h6> -->
+  </div>
+
 </ion-content>
 
-<!-- <div class="buttons">
-      <button (click)="cancel()">CANCEL</button>
-      <button (click)="update()">UPDATE</button>
-    </div> -->

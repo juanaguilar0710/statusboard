@@ -4,11 +4,14 @@ export const environment = {
   locktimer: 30,
   resetPin: '182440',
   maxInactivityTime: 20,
-  timeSaveScreen: 1,
+  timeSaveScreen: 3,
   currentPage: 0,
-  roomsPerPage: 6,
+  roomsPerPage: 4,
+  timeRoomsPerPage: 5000,
+  
   currentPageWhitPatients: 0,
   roomsPerPageWhitPatients: 6,
+  timeRoomsPerPageWhitPatients: 8000,
   broadcasting: {
     driver: 'pusher',
     host: 'https://api.dtouchmedia.com'

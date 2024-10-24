@@ -47,11 +47,11 @@ export class DashboardComponent  implements AfterViewInit, OnInit {
       this.changePageRooms();
       const event = new MouseEvent('mousemove');
       document.dispatchEvent(event); 
-    }, 4000);
+    }, environment.timeRoomsPerPage);
 
     setInterval(() => {
       this.changePageRoomsWhitPatients();
-    }, 8000);
+    }, environment.timeRoomsPerPageWhitPatients);
 
     this.networkService.networkStatus$.subscribe((status: string) => {
       this.networkStatus = status;
@@ -100,22 +100,14 @@ export class DashboardComponent  implements AfterViewInit, OnInit {
   }
 
   async ngOnInit() {
-    //get rooms
     this.updateTime();
     await this.getOperatingRoomsFromStorageOrLoadFromServer();
     await this.getTodaysPatientsFromLocal()
-
-    this.requestsService.getTodaysPatients();    
-
-    this.requestsService.initDropdowns().then((response: any) => {
-      console.log('init dropdowna', response);      
-    })
-
+    this.requestsService.getTodaysPatients();
+    this.requestsService.initDropdowns().then((response: any) => {})
     Preferences.get({ key: 'config' }).then((response: any) => {
       if (response.value) {
-        this.config = (JSON.parse(response.value));
-        console.log('config', this.config);
-        
+        this.config = (JSON.parse(response.value));        
       }
     })
     this.startCarousel();
@@ -134,10 +126,10 @@ export class DashboardComponent  implements AfterViewInit, OnInit {
     const patientsInRoom = this.filterPatientsByRoom(roomName);
     const currentGroup = this.currentGroups[roomName] || 0;
     const start = currentGroup * this.pageSize;
-    const end = start + this.pageSize;
+    const end = start + this.pageSize;    
     if (patientsInRoom.length <= this.pageSize) {
       return patientsInRoom;
-    }
+    }    
     return patientsInRoom.slice(start, end);
   }
 
@@ -149,13 +141,11 @@ export class DashboardComponent  implements AfterViewInit, OnInit {
 
         if (patientsInRoom.length > this.pageSize) {
           const currentGroup = this.currentGroups[room.name] || 0;
-          const totalGroups = Math.ceil(patientsInRoom.length / this.pageSize);
-          
-          // Cambia el grupo actual para la sala, volviendo al primer grupo si es necesario
+          const totalGroups = Math.ceil(patientsInRoom.length / this.pageSize);          
           this.currentGroups[room.name] = (currentGroup + 1) % totalGroups;
         }
       });
-    }, 5000); // Cambia de grupo cada 5 segundos
+    }, 20000); // Cambia de grupo cada 5 segundos
   }
 
   stopCarousel() {
@@ -164,8 +154,6 @@ export class DashboardComponent  implements AfterViewInit, OnInit {
 
 
   ngAfterViewInit(): void {
-
-    // this.requestsService.init().then(async () => {
         (<any>window).Pusher = Pusher;
         this.laravelEcho = new Echo({
           broadcaster: 'pusher',
@@ -174,26 +162,28 @@ export class DashboardComponent  implements AfterViewInit, OnInit {
           forceTLS: environment.pusher.forceTLS,
           disableStats: true
         });
-  
         const channel = `branch.${this.requestsService.config.branch.id}.room.${this.requestsService.config.waitingRoom.id}`;
-  
         this.laravelEcho.channel(channel).listen('.patient.updated', (e: any) => {
-          console.log('actualizado');
-          console.log(e);
           if (this.networkStatus === "ONLINE") {
             this.updatePatientList('updated', e.patient);
           }
         });
 
-    // });
+        this.laravelEcho.channel(channel).listen('.patient.created', (e: any) => {
+          if (this.networkStatus === "ONLINE") {             
+            this.updatePatientList('created', e.patient);
+          }
+        });
 
+        this.laravelEcho.channel(channel).listen('.patient.deleted', (e: any) => {
+          if (this.networkStatus === "ONLINE") {
+            this.updatePatientList('deleted', e.patient);
+          }
+        });
   }
 
   // Método para actualizar la lista de pacientes basado en los eventos en tiempo real
   private updatePatientList(eventType: string, patient: any) {    
-    console.log('update', patient);
-
-    
     const index = this.patients.findIndex((p: any) => p.id === patient.id);
     switch(eventType) {
       case 'created':
@@ -216,8 +206,6 @@ export class DashboardComponent  implements AfterViewInit, OnInit {
     this.LocaldataService.setPatients(this.patients);
     this.requestsService.lastSync = new Date().toLocaleString();
     this.lastsync = new Date().toLocaleString();
-
-    // Forzar la detección de cambios
     this.cdr.detectChanges();
   }
 
@@ -244,17 +232,14 @@ export class DashboardComponent  implements AfterViewInit, OnInit {
   }
 
 
-  // Contar pacientes en espera (status_Id = 1)
   getHoldingPatientsCount(): number {
     return this.patients.filter(patient => patient.status_Id === 1).length;
   }
 
-  // Contar pacientes en cirugía (status_Id = 3)
   getSurgeryPatientsCount(): number {
     return this.patients.filter(patient => patient.status_Id === 3).length;
   }
 
-  // Contar pacientes en recuperación (status_Id = 4)
   getRecoveryPatientsCount(): number {
     return this.patients.filter(patient => patient.status_Id === 4).length;
   }
@@ -263,17 +248,7 @@ export class DashboardComponent  implements AfterViewInit, OnInit {
     return this.patients.filter(patient => patient.status_Id === 4 || patient.status_Id === 5 || patient.status_Id === 6).length;
   }
 
-
-
-
-
-
-
-
-
   getPatientsByRoom(roomName: string): any[] {
-    // Aquí colocas la lógica para obtener los pacientes de cada sala
-    // Por ejemplo:
     return this.patients.filter(patient => patient.operating_room_name === roomName);
   }
 
@@ -287,34 +262,21 @@ export class DashboardComponent  implements AfterViewInit, OnInit {
   }
 
   getOperatingRoomsFromStorageOrLoadFromServer() {
-    // load from local
-    this.LocaldataService.getOperatingRooms().then((response: any) => {
-      if (response) {
-        this.operatingRooms = response;
-        console.log('this.operatingRooms',this.operatingRooms);
-        
-        // load from server
+    this.LocaldataService.getOperatingRooms().then((response: any) => {      
+        this.operatingRooms = response;        
         this.requestsService.getOperatingRooms().then((response: any) => {
           this.operatingRooms = response.data.data;
-          console.log(this.operatingRooms);
-          
           this.getRandomColor(this.operatingRooms);
           this.LocaldataService.setOperatingRooms(this.operatingRooms);
-        });
-      } else {
-        if (this.requestsService.operatingRooms.length > 0) {
-          this.operatingRooms = this.requestsService.operatingRooms;
-          this.getRandomColor(this.operatingRooms);
-          this.LocaldataService.setOperatingRooms(this.operatingRooms);
-        } else {
-          this.requestsService.getOperatingRooms().then((response: any) => {
-            this.operatingRooms = response.data.data;
-            this.getRandomColor(this.operatingRooms);
-            this.LocaldataService.setOperatingRooms(this.operatingRooms);
-          });
-        }
-      }
-    });
+        });      
+      });
+  }
+
+  getUserNames(role: any): string {
+    if (role.persons.length > 0) {
+      return role.persons.map((person:any) => person.full_name).join(', ');
+    }
+    return 'No asignado';
   }
 
   getRandomColor(operatingRooms: any[]) {
@@ -330,13 +292,10 @@ export class DashboardComponent  implements AfterViewInit, OnInit {
   async getTodaysPatientsFromLocal(event?: any) {
     this.updating = true;
     this.LocaldataService.getPatients().then(response => {      
-      if (response) {
-        console.log('patient',response);
-        
+      if (response) {        
         this.patients = response;        
         this.patientsCopy = response;
         this.updating = false;
-        //this.letters = this.getFirstLetterFromNames();
         this.getTodaysPatientsFromServer(event);
       } else {
         this.getTodaysPatientsFromServer();
@@ -346,7 +305,6 @@ export class DashboardComponent  implements AfterViewInit, OnInit {
 
   async getTodaysPatientsFromServer(event?: any, yesterday: boolean = false) {
     this.updating = true;
-    //this.disableYesterdaysToggle.emit(true);
     this.requestsService.getTodaysPatients(yesterday).then(async (response: any) => {
       if (event) {
         event.target.complete();
@@ -355,7 +313,6 @@ export class DashboardComponent  implements AfterViewInit, OnInit {
         this.lastsync = new Date().toLocaleString();
         this.patients = response.data;
         this.patientsCopy = response.data;
-        //this.letters = this.getFirstLetterFromNames();
         this.LocaldataService.setPatients(response.data);
         this.viewYesterdaysPatients = yesterday;
       } else {

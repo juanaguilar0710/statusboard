@@ -192,7 +192,7 @@ export class EditRoomComponent implements OnInit {
         this.LocaldataService.getOperatingRooms().then((rooms: any) => {
           const index = rooms.findIndex((r: any) => r.id === room.id);
           rooms[index] = room;
-          this.LocaldataService.setOperatingRooms(rooms);
+          // this.LocaldataService.setOperatingRooms(rooms);
         });
       }
     });
@@ -219,7 +219,7 @@ export class EditRoomComponent implements OnInit {
         this.LocaldataService.getOperatingRooms().then((rooms: any) => {
           const index = rooms.findIndex((r: any) => r.id === room.id);
           rooms[index] = room;
-          this.LocaldataService.setOperatingRooms(rooms);
+          // this.LocaldataService.setOperatingRooms(rooms);
           this.navController.navigateForward(['/home'], { replaceUrl: true });
           this.showToast('Patients assigned successfully');
           this.loading = false;

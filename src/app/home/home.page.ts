@@ -64,18 +64,6 @@ export class HomePage implements AfterViewInit, OnInit {
     private notificationService: NotificationService,
     private appComponent: AppComponent) {
 
-    //subscribe to the remaining time on app.component
-    // this.requestsService.timeRemaining$.subscribe((time: number) => {
-    //   this.remainingTime = time;
-    // });
-
-    //listen for logout event
-    // this.requestsService.logout$.subscribe(async (logout: boolean) => {
-    //   if (logout) {
-    //     this.logout();
-    //   }
-    // });
-
     //listen for the network status
     this.networkService.networkStatus$.subscribe((status: string) => {
       this.networkStatus = status;
@@ -105,11 +93,13 @@ export class HomePage implements AfterViewInit, OnInit {
     console.log('this.username',this.username.user.username);
     
     this.configuration = await this.LocaldataService.getConfiguration();    
-    this.requestsService.getOperatingRoomWithUsers(this.configuration.waitingRoom.id).subscribe(resp => {   
-      this.storage.set('OperatingRoomWithUsers', resp);      
-    },error => {
-      console.log(error);
-    })
+    // this.requestsService.getOperatingRoomWithUsers(this.configuration.waitingRoom.id).subscribe(resp => {  
+    //   console.log(resp);
+       
+    //   this.storage.set('OperatingRoomWithUsers', resp);      
+    // },error => {
+    //   console.log(error);
+    // })
     
 
     if(this.configuration.aplication == '2'){
@@ -118,7 +108,7 @@ export class HomePage implements AfterViewInit, OnInit {
     
     this.getTodaysPatientsFromLocal().then(resp => {
       this.storage.get('patient').then(response => {        
-        this.getOperatingRoomsFromStorageOrLoadFromServer();
+       this.getOperatingRoomsFromStorageOrLoadFromServer();
         if (response) {
           this._ngZone.run(() => {
             this.requestsService.updatePatient(response).then(async (response: any) => {
@@ -135,21 +125,12 @@ export class HomePage implements AfterViewInit, OnInit {
         }  
       });
     });
-
-    
-    // const scrollY = await this.storage.get('scrollY');
-    // if (scrollY) {
-    //   setTimeout(() => {
-    //     const element = document.getElementById('patient'+scrollY);
-    //     if (element != null) {
-    //       this.storage.remove('scrollY');
-    //       element?.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
-    //     }
-    //   }, 1000);
-    // }
     
   }
 
+  ionViewWillEnter() {
+    this.ngOnInit();
+  }
 
   private updatePatientList(eventType: string, patient: any) {    
     const index = this.patients.findIndex((p: any) => p.id === patient.id);
@@ -201,7 +182,7 @@ export class HomePage implements AfterViewInit, OnInit {
   
         this.laravelEcho.channel(channel).listen('.patient.updated', (e: any) => {
           if (this.networkStatus === "ONLINE" && !this.viewYesterdaysPatients) {
-            this.updatePatientList('updated', e.patient);
+            this.updatePatientList('updated', e.patient);            
           }
         });
   
@@ -219,37 +200,30 @@ export class HomePage implements AfterViewInit, OnInit {
             this.getTodaysPatientsFromServer();
             this.requestsService.lastSync = new Date().toLocaleString();
           }
-        });
+        });        
       });
     });
   }
 
+  getUserNames(role: any): string {
+    if (role.persons.length > 0) {
+      // Retornar los nombres de los usuarios asignados separados por coma
+      return role.persons.map((person:any) => person.full_name).join(', ');
+    }
+    // Si no hay usuarios asignados
+    return 'No asignado';
+  }
 
   getOperatingRoomsFromStorageOrLoadFromServer() {
-    // load from local
-    this.LocaldataService.getOperatingRooms().then((response: any) => {
-      if (response) {
-        this.operatingRooms = response;
-        // load from server
+    this.LocaldataService.getOperatingRooms().then((response: any) => {      
+        this.operatingRooms = response;        
         this.requestsService.getOperatingRooms().then((response: any) => {
           this.operatingRooms = response.data.data;
+          console.log(this.operatingRooms);
           this.getRandomColor(this.operatingRooms);
           this.LocaldataService.setOperatingRooms(this.operatingRooms);
-        });
-      } else {
-        if (this.requestsService.operatingRooms.length > 0) {
-          this.operatingRooms = this.requestsService.operatingRooms;
-          this.getRandomColor(this.operatingRooms);
-          this.LocaldataService.setOperatingRooms(this.operatingRooms);
-        } else {
-          this.requestsService.getOperatingRooms().then((response: any) => {
-            this.operatingRooms = response.data.data;
-            this.getRandomColor(this.operatingRooms);
-            this.LocaldataService.setOperatingRooms(this.operatingRooms);
-          });
-        }
-      }
-    });
+        });     
+      });
   }
 
   getRandomColor(operatingRooms: any[]) {
