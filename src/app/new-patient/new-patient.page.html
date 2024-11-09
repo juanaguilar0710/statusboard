@@ -21,14 +21,22 @@
         label-placement="floating" fill="outline" errorText="Family Full Name required" [maxlength]="50"></ion-input>
       <ion-input tabindex="5" [disabled]="loading" label="Family Phone Number" type="tel" formControlName="phone"
         label-placement="floating" fill="outline" errorText="Family Phone Number required" [maxlength]="13"></ion-input>
+
       <div class="d-flex">
-        <div class="flex-fill" style="padding: 0 10px;">
+        <div class="flex-fill" style="padding-right: 30px;">
           <ion-button [disabled]="loading" class="w-100 classButton" color="danger" (click)="cancel()">Cancel</ion-button>
         </div>
-        <div class="flex-fill" style="padding: 0 10px;">
-          <ion-button [disabled]="loading" class="w-100 classButton" color="success" (click)="createPatient()"
-            [disabled]="form.invalid">Create</ion-button>
+
+        <div class="flex-fill">
+          <!-- <ion-button [disabled]="loading" class="w-100 classButton" color="success" (click)="createPatient()"
+            [disabled]="form.invalid" style="color: white !important;">Create</ion-button> -->
+
+            <ion-button [disabled]="loading" color="success" class="w-100 classButton" (click)="createPatient()">
+              <span style="color: white;">Create</span>
+            </ion-button>
+
         </div>
       </div>
+      
   </form>
 </ion-content>

@@ -25,6 +25,8 @@ export class SearchableComponentComponent implements AfterViewInit {
   }
   ngAfterViewInit(): void {
     this.data = this.navParams.get('data');
+    console.log(this.data);
+    
     this.type = this.navParams.get('type');
     if(this.navParams.get('selectedValue')){
       const value = this.navParams.get('selectedValue');

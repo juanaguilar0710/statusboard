@@ -2,13 +2,15 @@ import { AfterViewInit, ChangeDetectorRef, Component, OnInit } from '@angular/co
 import { LocaldataService } from '../api/localdata.service';
 import { RequestsService } from '../api/requests.service';
 import { RoomColors } from 'colors';
-import { Preferences } from '@capacitor/preferences';
+import { Preferences, RemoveOptions } from '@capacitor/preferences';
 import { Router } from '@angular/router';
 import { Toast } from '@capacitor/toast';
 import Pusher from 'pusher-js';
 import Echo from 'laravel-echo';
 import { environment } from 'src/environments/environment';
 import { NetworkService } from '../api/network.service';
+import { AlertController } from '@ionic/angular';
+import { App } from '@capacitor/app';
 
 @Component({
   selector: 'app-dashboard',
@@ -37,6 +39,7 @@ export class DashboardComponent  implements AfterViewInit, OnInit {
               public requestsService: RequestsService,
               private router: Router,
               private cdr: ChangeDetectorRef,
+              private alertController: AlertController,
               private networkService: NetworkService
   ) { 
     setInterval(() => {
@@ -73,8 +76,8 @@ export class DashboardComponent  implements AfterViewInit, OnInit {
   }
 
   changePageRoomsWhitPatients() {
-    const totalPagesWhitPatients = Math.ceil(this.operatingRooms.length / environment.roomsPerPageWhitPatients);
-    environment.currentPageWhitPatients = (environment.currentPageWhitPatients + 1) % totalPagesWhitPatients;       
+    const totalPagesWhitPatients = Math.ceil(this.getRoomsWithPatients().length / environment.roomsPerPageWhitPatients);
+    environment.currentPageWhitPatients = (environment.currentPageWhitPatients + 1) % totalPagesWhitPatients;        
   }
 
   // Método para obtener las salas de la página actual
@@ -90,11 +93,13 @@ export class DashboardComponent  implements AfterViewInit, OnInit {
     return this.getRoomsWithPatients().slice(start, end);
   }
 
+  
+
 
   //solo salas con pacientes
   getRoomsWithPatients(): any[] {
     return this.operatingRooms.filter(room => {
-      const patientsInRoom = this.filterPatientsByRoom(room.name);      
+      const patientsInRoom = this.filterPatientsByRoom(room.name);        
       return patientsInRoom.length > 0;
     });
   }
@@ -110,7 +115,6 @@ export class DashboardComponent  implements AfterViewInit, OnInit {
         this.config = (JSON.parse(response.value));        
       }
     })
-    this.startCarousel();
   }
 
    // Filtra los pacientes por sala
@@ -123,35 +127,15 @@ export class DashboardComponent  implements AfterViewInit, OnInit {
 
   // Obtiene el grupo actual de pacientes para la sala
   getPatientsGroup(roomName: string): any[] {
-    const patientsInRoom = this.filterPatientsByRoom(roomName);
-    const currentGroup = this.currentGroups[roomName] || 0;
-    const start = currentGroup * this.pageSize;
-    const end = start + this.pageSize;    
-    if (patientsInRoom.length <= this.pageSize) {
+    const patientsInRoom = this.filterPatientsByRoom(roomName);     
+    const currentGroup = this.currentGroups[roomName] || 0;    
+    const start = currentGroup * this.pageSize;    
+    const end = start + this.pageSize;        
+    if (patientsInRoom.length <= this.pageSize) {      
       return patientsInRoom;
-    }    
+    }
     return patientsInRoom.slice(start, end);
   }
-
-  // Inicia el cambio de grupos de pacientes cada 5 segundos solo para salas con más de 4 pacientes
-  startCarousel() {
-    this.intervalId = setInterval(() => {
-      this.getRoomsWithPatients().forEach(room => {
-        const patientsInRoom = this.filterPatientsByRoom(room.name);
-
-        if (patientsInRoom.length > this.pageSize) {
-          const currentGroup = this.currentGroups[room.name] || 0;
-          const totalGroups = Math.ceil(patientsInRoom.length / this.pageSize);          
-          this.currentGroups[room.name] = (currentGroup + 1) % totalGroups;
-        }
-      });
-    }, 20000); // Cambia de grupo cada 5 segundos
-  }
-
-  stopCarousel() {
-    clearInterval(this.intervalId); // Detener el intervalo
-  }
-
 
   ngAfterViewInit(): void {
         (<any>window).Pusher = Pusher;
@@ -164,6 +148,8 @@ export class DashboardComponent  implements AfterViewInit, OnInit {
         });
         const channel = `branch.${this.requestsService.config.branch.id}.room.${this.requestsService.config.waitingRoom.id}`;
         this.laravelEcho.channel(channel).listen('.patient.updated', (e: any) => {
+          console.log(e);
+          
           if (this.networkStatus === "ONLINE") {
             this.updatePatientList('updated', e.patient);
           }
@@ -182,7 +168,6 @@ export class DashboardComponent  implements AfterViewInit, OnInit {
         });
   }
 
-  // Método para actualizar la lista de pacientes basado en los eventos en tiempo real
   private updatePatientList(eventType: string, patient: any) {    
     const index = this.patients.findIndex((p: any) => p.id === patient.id);
     switch(eventType) {
@@ -202,7 +187,7 @@ export class DashboardComponent  implements AfterViewInit, OnInit {
         }
         break;
     }
-    this.patientsCopy = [...this.patients]; // Clonamos el array para asegurar la detección del cambio
+    this.patientsCopy = [...this.patients];
     this.LocaldataService.setPatients(this.patients);
     this.requestsService.lastSync = new Date().toLocaleString();
     this.lastsync = new Date().toLocaleString();
@@ -211,7 +196,6 @@ export class DashboardComponent  implements AfterViewInit, OnInit {
 
 
   ngOnDestroy() {
-    this.stopCarousel();  // Detener el carousel cuando el componente se destruya
     if (this.laravelEcho) {
       this.laravelEcho.disconnect();  // Desconectar Laravel Echo al destruir el componente
     }
@@ -233,7 +217,7 @@ export class DashboardComponent  implements AfterViewInit, OnInit {
 
 
   getHoldingPatientsCount(): number {
-    return this.patients.filter(patient => patient.status_Id === 1).length;
+    return this.patients.filter(patient => patient.status_Id === 2).length;
   }
 
   getSurgeryPatientsCount(): number {
@@ -258,7 +242,7 @@ export class DashboardComponent  implements AfterViewInit, OnInit {
       hour: 'numeric',
       minute: '2-digit',
       hour12: true,
-    }).replace(' ', ' '); // Quita el espacio entre la hora y AM/PM
+    }).replace(' ', ' ').toUpperCase(); // Quita el espacio entre la hora y AM/PM
   }
 
   getOperatingRoomsFromStorageOrLoadFromServer() {
@@ -335,5 +319,71 @@ export class DashboardComponent  implements AfterViewInit, OnInit {
       }
     });
   }
+
+  clicks = 0;
+
+  async headerClicked() {
+    this.clicks++;
+    if (this.clicks === 3) {
+      const alert = await this.alertController.create({
+        header: 'Enter Admin Password',
+        message: 'Fail to enter correct password 3 times will alert the Administrator.',
+        buttons: ["Cancel", "Ok"],
+        inputs: [{
+          name: 'pin',
+          type: 'password',
+          placeholder: 'Enter Password'
+        }]
+      });
+      await alert.present();
+      alert.onDidDismiss().then((data) => {
+        this.clicks = 0;
+        if (data.data?.values)
+          if (data.data.values.pin === environment.resetPin) {
+            this.presentAlert();
+          } else {
+            Toast.show({
+              text: 'Incorrect Password Entered',
+              duration: 'long'
+            });
+          }
+      });
+    }
+  }
+
+  async presentAlert() {
+    // Presentar alerta con opciones para ir a login o configuración
+    const alert = await this.alertController.create({
+      header: 'Admin Options',
+      message: 'Select an option to proceed',
+      buttons: [
+        {
+          text: 'Login',
+          handler: () => {
+            Preferences.clear();
+            this.router.navigate(['/login'], { replaceUrl: true });
+          }
+        },
+        {
+          text: 'Configuration',
+          handler: () => {
+            const options: RemoveOptions = { key: 'config' };
+            Preferences.remove(options);
+            this.router.navigate(['/configuration'], { replaceUrl: true });
+          }
+        },
+        {
+          text: 'Close App',
+          handler: () => {
+            Preferences.clear();
+            this.router.navigate(['/login'], { replaceUrl: true });
+            App.exitApp(); // Cierra la aplicación
+          }
+        }
+      ]
+    });
+    await alert.present();
+  }
+  
 
 }

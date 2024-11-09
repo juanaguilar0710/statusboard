@@ -67,7 +67,7 @@ export class RequestsService {
       }
 
     setToken(token: string | null) {
-        this.token = token;
+        this.token = token;        
     }
 
     setAdminToken(token: string | null) {
@@ -100,17 +100,17 @@ export class RequestsService {
                     this.recoveryRooms = response.data.data;
                 }
             });
-            await this.getBranchStatuses().then(async (response: any) => {
-                if (response.status === 200) {
-                    const statuses = response.data.sort((a: any, b: any) => a.sequence - b.sequence);
-                    for (let id = 0; id < statuses.length; id++) {
-                        statuses[id]['colorHex'] = this.statusesColor[id]?.colorHex ?? null;
-                    }
-                    this.statuses = statuses;
-                    if (this.statuses.length > 0)
-                        Preferences.set({ key: 'statuses', value: JSON.stringify(this.statuses) });
-                }
-            });
+            // await this.getBranchStatuses().then(async (response: any) => {
+            //     if (response.status === 200) {
+            //         const statuses = response.data.sort((a: any, b: any) => a.sequence - b.sequence);
+            //         for (let id = 0; id < statuses.length; id++) {
+            //             statuses[id]['colorHex'] = this.statusesColor[id]?.colorHex ?? null;
+            //         }
+            //         this.statuses = statuses;
+            //         if (this.statuses.length > 0)
+            //             Preferences.set({ key: 'statuses', value: JSON.stringify(this.statuses) });
+            //     }
+            // });
             resolve(true);
         });
     }
@@ -289,18 +289,13 @@ export class RequestsService {
         });
     }
 
-    getBranchStatuses = async (): Promise<any> => {
-        return new Promise(async (resolve, reject) => {
-            const options = {
-                url: environment.url + environment.status + '/' + this.config.branch.id + '?orderBy=sequence&direction=asc',
-                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer ' + this.token },
-            };
-            try {
-                resolve(await CapacitorHttp.get(options));
-            } catch (error) {
-                reject(error);
-            }
-        });
+    getBranchStatuses(id:any): Observable<any> {        
+        const options = {
+            url: environment.url + environment.status + '/' + id + '?orderBy=sequence&direction=asc',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer ' + this.token },
+        };
+        this.statuses = from(CapacitorHttp.get(options)) 
+        return from(CapacitorHttp.get(options));
     }
 
     getBranchComments = async (): Promise<any> => {

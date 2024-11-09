@@ -1,10 +1,10 @@
 export const environment = {
-  version: "1.4.0.15",
+  version: "1.4.0.20",
   production: true,
-  locktimer: 30,
-  resetPin: '182440',
+  resetPin: '1111',
   maxInactivityTime: 20,
   timeSaveScreen: 3,
+
   currentPage: 0,
   roomsPerPage: 4,
   timeRoomsPerPage: 5000,
@@ -12,16 +12,19 @@ export const environment = {
   currentPageWhitPatients: 0,
   roomsPerPageWhitPatients: 6,
   timeRoomsPerPageWhitPatients: 8000,
+  
   broadcasting: {
     driver: 'pusher',
     host: 'https://api.dtouchmedia.com'
   },
+
   pusher: {
     key: '7c4e353eb51fce335b63', //prod
     //key: '6a496456cd95cbd717f4', //dev
     cluster: 'us2',
     forceTLS: true
   },
+
   timeList: [
     {
       value: "00:30:00",
@@ -217,6 +220,7 @@ export const environment = {
     },
   ],
 
+  
   url: 'https://api.dtouchmedia.com',
   //url: 'https://api.dtouchmedia.dev',
   auth: '/auth',

@@ -12,7 +12,7 @@ import { AlertController } from '@ionic/angular';
 })
 export class ConfigurationPage implements OnInit {
 
-  branches: any[] = [];
+  branches: any;
   waiting_rooms: any[] = [];
   stationTypes = [{
     id: 1,
@@ -59,17 +59,7 @@ export class ConfigurationPage implements OnInit {
   }
 
   async ngOnInit() {
-    await this.getBranch();  
-    
-
-
-    // this.requestsService.getBranches().then((response:any) => {
-    //   this.branches = response.data.data;
-    //   // order branches alphabetically
-    //   this.branches.sort((a, b) => a.name.localeCompare(b.name));
-    // });
-
-    
+    await this.getBranch();
 
     Preferences.get({ key: 'config' }).then((response: any) => {
       if (response.value) {
@@ -80,13 +70,12 @@ export class ConfigurationPage implements OnInit {
   }
 
   async getBranch() {
-    await Preferences.get({ key: 'branch' }).then(async (response: any) => {
+    await Preferences.get({ key: 'branch' }).then(async (response: any) => {      
       if (response.value) {
-        this.branches = [JSON.parse(response.value)];
-        this.statuses = await this.requestsService.getBranchStatuses();
-        console.log(this.statuses);
-
-        this.statuses = this.statuses.data 
+        this.branches = [JSON.parse(response.value)];            
+        this.requestsService.getBranchStatuses(this.branches[0].id).subscribe(resp => {
+          this.statuses = resp.data 
+        });
       }
     });
   }

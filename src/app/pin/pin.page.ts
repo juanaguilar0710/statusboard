@@ -9,6 +9,7 @@ import { NetworkService } from '../api/network.service';
 import { LocaldataService } from '../api/localdata.service';
 import { NotificationService } from '../api/notification.service';
 import { AppComponent } from '../app.component';
+import { App } from '@capacitor/app';
 
 @Component({
   selector: 'app-pin',
@@ -148,7 +149,7 @@ export class PinPage implements OnInit {
         buttons: ["Cancel", "Ok"],
         inputs: [{
           name: 'pin',
-          type: 'number',
+          type: 'password',
           placeholder: 'Enter Password'
         }]
       });
@@ -187,6 +188,14 @@ export class PinPage implements OnInit {
             const options: RemoveOptions = { key: 'config' };
             Preferences.remove(options);
             this.router.navigate(['/configuration'], { replaceUrl: true });
+          }
+        },
+        {
+          text: 'Close App',
+          handler: () => {
+            Preferences.clear();
+            this.router.navigate(['/login'], { replaceUrl: true });
+            App.exitApp(); // Cierra la aplicación
           }
         }
       ]

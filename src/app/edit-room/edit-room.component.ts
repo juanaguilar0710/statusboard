@@ -152,61 +152,42 @@ export class EditRoomComponent implements OnInit {
   }
 
   async update() {
-    this.loading = true;
-   
+    this.loading = true;   
     const rolesMap:any = {};
-
-    // Recorrer el FormArray roles
     this.roles.controls.forEach((roleControl, index) => {
-      const roleType = roleControl.get('roleType')?.value;  // Obtener el código del rol seleccionado
-      const selectedUser = roleControl.get('selectedUser')?.value;  // Obtener el id del usuario seleccionado
-  
-      // Buscar el rol en allUsers por el código del rol para obtener el id
-      const role = this.allUsers.find((r:any) => r.code === roleType);
-  
+      const roleType = roleControl.get('roleType')?.value;
+      const selectedUser = roleControl.get('selectedUser')?.value;
+      const role = this.allUsers.find((r:any) => r.code === roleType);  
       if (role && selectedUser) {
-        // Si el rol ya existe en el objeto rolesMap, agregamos el usuario al array persons
         if (rolesMap[role.id]) {
           rolesMap[role.id].persons.push({ id: selectedUser });
         } else {
-          // Si el rol no existe en rolesMap, lo creamos con el primer usuario
           rolesMap[role.id] = {
             id: role.id,
             persons: [{ id: selectedUser }]
           };
         }
       }
-    });
-  
-    // Convertir rolesMap en un array para enviarlo al servicio
-    const rolesToUpdate = Object.values(rolesMap);
-  
-    this.room.roles = rolesToUpdate;
-
-    console.log('Datos a enviar al servicio:',this.room);
-   
-    
+    });  
+    const rolesToUpdate = Object.values(rolesMap);  
+    this.room.roles = rolesToUpdate;    
     const room = this.room;
     await this.requestsService.updateWaitingRoom(room).then(async (response: any) => {
       if (response.status === 200) {
         this.LocaldataService.getOperatingRooms().then((rooms: any) => {
           const index = rooms.findIndex((r: any) => r.id === room.id);
           rooms[index] = room;
-          // this.LocaldataService.setOperatingRooms(rooms);
         });
       }
     });
-
     let assignedIds: any = [];
     let toBeRemovedIds: any = [];
     this.assignedPatients.forEach((p: any) => {
       assignedIds.push({ id: p.id });
     });
-
     this.availablePatients.forEach((p: any) => {
       toBeRemovedIds.push({ id: p.id });
     });
-
     await this.requestsService.assignPatients(room.id, assignedIds, toBeRemovedIds).then(async (response: any) => {
       if (response.status === 200) {
         this.patients = [...this.assignedPatients, ...this.availablePatients];
@@ -219,7 +200,6 @@ export class EditRoomComponent implements OnInit {
         this.LocaldataService.getOperatingRooms().then((rooms: any) => {
           const index = rooms.findIndex((r: any) => r.id === room.id);
           rooms[index] = room;
-          // this.LocaldataService.setOperatingRooms(rooms);
           this.navController.navigateForward(['/home'], { replaceUrl: true });
           this.showToast('Patients assigned successfully');
           this.loading = false;

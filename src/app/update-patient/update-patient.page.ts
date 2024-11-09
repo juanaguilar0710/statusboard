@@ -84,16 +84,9 @@ export class UpdatePatientPage implements OnInit, OnDestroy {
     this.form.get('recovery_room_id')?.setValue(this.patient?.recovery_room);
     this.form.get('time_id')?.setValue(this.patient?.procedure_time);
     this.form.get('next_to_surgery_id')?.setValue(this.patient?.operating_room_id);
-    this.statuses = JSON.parse(JSON.stringify(this.requestsService.statuses));
-    if (this.statuses?.length == 0) {
-      Preferences.get({ key: 'statuses' }).then((response: any) => {
-        this.statuses = JSON.parse(response.value);
-      });
-    }
-
-    
+        
     setTimeout(() => {
-      this.patientStatusUIUpdate();
+      this.getBranch();      
     }, 250);
 
     if (!this.patient.surgeon_id) {
@@ -113,6 +106,18 @@ export class UpdatePatientPage implements OnInit, OnDestroy {
         this.patient.procedure_id = procedure.id;
       }
     }
+  }
+
+  getBranch() {
+    Preferences.get({ key: 'branch' }).then(async (response: any) => {
+      if (response.value) {
+        const branches = [JSON.parse(response.value)];            
+        this.requestsService.getBranchStatuses(branches[0].id).subscribe(resp => {          
+          this.statuses = resp.data 
+          this.patientStatusUIUpdate();
+        });
+      }
+    });
   }
 
   async openSearchableComponentOnModal(type: string) {
@@ -254,6 +259,8 @@ export class UpdatePatientPage implements OnInit, OnDestroy {
 
   patientStatusUIUpdate() {
     this.loading = false;
+    console.log(this.statuses);
+    
     var statusLength = this.statuses.length;
     let statusIndex = this.statuses.findIndex((status: any) => { return status.id == this.patient.status_Id });
     if (statusIndex > -1) {

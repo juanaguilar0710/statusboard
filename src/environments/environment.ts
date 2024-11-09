@@ -1,27 +1,30 @@
 export const environment = {
-  version: "1.4.0.15",
+  version: "1.4.0.20",
   production: false,
-  locktimer: 600,
-  resetPin: '182440',
-  maxInactivityTime: 20,
+  resetPin: '1111',
+  maxInactivityTime: 20000,
   timeSaveScreen: 3,
+
   currentPage: 0,
   roomsPerPage: 4,
-  timeRoomsPerPage: 5000,
+  timeRoomsPerPage: 4000,
   
   currentPageWhitPatients: 0,
   roomsPerPageWhitPatients: 6,
-  timeRoomsPerPageWhitPatients: 8000,
+  timeRoomsPerPageWhitPatients: 6000,
+
   broadcasting: {
     driver: 'pusher', // 'socket.io',
     host: 'https://api.dtouchmedia.com'
   },
+
   pusher: {
-    //key: '7c4e353eb51fce335b63',
-    key: '6a496456cd95cbd717f4',    
+    key: '7c4e353eb51fce335b63',
+    //key: '6a496456cd95cbd717f4',    
     cluster: 'us2',
     forceTLS: true
   },
+
   timeList: [
     {
       value: "00:30:00",
@@ -218,8 +221,8 @@ export const environment = {
   ],
 
 
-  //url: 'https://api.dtouchmedia.com',
-  url: 'https://api.dtouchmedia.dev',
+  url: 'https://api.dtouchmedia.com',
+  //url: 'https://api.dtouchmedia.dev',
   auth: '/auth',
   login: '/login',
   refresh: '/refresh',
