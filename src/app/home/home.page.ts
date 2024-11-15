@@ -34,7 +34,7 @@ export class HomePage implements AfterViewInit, OnInit {
   filtering = false;
   filteredLetter: string | null = null;
   letters = this.getFirstLetterFromNames();
-  laravelEcho: Echo | undefined;
+  laravelEcho: Echo<any> | undefined;
   operatingRooms: any = [];
   //create a list of 10 light pallette colors
   updating: boolean = true;

@@ -1,8 +1,8 @@
 export const environment = {
-  version: "1.4.0.20",
+  version: "1.4.0.21",
   production: false,
   resetPin: '1111',
-  maxInactivityTime: 20000,
+  maxInactivityTime: 20,
   timeSaveScreen: 3,
 
   currentPage: 0,
@@ -11,7 +11,7 @@ export const environment = {
   
   currentPageWhitPatients: 0,
   roomsPerPageWhitPatients: 6,
-  timeRoomsPerPageWhitPatients: 6000,
+  timeRoomsPerPageWhitPatients: 8000,
 
   broadcasting: {
     driver: 'pusher', // 'socket.io',

@@ -23,7 +23,7 @@ export class DashboardComponent  implements AfterViewInit, OnInit {
   pageSize: number = 4; // Tamaño de cada grupo de pacientes (4 por cada grupo)
   currentGroups: { [key: string]: number } = {}; // Almacena el grupo actual de cada sala
   intervalId: any;
-  laravelEcho: Echo | undefined;
+  laravelEcho: Echo<any> | undefined;
   networkStatus: string = "ONLINE";
   deviceWasOffline: boolean = false;
   updating: boolean = true;
