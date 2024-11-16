@@ -1,20 +1,21 @@
 <ion-content>
   <ion-grid>
     <!-- Información general en la parte superior derecha -->
-    <ion-row class="status-overview" style="overflow-y: scroll; height: 90vh; padding-bottom: 1px;">
+    <ion-row class="status-overview" style="overflow-y: scroll; height: 92vh; padding-bottom: 1px;">
 
       <ion-col size="10" size-md="10" size-lg="10" style="padding-left: 0; padding-right: 0; padding-top: 0;">
         <ion-grid style="padding-left: 0; padding-right: 0; padding-top: 0;">
-          <ion-row>
+          <ion-row *ngIf="this.operatingRooms">
             <ion-col size="10" size-md="9" size-lg="6" *ngFor="let room of getRoomsForCurrentPagewhitpatients()"  >  
               <ion-card class="ionCard">
                 <ion-card-header class="ionCardHeader">
                   <ion-card-title>
                     <ion-row>
-                      <ion-col size="2" size-md="2" size-lg="2" class="tittleCardText">{{room.name}}</ion-col>
-                      <ion-col size="5" size-md="5" size-lg="5" class="tittleCardText"></ion-col><!-- Dr.{{room.id}}-->
+                      <ion-col size="4" size-md="4" size-lg="4" class="tittleCardText">{{room.name}}</ion-col>
+                      <ion-col *ngIf="this.totalGroups > 1" size="3" size-md="3" size-lg="3" class="tittleCardTextPages">Page: {{this.currentGroups[room.name] + 1}}/{{this.totalGroups}}</ion-col>
+                      <ion-col *ngIf="this.totalGroups < 1" size="3" size-md="3" size-lg="3" class="tittleCardTextPages"></ion-col>
                       <ion-col size="5" size-md="5" size-lg="5" class="tittleCardTextNumber" style="text-align: end !important;">
-                        Completed: {{ getCompletedRoomPatientsCount(room.name) }}/{{ getTotalPatientsInRoom(room.name) }}
+                        {{room.name === "TO FOLLOW"? "": "Completed:"+ getCompletedRoomPatientsCount(room.name) +"/"+ getTotalPatientsInRoom(room.name)}}                        
                       </ion-col>            
                     </ion-row>
                   </ion-card-title>
@@ -23,17 +24,22 @@
                 <ion-card-content>
                   <!-- Llama a la función en el archivo TS para filtrar los pacientes -->
                   <div *ngFor="let patient of getPatientsGroup(room.name)">
-                    <ion-row [ngClass]="{ 'surgery': patient.status_Id === 3, 'nextSurgery': patient.status_Id === 2 }">
+                    <ion-row style="height: 22px;">
                       <ion-col size="1" class="textCardPatients">{{patient.age}}y</ion-col>
-                      <ion-col size="3" class="textCardPatients text-ellipsis"><strong>{{patient.fullName}}</strong></ion-col>
+                      <ion-col size="3" class="textCardPatients text-ellipsis" [ngClass]="{ 'surgery': patient.status.type === 'surgery', 'holding': patient.status.type === 'holding' }"><strong>{{patient.fullName}}</strong></ion-col>
                       <ion-col size="4" class="textCardPatients text-ellipsis" style="text-align: left !important;">{{patient.procedure_name}}</ion-col> 
-                      <ion-col size="3" class="textCardPatients text-ellipsis" style="text-align: left !important;">{{patient.surgeon_name}}juan camilo agular</ion-col> 
-                      <ion-col size="1" class="textCardPatients text-ellipsis" style="text-align: left !important;">
-                        <div class="icon-container" *ngIf="!patient.phone_national_format" style="position: relative; width: 30px; height: 18px;">
+                      <ion-col size="3" class="textCardPatients text-ellipsis" style="text-align: left !important;">{{patient.surgeon_name}}</ion-col> 
+                      <ion-col size="1" class="textCardPatients text-ellipsis" style="text-align: center !important;">
+                        <!-- <div class="icon-container" *ngIf="!patient.phone_national_format" style="position: relative; width: 30px; height: 18px;">
                           <ion-icon name="call-outline" class="callPosition"></ion-icon>
                           <div class="circle circleBorder"></div>
                           <div class="line lineRedPhone" ></div>
+                        </div> -->
+
+                        <div class="icon-container"  *ngIf="!patient.phone_national_format">
+                          <img [src]="'assets/icon/Phone.png'" style="width: 50%;">
                         </div>
+                      
                       </ion-col> 
                     </ion-row>
                   </div>
@@ -59,8 +65,7 @@
               <p class="dateTimeHeader">{{ currentDate | date: 'EEEE, d MMMM Y' : 'en' }}</p>
               <h2 class="dateTimeHeaderHour">{{ currentTime }}</h2>
             </ion-col>            
-          </ion-row>  
-
+          </ion-row>
 
           <ion-row class="patients-today-row">
             <ion-col class="patients-today">
@@ -107,7 +112,7 @@
           </div>
         </div>
 
-        <ion-row>
+        <ion-row *ngIf="this.operatingRooms">
           <ion-col size="12" *ngFor="let room of getRoomsForCurrentPage()" class="topCard" >
             <div class="room-card">
               <div class="room-name text-center">
@@ -115,9 +120,8 @@
               </div>
               <div class="room-card-details">
                 <div *ngFor="let role of room.roles">
-                  <div>
-                    <a style="font-weight: bold;">{{ role.code }}:</a>
-                    <span>{{ getUserNames(role) }}</span>
+                  <div *ngIf="role.persons.length > 0">
+                    <a style="font-weight: bold;">{{ role.code }}: </a><span>{{ getUserNames(role) }}</span>
                   </div>
                 </div>
               </div>                 
@@ -130,33 +134,41 @@
       
 
 
-    </ion-row>
-
-    <ion-row style="align-items: center; padding-left: 5px;">
-      <!-- Online text with date -->
-      <ion-col size="3" style="text-align: left;">
-        <span class="onlineTittle">ONLINE:</span>
-        <span class="textUnderLine" style="padding-left: 20px;">{{ this.lastsync }}</span>
-      </ion-col>
-    
-      <!-- In Holding -->
-      <ion-col size="2" style="display: flex; align-items: center;">
-        <ion-icon name="ellipse" style="color: #7ed956;" class="underline"></ion-icon>
-        <span class="textUnderLine">IN HOLDING</span>
-      </ion-col>
-    
-      <!-- In Surgery -->
-      <ion-col size="2" style="display: flex; align-items: center;">
-        <ion-icon name="ellipse" style="color: red;" class="underline"></ion-icon>
-        <span class="textUnderLine">IN SURGERY</span>
-      </ion-col>
-    
-      <!-- Next to Surgery -->
-      <ion-col size="3" style="display: flex; align-items: center;">
-        <ion-icon name="ellipse" style="color: blue;" class="underline"></ion-icon>
-        <span class="textUnderLine">NEXT to SURGERY</span>
-      </ion-col>
-    </ion-row>
+    </ion-row>    
   </ion-grid>
+  <ion-row style="align-items: center; padding-left: 5px; padding-top: 10px;">
+    <!-- Online text with date -->
+    <ion-col size="3" style="text-align: left;">
+      <span class="onlineTittle">ONLINE:</span>
+      <span class="textUnderLine" style="padding-left: 20px;">{{ this.lastsync }}</span>
+    </ion-col>
+  
+    <!-- In Holding -->
+    <ion-col size="2" style="display: flex; align-items: center;">
+      <ion-icon name="ellipse" style="color: #48a347;" class="underline"></ion-icon>
+      <span class="textUnderLine">IN HOLDING</span>
+    </ion-col>
+  
+    <!-- In Surgery -->
+    <ion-col size="2" style="display: flex; align-items: center;">
+      <ion-icon name="ellipse" style="color: #eb4343;" class="underline"></ion-icon>
+      <span class="textUnderLine">IN SURGERY</span>
+    </ion-col>
+  
+    <!-- Next to Surgery -->
+    <ion-col size="3" style="display: flex; align-items: center;">
+      <ion-icon name="ellipse" style="color: #3e3dcc;" class="underline"></ion-icon>
+      <span class="textUnderLine">NEXT to SURGERY</span>
+    </ion-col>
+
+    <ion-col size="1" style="display: flex; align-items: center;">
+      <span class="textUnderLine">PAGE: {{this.currentPageWithPatients}}/{{this.totalPagesWithPatients}}</span>
+    </ion-col>
+
+    <ion-col *ngIf="this.totalPagesWithPatients > 1" size="1" style="display: flex; align-items: center;">
+      <span class="textUnderLine">TIMER: {{this.countdown}}</span>
+    </ion-col>
+
+  </ion-row>
 </ion-content>
 

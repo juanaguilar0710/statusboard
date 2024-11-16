@@ -70,6 +70,10 @@ export class RequestsService {
         this.token = token;        
     }
 
+    getToken() {
+        return this.token;
+    }
+
     setAdminToken(token: string | null) {
         this.adminToken = token;
     }
@@ -83,6 +87,11 @@ export class RequestsService {
             await this.getBranchComments().then(async (response: any) => {
                 if (response.status === 200) {
                     this.comments = response.data;
+                }
+            });
+            await this.getOperatingRooms().then(async (response: any) => {
+                if (response.status === 200) {
+                    this.operatingRooms = response.data.data;
                 }
             });
             await this.getBranchSurgeonsByWaitingRoom().then(async (response: any) => {
@@ -329,7 +338,7 @@ export class RequestsService {
     getOperatingRooms = async (): Promise<any> => {
         return new Promise(async (resolve, reject) => {
             const options = {
-                url: environment.url + environment.waitingRooms + '/' + this.config.waitingRoom.id + '/operating-rooms-schedules',//environment.operatingrooms,
+                url: environment.url + environment.waitingRooms + '/' + this.config.waitingRoom.id + environment.operatingroomsschedules,//environment.operatingrooms,
                 headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer ' + this.token },
             };
             try {

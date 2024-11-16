@@ -89,9 +89,7 @@ export class HomePage implements AfterViewInit, OnInit {
       this.timeRemaining = time;
     });   
     this.user = await this.LocaldataService.getUser();      
-    this.username = JSON.parse(localStorage.getItem('user')!);
-    console.log('this.username',this.username.user.username);
-    
+    this.username = JSON.parse(localStorage.getItem('user')!);    
     this.configuration = await this.LocaldataService.getConfiguration();    
     // this.requestsService.getOperatingRoomWithUsers(this.configuration.waitingRoom.id).subscribe(resp => {  
     //   console.log(resp);
@@ -219,7 +217,6 @@ export class HomePage implements AfterViewInit, OnInit {
         this.operatingRooms = response;        
         this.requestsService.getOperatingRooms().then((response: any) => {
           this.operatingRooms = response.data.data;
-          console.log(this.operatingRooms);
           this.getRandomColor(this.operatingRooms);
           this.LocaldataService.setOperatingRooms(this.operatingRooms);
         });     

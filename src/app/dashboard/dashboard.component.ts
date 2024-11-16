@@ -11,6 +11,7 @@ import { environment } from 'src/environments/environment';
 import { NetworkService } from '../api/network.service';
 import { AlertController } from '@ionic/angular';
 import { App } from '@capacitor/app';
+import { interval, Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-dashboard',
@@ -20,7 +21,7 @@ import { App } from '@capacitor/app';
 export class DashboardComponent  implements AfterViewInit, OnInit {
   operatingRooms: any[] = []; // Array de todas las salas
   patients: any[] = []; // Array de todos los pacientes
-  pageSize: number = 4; // Tamaño de cada grupo de pacientes (4 por cada grupo)
+  pageSize: number = environment.pageSizeWhitPatients; // Tamaño de cada grupo de pacientes (4 por cada grupo)
   currentGroups: { [key: string]: number } = {}; // Almacena el grupo actual de cada sala
   intervalId: any;
   laravelEcho: Echo<any> | undefined;
@@ -33,8 +34,14 @@ export class DashboardComponent  implements AfterViewInit, OnInit {
   currentDate: Date = new Date();
   currentTime: string = '';
   config:any;
-  
-
+  timeRoomsPerPage = environment.timeRoomsPerPageWhitPatients;
+  totalPagesWhitPatients:any;
+  totalPages:any;
+  totalPagesWithPatients: number = 0;
+  currentPageWithPatients: number = 0;
+  countdown: number = 0;
+  intervalIdForPages: any;
+  totalGroups = 0;
   constructor(private LocaldataService: LocaldataService,
               public requestsService: RequestsService,
               private router: Router,
@@ -42,19 +49,22 @@ export class DashboardComponent  implements AfterViewInit, OnInit {
               private alertController: AlertController,
               private networkService: NetworkService
   ) { 
-    setInterval(() => {
-      this.updateTime();
-    }, 1000);
 
-    setInterval(() => {
-      this.changePageRooms();
-      const event = new MouseEvent('mousemove');
-      document.dispatchEvent(event); 
-    }, environment.timeRoomsPerPage);
+    setTimeout(() => {
+      setInterval(() => {
+        this.updateTime();
+      }, 1000);
+  
+      setInterval(() => {
+        this.changePageRooms();
+        const event = new MouseEvent('mousemove');
+        document.dispatchEvent(event); 
+      }, environment.timeRoomsPerPage);      
+    }, 3000);
 
-    setInterval(() => {
-      this.changePageRoomsWhitPatients();
-    }, environment.timeRoomsPerPageWhitPatients);
+    // setInterval(() => {
+    //   this.changePageRoomsWhitPatients();
+    // }, environment.timeRoomsPerPageWhitPatients);
 
     this.networkService.networkStatus$.subscribe((status: string) => {
       this.networkStatus = status;
@@ -74,10 +84,11 @@ export class DashboardComponent  implements AfterViewInit, OnInit {
     const totalPages = Math.ceil(this.operatingRooms.length / environment.roomsPerPage);
     environment.currentPage = (environment.currentPage + 1) % totalPages;     
   }
-
+  totalPagesCurrentPatients:any
   changePageRoomsWhitPatients() {
-    const totalPagesWhitPatients = Math.ceil(this.getRoomsWithPatients().length / environment.roomsPerPageWhitPatients);
-    environment.currentPageWhitPatients = (environment.currentPageWhitPatients + 1) % totalPagesWhitPatients;        
+    this.totalPagesWhitPatients = Math.ceil(this.getRoomsWithPatients().length / environment.roomsPerPageWhitPatients);
+    environment.currentPageWhitPatients = (environment.currentPageWhitPatients + 1) % this.totalPagesWhitPatients;
+    this.totalPagesCurrentPatients = environment.currentPageWhitPatients;
   }
 
   // Método para obtener las salas de la página actual
@@ -87,55 +98,134 @@ export class DashboardComponent  implements AfterViewInit, OnInit {
     return this.operatingRooms.slice(start, end);
   }
 
-  getRoomsForCurrentPagewhitpatients() {
-    const start = environment.currentPageWhitPatients * environment.roomsPerPageWhitPatients;
-    const end = start + environment.roomsPerPageWhitPatients;      
-    return this.getRoomsWithPatients().slice(start, end);
-  }
-
-  
-
-
-  //solo salas con pacientes
-  getRoomsWithPatients(): any[] {
-    return this.operatingRooms.filter(room => {
-      const patientsInRoom = this.filterPatientsByRoom(room.name);        
-      return patientsInRoom.length > 0;
-    });
-  }
-
   async ngOnInit() {
+    Preferences.get({ key: 'config' }).then((response: any) => {
+      if (response.value) {
+        this.config = (JSON.parse(response.value)); 
+        this.requestsService.setToken(this.config.token);
+        this.requestsService.setAdminToken(this.config.token);               
+      }
+    })
+    
     this.updateTime();
     await this.getOperatingRoomsFromStorageOrLoadFromServer();
     await this.getTodaysPatientsFromLocal()
     this.requestsService.getTodaysPatients();
-    this.requestsService.initDropdowns().then((response: any) => {})
-    Preferences.get({ key: 'config' }).then((response: any) => {
-      if (response.value) {
-        this.config = (JSON.parse(response.value));        
+    this.requestsService.initDropdowns().then((response: any) => {})    
+    this.startCarousel();
+    this.startCountdown();
+  }
+
+  startCountdown() {
+    this.countdown = environment.timeRoomsPerPageWhitPatients / 1000; // Inicializar con el tiempo configurado en segundos
+    this.intervalIdForPages = setInterval(() => {
+      if (this.countdown > 1) {
+        this.countdown--; // Decrementar cada segundo
+        
+      } else {
+        this.changePageRoomsWhitPatients(); // Cambiar de página
+        this.updatePaginationDetails();
+        this.countdown = environment.timeRoomsPerPageWhitPatients / 1000; // Reiniciar el temporizador
       }
-    })
+    }, 1000);
+  }
+  
+  getRoomsForCurrentPagewhitpatients() {
+    const start = environment.currentPageWhitPatients * environment.roomsPerPageWhitPatients;    
+    const end = start + environment.roomsPerPageWhitPatients;    
+    this.totalPages = end    
+    return this.getRoomsWithPatients().slice(start, end);
+  }  
+
+  getRoomsWithPatients(): any[] {
+    const roomsWithPatients = this.operatingRooms.filter(room => {
+      const patientsInRoom = this.filterPatientsByRoom(room.name);        
+      return patientsInRoom.length > 0;
+    });
+  
+    // Filtrar pacientes sin sala asignada
+    const patientsWithoutRoom = this.patients.filter(patient => 
+      !this.operatingRooms.some(room => room.name === patient.operating_room_name)
+    );
+    
+    if (patientsWithoutRoom.length > 0) {
+      // Crear una nueva sala para los pacientes sin sala
+      const newRoom = {
+        name: 'TO FOLLOW',
+        id: 'unassigned-room',
+        patients: patientsWithoutRoom,
+      };
+  
+      // Agregar la nueva sala al final
+      roomsWithPatients.push(newRoom);
+    }
+  
+    return roomsWithPatients;
   }
 
    // Filtra los pacientes por sala
-   filterPatientsByRoom(roomName: string): any[] {
+  //  filterPatientsByRoom(roomName: string): any[] {
+  //   return this.patients.filter(patient => 
+  //     patient.operating_room_name === roomName && 
+  //     this.config.statuses.includes(patient.status_Id) // Filtra por los estados permitidos
+  //   );
+  // }
+
+  filterPatientsByRoom(roomName: string): any[] {
+    if (roomName === 'TO FOLLOW') {
+      // Devolver pacientes sin sala asignada
+      return this.patients.filter(patient =>
+        !this.operatingRooms.some(room => room.name === patient.operating_room_name)
+      );
+    }
+  
+    // Filtrar pacientes asociados a una sala
     return this.patients.filter(patient => 
       patient.operating_room_name === roomName && 
-      this.config.statuses.includes(patient.status_Id) // Filtra por los estados permitidos
+      this.config.statuses.includes(patient.status_Id)
     );
   }
 
   // Obtiene el grupo actual de pacientes para la sala
   getPatientsGroup(roomName: string): any[] {
-    const patientsInRoom = this.filterPatientsByRoom(roomName);     
+    const patientsInRoom = this.filterPatientsByRoom(roomName);
+    if (!patientsInRoom.length) return []; 
     const currentGroup = this.currentGroups[roomName] || 0;    
-    const start = currentGroup * this.pageSize;    
-    const end = start + this.pageSize;        
-    if (patientsInRoom.length <= this.pageSize) {      
+    const start = currentGroup * this.pageSize;
+    const end = start + this.pageSize;    
+    if (patientsInRoom.length <= this.pageSize) {
       return patientsInRoom;
-    }
+    }    
     return patientsInRoom.slice(start, end);
   }
+    
+  // Inicia el cambio de grupos de pacientes cada x segundos solo para salas con más de x pacientes configurado en enviroment
+  startCarousel() {
+    this.updatePaginationDetails();
+    this.intervalId = setInterval(() => {                  
+      this.getRoomsWithPatients().forEach(room => {
+        const patientsInRoom = this.filterPatientsByRoom(room.name);    
+        if (patientsInRoom.length > this.pageSize) {
+          const currentGroup = this.currentGroups[room.name] || 0;
+          this.totalGroups = Math.ceil(patientsInRoom.length / this.pageSize);                   
+          this.currentGroups[room.name] = (currentGroup + 1) % this.totalGroups;          
+        }
+      });
+      this.updatePaginationDetails();        
+    }, environment.timeForCardsWhitPatients);
+  }      
+
+  updatePaginationDetails() {
+    this.totalPagesWithPatients = Math.ceil(this.getRoomsWithPatients().length / environment.roomsPerPageWhitPatients);        
+    this.currentPageWithPatients = environment.currentPageWhitPatients + 1;
+  }
+
+  stopCarousel() {
+    clearInterval(this.intervalId); // Detener el intervalo
+  }
+
+      
+
 
   ngAfterViewInit(): void {
         (<any>window).Pusher = Pusher;
@@ -147,28 +237,34 @@ export class DashboardComponent  implements AfterViewInit, OnInit {
           disableStats: true
         });
         const channel = `branch.${this.requestsService.config.branch.id}.room.${this.requestsService.config.waitingRoom.id}`;
+
         this.laravelEcho.channel(channel).listen('.patient.updated', (e: any) => {
           console.log(e);
           
-          if (this.networkStatus === "ONLINE") {
+          if (this.networkStatus === "ONLINE") {            
             this.updatePatientList('updated', e.patient);
           }
         });
 
-        this.laravelEcho.channel(channel).listen('.patient.created', (e: any) => {
+        this.laravelEcho.channel(channel).listen('.patient.created', (e: any) => {  
+          console.log(e);        
           if (this.networkStatus === "ONLINE") {             
             this.updatePatientList('created', e.patient);
           }
         });
 
         this.laravelEcho.channel(channel).listen('.patient.deleted', (e: any) => {
+          console.log(e);
           if (this.networkStatus === "ONLINE") {
             this.updatePatientList('deleted', e.patient);
           }
         });
   }
 
-  private updatePatientList(eventType: string, patient: any) {    
+  private updatePatientList(eventType: string, patient: any) {   
+    console.log(eventType);
+    console.log(patient);
+     
     const index = this.patients.findIndex((p: any) => p.id === patient.id);
     switch(eventType) {
       case 'created':
@@ -196,15 +292,19 @@ export class DashboardComponent  implements AfterViewInit, OnInit {
 
 
   ngOnDestroy() {
+    this.stopCarousel();  // Detener el carousel cuando el componente se destruya
+    if (this.intervalIdForPages) {
+      clearInterval(this.intervalIdForPages);
+    }
     if (this.laravelEcho) {
-      this.laravelEcho.disconnect();  // Desconectar Laravel Echo al destruir el componente
+      this.laravelEcho.disconnect();
     }
   }
 
 
   getCompletedRoomPatientsCount(roomName: string): number {
     return this.patients.filter(patient => 
-      patient.operating_room_name === roomName && (patient.status_Id === 4 || patient.status_Id === 5 || patient.status_Id === 6) // Ajusta este valor si "complete" tiene otro status_Id
+      patient.operating_room_name === roomName && (patient.status.type === 'completed')
     ).length;
   }
 
@@ -217,19 +317,19 @@ export class DashboardComponent  implements AfterViewInit, OnInit {
 
 
   getHoldingPatientsCount(): number {
-    return this.patients.filter(patient => patient.status_Id === 2).length;
+    return this.patients.filter(patient => patient.status.type === 'holding').length;
   }
 
   getSurgeryPatientsCount(): number {
-    return this.patients.filter(patient => patient.status_Id === 3).length;
+    return this.patients.filter(patient => patient.status.type === 'surgery').length;
   }
 
   getRecoveryPatientsCount(): number {
-    return this.patients.filter(patient => patient.status_Id === 4).length;
+    return this.patients.filter(patient => patient.status.type === 'recovery').length;
   }
-
+  
   getCompletedPatientsCount(): number {
-    return this.patients.filter(patient => patient.status_Id === 4 || patient.status_Id === 5 || patient.status_Id === 6).length;
+    return this.patients.filter(patient => patient.status.type === 'completed').length;
   }
 
   getPatientsByRoom(roomName: string): any[] {
@@ -277,7 +377,9 @@ export class DashboardComponent  implements AfterViewInit, OnInit {
     this.updating = true;
     this.LocaldataService.getPatients().then(response => {      
       if (response) {        
-        this.patients = response;        
+        this.patients = response;  
+        console.log(this.patients);
+              
         this.patientsCopy = response;
         this.updating = false;
         this.getTodaysPatientsFromServer(event);

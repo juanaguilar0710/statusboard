@@ -11,9 +11,9 @@
         <ion-list *ngIf="type === 'comment'">
           <form [formGroup]="form">
             <ion-radio-group formControlName="value" (ngModelChange)="dataSelected()">
-              <ion-item *ngFor="let item of data;" [ngClass]="{'selected-item': form.controls['value'].value === item}">
+              <ion-item *ngFor="let item of data" [ngClass]="{'selected-item': form.get('value')?.value === item}">
                 <ion-radio [value]="item" label-placement="start">
-                  {{item.short_description}}
+                  {{ item.name || item.short_description || item }}
                 </ion-radio>
               </ion-item>
             </ion-radio-group>

@@ -113,6 +113,7 @@ export class PinPage implements OnInit {
   }
 
   async ngOnInit() {
+    
     this.appComponent.stopInactivityTracking();
     this.loading = true;
     this.lastsync = this.requestsService.lastSync;    

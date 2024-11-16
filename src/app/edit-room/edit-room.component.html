@@ -86,7 +86,7 @@
                     
                     <!-- Selector de usuario filtrado con ancho fijo -->
                     <ion-col size="8" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-left: 8%;">
-                      <select formControlName="selectedUser" placeholder="Select User" style="width: 100%; min-width: 200px;">
+                      <select formControlName="selectedUser" placeholder="Select User" class="selectedUserDropdown">
                         <option *ngFor="let person of filteredUsers[i]" [value]="person.id">{{ person.full_name }}</option>
                       </select>
                     </ion-col>

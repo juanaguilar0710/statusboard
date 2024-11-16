@@ -63,10 +63,11 @@ export class ConfigurationPage implements OnInit {
 
     Preferences.get({ key: 'config' }).then((response: any) => {
       if (response.value) {
+        console.log(response);
+        
         this.form.patchValue(JSON.parse(response.value));
       }
-    })
-    
+    })    
   }
 
   async getBranch() {
@@ -86,7 +87,22 @@ export class ConfigurationPage implements OnInit {
       value: JSON.stringify(this.form.value)
     });
     this.requestsService.setConfig(this.form.value);
-    this.router.navigate(['/pin'], { replaceUrl: true });
+
+
+    const configResponse = await Preferences.get({ key: 'config' });
+    const configObject = JSON.parse(configResponse.value || '{}');
+    if(configObject.aplication === "2"){
+      configObject.token = this.requestsService.getToken();
+      await Preferences.set({
+        key: 'config',
+        value: JSON.stringify(configObject)
+      });
+      this.router.navigate(['/dashboard'], { replaceUrl: true });
+    }else{
+      this.router.navigate(['/pin'], { replaceUrl: true });
+    }   
+    
+
   }
 
   async openTimeRangePicker() {

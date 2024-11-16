@@ -43,9 +43,9 @@
             </ion-col>
             </ion-row>
         </div>
-        <ion-button id="add-request" class="mt-2 bigger-text" fill="outline" expand="block" (click)="openSearchableComponentOnModal('comment')">Add
+        <ion-button id="add-request" style="font-size: 20px !important;" class="mt-2" fill="outline" expand="block" (click)="openSearchableComponentOnModal('comment')">Add
           Request</ion-button>
-        <ion-button class="mt-2 bigger-text" color="danger" fill="outline" expand="block" (click)="clearRequest()">Clear
+        <ion-button class="mt-2" style="font-size: 20px !important;" color="danger" fill="outline" expand="block" (click)="clearRequest()">Clear
           Request</ion-button>
       </div>
       <div class="my-2">
@@ -160,15 +160,18 @@
             <ion-col style="padding-left: 50px;">
               <div class="d-flex">
                 <div class="text-nowrap d-flex justify-content-start align-items-end">
-                  <h4>Note:</h4>
+                  <h4>Private Note:</h4>
                 </div>
                 <div class="w-100 justify-content-end">
                   <ion-item>
-                    <ion-input aria-label="Note" [maxlength]="150" formControlName="note"></ion-input>
+                    <ion-input aria-label="Note" placeholder="For internal use only" [maxlength]="150" formControlName="note"></ion-input>
                   </ion-item>
                 </div>
               </div>
             </ion-col>
+
+
+
           </ion-row>
           <ion-row>
             <ion-col>
@@ -191,33 +194,41 @@
           
         </ion-grid>
       </div>
+
+
+     
+
+
+
+
+
     </div>
   </form>
 
-          <ion-row class="rowButton">
-            <ion-col>
-              <div class="d-flex justify-content-center">
-                <ion-button color="danger" class="w-100 mx-4 classButton" size="large" id="cancel-surgery-modal">
-                  <span *ngIf="!patient.visit_canceled_at">Surgery Canceled</span>
-                  <span *ngIf="patient.visit_canceled_at">Enable Surgery</span>
-                </ion-button>
-                <ion-button color="primary" class="w-100 mx-4 classButton" size="large" (click)="openSearchableComponentOnModal('next_to_surgery')">
-                  Next To Surgery
-                </ion-button>
-              </div>
-            </ion-col>
-            <ion-col>
-              <div class="d-flex justify-content-center">
-                <ion-button color="danger" class="w-100 mx-4 classButton" size="large" (click)="cancel()">
-                  <span>Cancel</span>
-                </ion-button>
-                <ion-button color="success" class="w-100 mx-4 classButton" size="large" (click)="updatePatient()">
-                  <span style="color: white;">Update</span>
-                </ion-button>
-              </div>
-            </ion-col>
-          </ion-row>
-
+         
+  <ion-row class="rowButton">
+    <ion-col>
+      <div class="d-flex justify-content-center">
+        <ion-button color="danger" class="w-100 mx-4 classButton" size="large" id="cancel-surgery-modal">
+          <span *ngIf="!patient.visit_canceled_at">Surgery Canceled</span>
+          <span *ngIf="patient.visit_canceled_at">Enable Surgery</span>
+        </ion-button>
+        <ion-button color="primary" class="w-100 mx-4 classButton" size="large" (click)="openSearchableComponentOnModal('next_to_surgery')">
+          Next To Surgery
+        </ion-button>
+      </div>
+    </ion-col>
+    <ion-col>
+      <div class="d-flex justify-content-center">
+        <ion-button color="danger" class="w-100 mx-4 classButton" size="large" (click)="cancel()">
+          <span>Cancel</span>
+        </ion-button>
+        <ion-button color="success" class="w-100 mx-4 classButton" size="large" (click)="updatePatient()">
+          <span style="color: white;">Update</span>
+        </ion-button>
+      </div>
+    </ion-col>
+  </ion-row>
 
 
 

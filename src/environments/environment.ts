@@ -1,17 +1,19 @@
 export const environment = {
-  version: "1.4.0.21",
+  version: "1.4.0.25",
   production: false,
   resetPin: '1111',
   maxInactivityTime: 20,
   timeSaveScreen: 3,
 
   currentPage: 0,
-  roomsPerPage: 4,
-  timeRoomsPerPage: 4000,
+  roomsPerPage: 3,
+  timeRoomsPerPage: 10000,
   
   currentPageWhitPatients: 0,
-  roomsPerPageWhitPatients: 6,
-  timeRoomsPerPageWhitPatients: 8000,
+  roomsPerPageWhitPatients: 8,
+  pageSizeWhitPatients: 5,
+  timeForCardsWhitPatients: 10000,//adentro de las cards
+  timeRoomsPerPageWhitPatients: 60000,//pagina completa
 
   broadcasting: {
     driver: 'pusher', // 'socket.io',
@@ -19,8 +21,8 @@ export const environment = {
   },
 
   pusher: {
-    key: '7c4e353eb51fce335b63',
-    //key: '6a496456cd95cbd717f4',    
+    //key: '7c4e353eb51fce335b63',
+    key: '6a496456cd95cbd717f4',    
     cluster: 'us2',
     forceTLS: true
   },
@@ -221,8 +223,8 @@ export const environment = {
   ],
 
 
-  url: 'https://api.dtouchmedia.com',
-  //url: 'https://api.dtouchmedia.dev',
+  //url: 'https://api.dtouchmedia.com',
+  url: 'https://api.dtouchmedia.dev',
   auth: '/auth',
   login: '/login',
   refresh: '/refresh',

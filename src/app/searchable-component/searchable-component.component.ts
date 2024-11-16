@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ViewChild } from '@angular/core';
+import { AfterViewInit, ChangeDetectorRef, Component, OnInit, ViewChild } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup } from '@angular/forms';
 import { ModalController, NavParams } from '@ionic/angular';
 
@@ -7,7 +7,7 @@ import { ModalController, NavParams } from '@ionic/angular';
   templateUrl: './searchable-component.component.html',
   styleUrls: ['./searchable-component.component.scss'],
 })
-export class SearchableComponentComponent implements AfterViewInit {
+export class SearchableComponentComponent implements AfterViewInit, OnInit {
 
   @ViewChild('searchInput') searchInput: any;
 
@@ -20,33 +20,50 @@ export class SearchableComponentComponent implements AfterViewInit {
     value: new FormControl('')
   });
 
-  constructor(private modalCtrl: ModalController, private navParams: NavParams, private _formbuilder: FormBuilder) {
-    
+  constructor(
+    private modalCtrl: ModalController,
+    private navParams: NavParams,
+    private _formbuilder: FormBuilder,
+    private cdr: ChangeDetectorRef
+  ) {
+    this.form = this._formbuilder.group({
+      value: new FormControl('')
+    });
   }
-  ngAfterViewInit(): void {
+  ngOnInit(): void {
     this.data = this.navParams.get('data');
-    console.log(this.data);
-    
     this.type = this.navParams.get('type');
-    if(this.navParams.get('selectedValue')){
+    
+    if (this.navParams.get('selectedValue')) {
       const value = this.navParams.get('selectedValue');
       this.form.get('value')?.setValue(value);
       setTimeout(() => {
         const element = document.getElementsByClassName('radio-checked');
-        if(element.length > 0){
+        if (element.length > 0) {
           element[0].scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
         }
-      }, 250);
+        this.cdr.detectChanges();
+      }, 500);
     }
+  }
 
-    if(this.navParams.get('customValue')){
-      this.searchInput.value = this.navParams.get('customValue');
-      this.getUserInput = true;
-    }
+  ngAfterViewInit(): void {
+    
+  
+      // if (this.navParams.get('customValue') && this.searchInput?.nativeElement) {
+      //   this.searchInput.nativeElement.value = this.navParams.get('customValue');
+      //   this.getUserInput = true;
+
+      //   this.cdr.detectChanges();
+      // }
   }
 
   onInputChange() { 
     this.getUserInput = true;
+
+  const filterFunction = (item: any, property: string) =>
+    item[property]?.toLowerCase().includes(this.searchInput?.nativeElement?.value?.toLowerCase() || '');
+
     switch (this.type) {
       case 'comments':
         this.data = this.navParams.get('data').filter((item: any) => {

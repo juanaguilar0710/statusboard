@@ -4,8 +4,8 @@
       <img class="logo" src="assets/logos/StatusBoard_Black.png" alt="logo" (click)="headerClicked()" style="margin-top: 15px;" />
       <div style="position: absolute; top: 15px; left: 15px; text-align: center;">       
         <img *ngIf="this.image_url !== '' " [src]="this.image_url" width="200px" />
-        <h4 *ngIf="this.branch_name !== '' " class="info">{{this.branch_name}}</h4>
-        <h4 *ngIf="this.waitingRoom_name !== '' " class="info">{{this.waitingRoom_name}}</h4>
+        <h5 *ngIf="this.branch_name !== '' " class="info">{{this.branch_name}}</h5>
+        <h5 *ngIf="this.waitingRoom_name !== '' " class="info">{{this.waitingRoom_name}}</h5>
       </div>
       <div style="position: absolute; top: 15px; right: 15px; text-align: center;">
         <div class="my-3">
@@ -13,7 +13,7 @@
             <b>{{networkStatus}}</b>
           </span>
           <br/>
-          <b>Last Update: </b><span>{{lastsync}}</span>
+          <b>Last Update: </b><br><span>{{lastsync}}</span>
         </div>
       </div>
     </div>
@@ -21,7 +21,7 @@
 
       <div class="text-center">
         <h1><b>{{loading ? 'Loading...' : 'Welcome'}}</b></h1>
-        <h5>{{loading ? 'Trying to log you in...' : 'Please enter your Pin Code'}}</h5>
+        <h5>{{loading ? 'Trying to log you in...' : 'Please enter your Access Code'}}</h5>
       </div>
 
       <ion-grid>
@@ -89,10 +89,10 @@
       </ion-grid>
     </div>
     <div style="margin-bottom: 15px;">
-      <img class="logo" src="assets/logos/DTouchmedia_Black.png" alt="logo" />
+      <!-- <img class="logo" src="assets/logos/DTouchmedia_Black.png" alt="logo" /> -->
     </div>
-    <div style="position: absolute; bottom: 5px; left: 15px;">
-      <h6 class="info">Version: {{version}}</h6>
+    <div style="position: absolute; bottom: 5px; right: 15px;">
+      <h6 class="info" style="font-size: 15px !important;">Version: {{version}}</h6>
     </div>
   </div>
 

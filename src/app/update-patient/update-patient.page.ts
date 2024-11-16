@@ -74,11 +74,17 @@ export class UpdatePatientPage implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.storage.remove('patient');
-    this.comments = this.requestsService.comments?.sort((a: any, b: any) => { return a.short_description.localeCompare(b.short_description) });
-    this.operatingRooms = this.requestsService.operatingRooms?.sort((a: any, b: any) => { return a.name.localeCompare(b.name) });
-    this.surgeons = this.requestsService.surgeons?.sort((a: any, b: any) => { return a.name.localeCompare(b.name) });
-    this.procedures = this.requestsService.procedures?.sort((a: any, b: any) => { return a.name.localeCompare(b.name) });
-    this.recoveryRooms = this.requestsService.recoveryRooms;
+    this.comments = this.requestsService.comments?.sort((a: any, b: any) => { return a.short_description.localeCompare(b.short_description) });    
+    this.requestsService.getOperatingRooms().then(resp => {
+      this.operatingRooms = resp.data.data?.sort((a: any, b: any) => { return a.name.localeCompare(b.name) });
+    })
+    this.requestsService.getBranchSurgeonsByWaitingRoom().then(resp => {
+      this.surgeons = resp.data?.sort((a: any, b: any) => { return a.name.localeCompare(b.name) });      
+    })
+    this.procedures = this.requestsService.procedures?.sort((a: any, b: any) => { return a.name.localeCompare(b.name) });   
+    this.requestsService.getRecoveryRooms().then(resp => {
+      this.recoveryRooms = resp.data.data      
+    })
     this.form.patchValue(this.patient);
     this.form.get('comment_id')?.setValue(this.patient?.comment_Id);
     this.form.get('recovery_room_id')?.setValue(this.patient?.recovery_room);
@@ -113,7 +119,7 @@ export class UpdatePatientPage implements OnInit, OnDestroy {
       if (response.value) {
         const branches = [JSON.parse(response.value)];            
         this.requestsService.getBranchStatuses(branches[0].id).subscribe(resp => {          
-          this.statuses = resp.data 
+          this.statuses = resp.data           
           this.patientStatusUIUpdate();
         });
       }
@@ -121,7 +127,7 @@ export class UpdatePatientPage implements OnInit, OnDestroy {
   }
 
   async openSearchableComponentOnModal(type: string) {
-    const data = (type == 'operating_room' || type == 'next_to_surgery') ? this.operatingRooms : type == 'surgeon' ? this.surgeons : type == 'procedure' ? this.procedures : type == 'time' ? this.timeList : type == 'recovery_room' ? this.recoveryRooms : this.comments;
+    const data = (type == 'operating_room' || type == 'next_to_surgery') ? this.operatingRooms : type == 'surgeon' ? this.surgeons : type == 'procedure' ? this.procedures : type == 'time' ? this.timeList : type == 'recovery_room' ? this.recoveryRooms : this.comments;       
     this.modal = await this.modalController.create({
       cssClass: 'searchable-component-modal',
       component: SearchableComponentComponent,
@@ -229,10 +235,9 @@ export class UpdatePatientPage implements OnInit, OnDestroy {
     }, 150)
   }
 
-  updateStatus(status: any) {
+  updateStatus(status: any) {    
     this.loading = true;
-    if (status.id != 0) {
-      this.statuses = JSON.parse(JSON.stringify(this.requestsService.statuses));
+    if (status.id != 0) {      
       this.patient.status_Id = status.id;
       this.form.get('status_Id')?.setValue(status.id);
       this.patientStatusUIUpdate();
@@ -259,7 +264,6 @@ export class UpdatePatientPage implements OnInit, OnDestroy {
 
   patientStatusUIUpdate() {
     this.loading = false;
-    console.log(this.statuses);
     
     var statusLength = this.statuses.length;
     let statusIndex = this.statuses.findIndex((status: any) => { return status.id == this.patient.status_Id });
@@ -318,8 +322,8 @@ export class UpdatePatientPage implements OnInit, OnDestroy {
     this.patient.surgeon_name = this.form.value.surgeon_id ? this.surgeons.find((surgeon: any) => { return surgeon.id == this.form.value.surgeon_id })?.full_name : this.form.get('surgeon_name')?.value ? this.form.get('surgeon_name')?.value : null;
     this.patient.surgeon = this.form.value.surgeon_id ? this.surgeons.find((surgeon: any) => { return surgeon.id == this.form.value.surgeon_id }) : null;
     this.patient.procedure_id = this.form.value.procedure_id;
-    this.patient.procedure_name = this.form.value.procedure_id ? this.procedures.find((procedure: any) => { return procedure.id == this.form.value.procedure_id })?.name : this.form.get('procedure_name')?.value ? this.form.get('procedure_name')?.value : null;
-    this.patient.procedure_time = this.form.value.procedure_time;
+    this.patient.procedure_name = this.form.value.procedure_id ? this.procedures.find((procedure: any) => { return procedure.id == this.form.value.procedure_id })?.name : this.form.get('procedure_name')?.value ? this.form.get('procedure_name')?.value : null;   
+    this.patient.procedure_time = this.form.value.procedure_time?.split(':').slice(0, 2).join(':');;
     this.patient.recovery_room = this.form.value.recovery_room;
     this.patient.companion_name = this.form.value.companion_name;
     this.patient.phone = this.form.value.phone;
