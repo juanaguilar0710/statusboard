@@ -12,6 +12,7 @@ import { NetworkService } from '../api/network.service';
 import { AlertController } from '@ionic/angular';
 import { App } from '@capacitor/app';
 import { interval, Subscription } from 'rxjs';
+import { NotificationService } from '../api/notification.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -43,6 +44,7 @@ export class DashboardComponent  implements AfterViewInit, OnInit {
   intervalIdForPages: any;
   totalGroups = 0;
   roomsWithPatients:any[] = []
+  clicks = 0;
 
 
   constructor(private LocaldataService: LocaldataService,
@@ -50,7 +52,8 @@ export class DashboardComponent  implements AfterViewInit, OnInit {
               private router: Router,
               private cdr: ChangeDetectorRef,
               private alertController: AlertController,
-              private networkService: NetworkService
+              private networkService: NetworkService,
+              private notificationService: NotificationService
   ) { 
 
     setTimeout(() => {
@@ -77,13 +80,6 @@ export class DashboardComponent  implements AfterViewInit, OnInit {
       });
 
     }, 3000);
-
-    // setInterval(() => {
-    //   this.changePageRoomsWhitPatients();
-    // }, environment.timeRoomsPerPageWhitPatients);
-
-   
-
   }
 
   changePageRooms() {
@@ -115,9 +111,9 @@ export class DashboardComponent  implements AfterViewInit, OnInit {
     
     this.updateTime();
     await this.getOperatingRoomsFromStorageOrLoadFromServer();
-    await this.getTodaysPatientsFromLocal()
+    await this.getTodaysPatientsFromLocal();
     this.requestsService.getTodaysPatients();
-    this.requestsService.initDropdowns().then((response: any) => {})    
+    this.requestsService.initDropdowns().then((response: any) => {});
     this.startCarousel();
     this.startCountdown();
   }
@@ -444,11 +440,21 @@ private monitorConnection(): void {
 
   updateTime() {
     const now = new Date();
+    const hours = now.getHours();
+    const minutes = now.getMinutes();
+
     this.currentTime = now.toLocaleTimeString('es-ES', {
       hour: 'numeric',
       minute: '2-digit',
       hour12: true,
-    }).replace(' ', ' ').toUpperCase(); // Quita el espacio entre la hora y AM/PM
+    }).replace(' ', ' ').toUpperCase(); // Quita el espacio entre la hora y AM/PM    
+    
+    if (hours === 23 && minutes === 59) {
+      setTimeout(() => {
+        window.location.reload();
+      }, 120000);
+    }
+
   }
 
   getOperatingRoomsFromStorageOrLoadFromServer() {
@@ -510,7 +516,7 @@ private monitorConnection(): void {
       } else {
         if (response.status === 401) {
           Preferences.remove({ key: 'user' });
-          this.router.navigate(['/pin'], { replaceUrl: true });
+          this.updateToken();          
         }
       }
       this.updating = false;
@@ -528,7 +534,21 @@ private monitorConnection(): void {
     });
   }
 
-  clicks = 0;
+  updateToken() {
+    this.config.token = "";
+    Preferences.set({
+      key: 'config',
+      value: JSON.stringify(this.config),
+    }).then(() => {
+      this.notificationService.showError('Your session has expired because the token is no longer valid. Please sign in again to continue accessing the application.',60000);
+      this.router.navigate(['/pin'], { replaceUrl: true });
+      console.log('Token caducado eliminado y guardado en Preferences');
+    }).catch(error => {
+      this.notificationService.showError('An error occurred while trying to update your session. Please try signing in again. If the issue persists, contact support.',120000);
+      this.router.navigate(['/login'], { replaceUrl: true });
+      console.error('Error al guardar el token en Preferences:', error);
+    });
+  }
 
   async headerClicked() {
     this.clicks++;

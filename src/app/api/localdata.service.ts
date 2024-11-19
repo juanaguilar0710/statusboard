@@ -39,13 +39,10 @@ export class LocaldataService {
     }
   }
 
-  async getPatients(): Promise<any> {
-    
-    
+  async getPatients(): Promise<any> {    
     if (!this.user) {
-      return null;  // O podrías lanzar un error si esto no debería ocurrir
-    }
-  
+      return null;
+    }  
     try {
       const username = this.user.user?.username ?? "";
       const response = await Preferences.get({ key: `${username}_patients_${this.today}` });
@@ -58,7 +55,7 @@ export class LocaldataService {
       }
     } catch (error) {
       console.error('Error al obtener pacientes:', error);
-      throw error;  // Puedes rechazar con un error o manejarlo de otra manera según tu lógica
+      throw error;
     }
   }
 
