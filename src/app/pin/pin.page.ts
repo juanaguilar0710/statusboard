@@ -138,7 +138,14 @@ export class PinPage implements OnInit {
           this.router.navigate(['/login'], { replaceUrl: true });
           this.loading = false;
           return; 
-      }    
+        }
+
+        this.configResponse = JSON.parse(this.configResponse .value)     
+
+        if(this.configResponse.aplication === "2"){
+          this.configResponse.token = this.requestsService.getToken();       
+          this.router.navigate(['/dashboard'], { replaceUrl: true });
+        }      
   }
 
   async headerClicked() {

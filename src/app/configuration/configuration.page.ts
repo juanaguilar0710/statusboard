@@ -63,11 +63,26 @@ export class ConfigurationPage implements OnInit {
 
     Preferences.get({ key: 'config' }).then((response: any) => {
       if (response.value) {
-        console.log(response);
+        const objResponse = JSON.parse(response.value)        
+        this.form.patchValue(objResponse);
+
+        if(objResponse.aplication === "2"){
+          objResponse.token = this.requestsService.getToken();       
+        this.router.navigate(['/dashboard'], { replaceUrl: true });
+        }
         
-        this.form.patchValue(JSON.parse(response.value));
       }
-    })    
+
+      // if(configObject.aplication === "2"){
+      //   configObject.token = this.requestsService.getToken();
+      //   await Preferences.set({
+      //     key: 'config',
+      //     value: JSON.stringify(configObject)
+      //   });
+      //   this.router.navigate(['/dashboard'], { replaceUrl: true });
+      // }
+
+    })
   }
 
   async getBranch() {

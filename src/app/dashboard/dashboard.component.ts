@@ -42,6 +42,9 @@ export class DashboardComponent  implements AfterViewInit, OnInit {
   countdown: number = 0;
   intervalIdForPages: any;
   totalGroups = 0;
+  roomsWithPatients:any[] = []
+
+
   constructor(private LocaldataService: LocaldataService,
               public requestsService: RequestsService,
               private router: Router,
@@ -59,29 +62,32 @@ export class DashboardComponent  implements AfterViewInit, OnInit {
         this.changePageRooms();
         const event = new MouseEvent('mousemove');
         document.dispatchEvent(event); 
-      }, environment.timeRoomsPerPage);      
+      }, environment.timeRoomsPerPage);  
+      
+      this.networkService.networkStatus$.subscribe((status: string) => {
+        this.networkStatus = status;
+        if (status === "OFFLINE") {
+          this.deviceWasOffline = true;
+        } else {
+          if (this.deviceWasOffline) {
+            this.getTodaysPatientsFromServer();
+            this.deviceWasOffline = false;
+          }
+        }
+      });
+
     }, 3000);
 
     // setInterval(() => {
     //   this.changePageRoomsWhitPatients();
     // }, environment.timeRoomsPerPageWhitPatients);
 
-    this.networkService.networkStatus$.subscribe((status: string) => {
-      this.networkStatus = status;
-      if (status === "OFFLINE") {
-        this.deviceWasOffline = true;
-      } else {
-        if (this.deviceWasOffline) {
-          this.getTodaysPatientsFromServer();
-          this.deviceWasOffline = false;
-        }
-      }
-    });
+   
 
   }
 
   changePageRooms() {
-    const totalPages = Math.ceil(this.operatingRooms.length / environment.roomsPerPage);
+    const totalPages = this.operatingRooms && this.operatingRooms.length > 0 ? Math.ceil(this.operatingRooms.length / environment.roomsPerPage) : 0;
     environment.currentPage = (environment.currentPage + 1) % totalPages;     
   }
   totalPagesCurrentPatients:any
@@ -138,38 +144,64 @@ export class DashboardComponent  implements AfterViewInit, OnInit {
   }  
 
   getRoomsWithPatients(): any[] {
-    const roomsWithPatients = this.operatingRooms.filter(room => {
-      const patientsInRoom = this.filterPatientsByRoom(room.name);        
-      return patientsInRoom.length > 0;
-    });
-  
-    // Filtrar pacientes sin sala asignada
-    const patientsWithoutRoom = this.patients.filter(patient => 
-      !this.operatingRooms.some(room => room.name === patient.operating_room_name)
-    );
-    
-    if (patientsWithoutRoom.length > 0) {
-      // Crear una nueva sala para los pacientes sin sala
-      const newRoom = {
-        name: 'TO FOLLOW',
-        id: 'unassigned-room',
-        patients: patientsWithoutRoom,
-      };
-  
-      // Agregar la nueva sala al final
-      roomsWithPatients.push(newRoom);
+    // Si el array no existe, inicializarlo
+    if (!this.roomsWithPatients) {
+        this.roomsWithPatients = [];
     }
-  
-    return roomsWithPatients;
-  }
 
-   // Filtra los pacientes por sala
-  //  filterPatientsByRoom(roomName: string): any[] {
-  //   return this.patients.filter(patient => 
-  //     patient.operating_room_name === roomName && 
-  //     this.config.statuses.includes(patient.status_Id) // Filtra por los estados permitidos
-  //   );
-  // }
+    // Procesar salas con pacientes asignados
+    this.operatingRooms.forEach(room => {
+        const patientsInRoom = this.filterPatientsByRoom(room.name);
+
+        // Buscar si la sala ya existe en roomsWithPatients
+        const existingRoom = this.roomsWithPatients.find(r => r.name === room.name);
+
+        if (existingRoom) {
+            // Actualizar los pacientes si la sala ya existe
+            existingRoom.patients = patientsInRoom;
+        } else if (patientsInRoom.length > 0) {
+            // Agregar la sala si tiene pacientes
+            this.roomsWithPatients.push({
+                name: room.name,
+                id: room.id,
+                totalpage: Math.ceil(patientsInRoom.length / this.pageSize),
+                actualPage: 1,
+                patients: patientsInRoom,
+            });
+        }
+    });
+
+    // Manejar pacientes sin sala asignada
+    const patientsWithoutRoom = this.patients.filter(patient => 
+        !this.operatingRooms.some(room => room.name === patient.operating_room_name)
+    );
+
+    const existingUnassignedRoom = this.roomsWithPatients.find(room => room.name === 'TO FOLLOW');
+
+    if (patientsWithoutRoom.length > 0) {
+        // Crear o actualizar la sala 'TO FOLLOW' si hay pacientes sin sala asignada
+        if (existingUnassignedRoom) {
+            existingUnassignedRoom.patients = patientsWithoutRoom;
+        } else {
+            this.roomsWithPatients.push({
+                name: 'TO FOLLOW',
+                id: 'unassigned-room',
+                totalpage: Math.ceil(patientsWithoutRoom.length / this.pageSize),
+                actualPage: 1,
+                patients: patientsWithoutRoom,
+            });
+        }
+    } else if (existingUnassignedRoom) {
+        // Eliminar la sala 'TO FOLLOW' si ya no tiene pacientes
+        this.roomsWithPatients = this.roomsWithPatients.filter(room => room.name !== 'TO FOLLOW');
+    }
+
+    // Eliminar salas que no tengan pacientes
+    this.roomsWithPatients = this.roomsWithPatients.filter(room => room.patients && room.patients.length > 0);
+
+    return this.roomsWithPatients;
+}
+
 
   filterPatientsByRoom(roomName: string): any[] {
     if (roomName === 'TO FOLLOW') {
@@ -187,12 +219,20 @@ export class DashboardComponent  implements AfterViewInit, OnInit {
   }
 
   // Obtiene el grupo actual de pacientes para la sala
-  getPatientsGroup(roomName: string): any[] {
+  getPatientsGroup(roomName: string): any[] {    
     const patientsInRoom = this.filterPatientsByRoom(roomName);
+    
     if (!patientsInRoom.length) return []; 
-    const currentGroup = this.currentGroups[roomName] || 0;    
+    const currentGroup = this.currentGroups[roomName] || 0;
+     
     const start = currentGroup * this.pageSize;
-    const end = start + this.pageSize;    
+    const end = start + this.pageSize; 
+
+    const room = this.roomsWithPatients.find(r => r.name === roomName);
+    if (room) {
+        room.actualPage = currentGroup + 1; // `+1` porque las páginas empiezan desde 1
+    }
+
     if (patientsInRoom.length <= this.pageSize) {
       return patientsInRoom;
     }    
@@ -208,7 +248,7 @@ export class DashboardComponent  implements AfterViewInit, OnInit {
         if (patientsInRoom.length > this.pageSize) {
           const currentGroup = this.currentGroups[room.name] || 0;
           this.totalGroups = Math.ceil(patientsInRoom.length / this.pageSize);                   
-          this.currentGroups[room.name] = (currentGroup + 1) % this.totalGroups;          
+          this.currentGroups[room.name] = (currentGroup + 1) % this.totalGroups;                
         }
       });
       this.updatePaginationDetails();        
@@ -238,28 +278,94 @@ export class DashboardComponent  implements AfterViewInit, OnInit {
         });
         const channel = `branch.${this.requestsService.config.branch.id}.room.${this.requestsService.config.waitingRoom.id}`;
 
-        this.laravelEcho.channel(channel).listen('.patient.updated', (e: any) => {
-          console.log(e);
-          
-          if (this.networkStatus === "ONLINE") {            
-            this.updatePatientList('updated', e.patient);
-          }
-        });
+        // Escuchar eventos de pacientes
+        this.listenToPatientEvents(channel);
 
-        this.laravelEcho.channel(channel).listen('.patient.created', (e: any) => {  
-          console.log(e);        
-          if (this.networkStatus === "ONLINE") {             
-            this.updatePatientList('created', e.patient);
-          }
-        });
+        // Manejar eventos de conexión/desconexión
+        this.handlePusherConnection();
 
-        this.laravelEcho.channel(channel).listen('.patient.deleted', (e: any) => {
-          console.log(e);
-          if (this.networkStatus === "ONLINE") {
-            this.updatePatientList('deleted', e.patient);
-          }
-        });
+        // Iniciar monitoreo de la conexión
+        this.monitorConnection();
   }
+
+  private listenToPatientEvents(channel: string): void {
+    this.laravelEcho?.channel(channel).listen('.patient.updated', (e: any) => {
+        console.log(e);
+        if (this.networkStatus === "ONLINE") {            
+            this.updatePatientList('updated', e.patient);
+            this.getRoomsWithPatients();
+        }
+    });
+
+    this.laravelEcho?.channel(channel).listen('.patient.created', (e: any) => {  
+        console.log(e);        
+        if (this.networkStatus === "ONLINE") {             
+            this.updatePatientList('created', e.patient);
+            this.getRoomsWithPatients();
+        }
+    });
+
+    this.laravelEcho?.channel(channel).listen('.patient.deleted', (e: any) => {
+        console.log(e);
+        if (this.networkStatus === "ONLINE") {
+            this.updatePatientList('deleted', e.patient);
+            this.getRoomsWithPatients();
+        }
+    });
+}
+
+private handlePusherConnection(): void {
+  const pusherInstance = (<any>this.laravelEcho).connector.pusher;
+
+  // Escuchar cuando Pusher se conecta
+  pusherInstance.connection.bind('connected', () => {
+      console.log('Pusher connected');
+  });
+
+  // Escuchar cuando Pusher se desconecta
+  pusherInstance.connection.bind('disconnected', () => {
+      console.error('Pusher disconnected');
+      this.retryConnection();
+  });
+
+  // Escuchar errores
+  pusherInstance.connection.bind('error', (err: any) => {
+      console.error('Pusher error', err);
+  });
+}
+
+
+private retryConnection(): void {
+  let retries = 0;
+  const maxRetries = 5;
+
+  const interval = setInterval(() => {
+      if (retries >= maxRetries) {
+          clearInterval(interval);
+          console.error('Max retries reached. Unable to reconnect to Pusher.');
+          return;
+      }
+
+      try {
+          console.log(`Reconnecting to Pusher (attempt ${retries + 1})...`);
+          (<any>this.laravelEcho).connector.pusher.connect();
+          retries++;
+      } catch (error) {
+          console.error('Reconnection failed', error);
+      }
+  }, 3000); // Intentar reconectar cada 3 segundos
+}
+
+private monitorConnection(): void {
+  const pusherInstance = (<any>this.laravelEcho).connector.pusher;
+
+  setInterval(() => {
+      if (pusherInstance.connection.state !== 'connected') {
+          console.warn('Pusher is not connected, attempting to reconnect...');
+          this.retryConnection();
+      }
+  }, 10000); // Verificar cada 10 segundos
+}
 
   private updatePatientList(eventType: string, patient: any) {   
     console.log(eventType);

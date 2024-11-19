@@ -6,13 +6,13 @@
       <ion-col size="10" size-md="10" size-lg="10" style="padding-left: 0; padding-right: 0; padding-top: 0;">
         <ion-grid style="padding-left: 0; padding-right: 0; padding-top: 0;">
           <ion-row *ngIf="this.operatingRooms">
-            <ion-col size="10" size-md="9" size-lg="6" *ngFor="let room of getRoomsForCurrentPagewhitpatients()"  >  
+            <ion-col size="10" size-md="9" size-lg="6" *ngFor="let room of getRoomsForCurrentPagewhitpatients(); let i = index">  
               <ion-card class="ionCard">
                 <ion-card-header class="ionCardHeader">
                   <ion-card-title>
                     <ion-row>
                       <ion-col size="4" size-md="4" size-lg="4" class="tittleCardText">{{room.name}}</ion-col>
-                      <ion-col *ngIf="this.totalGroups > 1" size="3" size-md="3" size-lg="3" class="tittleCardTextPages">Page: {{this.currentGroups[room.name] + 1}}/{{this.totalGroups}}</ion-col>
+                      <ion-col *ngIf="this.totalGroups > 1" size="3" size-md="3" size-lg="3" class="tittleCardTextPages"><span *ngIf="this.roomsWithPatients[i].totalpage > 1">Page: {{this.roomsWithPatients[i].actualPage}}/{{this.roomsWithPatients[i].totalpage}}</span></ion-col>
                       <ion-col *ngIf="this.totalGroups < 1" size="3" size-md="3" size-lg="3" class="tittleCardTextPages"></ion-col>
                       <ion-col size="5" size-md="5" size-lg="5" class="tittleCardTextNumber" style="text-align: end !important;">
                         {{room.name === "TO FOLLOW"? "": "Completed:"+ getCompletedRoomPatientsCount(room.name) +"/"+ getTotalPatientsInRoom(room.name)}}                        
@@ -30,14 +30,9 @@
                       <ion-col size="4" class="textCardPatients text-ellipsis" style="text-align: left !important;">{{patient.procedure_name}}</ion-col> 
                       <ion-col size="3" class="textCardPatients text-ellipsis" style="text-align: left !important;">{{patient.surgeon_name}}</ion-col> 
                       <ion-col size="1" class="textCardPatients text-ellipsis" style="text-align: center !important;">
-                        <!-- <div class="icon-container" *ngIf="!patient.phone_national_format" style="position: relative; width: 30px; height: 18px;">
-                          <ion-icon name="call-outline" class="callPosition"></ion-icon>
-                          <div class="circle circleBorder"></div>
-                          <div class="line lineRedPhone" ></div>
-                        </div> -->
 
                         <div class="icon-container"  *ngIf="!patient.phone_national_format">
-                          <img [src]="'assets/icon/Phone.png'" style="width: 50%;">
+                          <img src="assets/icon/Phone.png" style="width: 50%;">
                         </div>
                       
                       </ion-col> 
