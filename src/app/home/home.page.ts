@@ -113,11 +113,10 @@ export class HomePage implements AfterViewInit, OnInit {
               this.storage.set('patient', null);
               if (response.status === 200) {
                 this.getTodaysPatientsFromServer();
-                await Toast.show({
-                  text: response.data.message,
-                  duration: 'long'
-                });
+                this.notificationService.showInfo(response.data.message, 5000);                
               }
+            }, error =>{
+              this.notificationService.showError('Error updating users.', 5000);
             });
           });
         }  

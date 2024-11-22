@@ -67,7 +67,9 @@ export class ConfigurationPage implements OnInit {
         this.form.patchValue(objResponse);
 
         if(objResponse.aplication === "2"){
-          objResponse.token = this.requestsService.getToken();       
+          objResponse.token = this.requestsService.getToken();   
+          console.log('configObject.token',objResponse.token);
+              
         this.router.navigate(['/dashboard'], { replaceUrl: true });
         }
         
@@ -108,6 +110,8 @@ export class ConfigurationPage implements OnInit {
     const configObject = JSON.parse(configResponse.value || '{}');
     if(configObject.aplication === "2"){
       configObject.token = this.requestsService.getToken();
+      console.log('configObject.token',configObject.token);
+      
       await Preferences.set({
         key: 'config',
         value: JSON.stringify(configObject)

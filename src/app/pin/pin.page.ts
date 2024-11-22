@@ -213,40 +213,13 @@ export class PinPage implements OnInit {
 
   async login() {
     if (this.isNavigating) return;
-    this.isNavigating = true;
-  
+    this.isNavigating = true;  
     try {
-      await this.refreshAdminToken();
-      // const token = await this.localdataService.getTokenBasedOnPin(this.pin);
-      // console.log(JSON.parse(atob(token.split('.')[1])));
-      
-      // if (!token) {        
-      //   const user = await Preferences.get({ key: 'user' });
-      //   console.log('user',user);
-        
-      //   localStorage.setItem('user',JSON.stringify(user));
-      //   this.requestsService.logout$.next(false);
-      //   this.localdataService.user = user;
-      //   this.requestsService.setToken(token);       
-      //   this.loading = false;
-
-      //   if(this.configResponse.aplication == '2'){
-      //     this.router.navigate(['/dashboard'], { replaceUrl: true });
-      //   }
-
-      //   this.router.navigate(['/home'], { replaceUrl: true }).then(() => {
-      //     console.log('Navegación a /home exitosa');
-      //     this.appComponent.resetSession();
-      //   }).catch(error => {
-      //     console.error('Error en la navegación:', error);
-      //   });
-      //   this.isNavigating = false;
-      // } else {
+      await this.refreshAdminToken();      
         console.log('Token no obtenido, solicitando nuevo...');
         this.requestTokenBasedOnPin();
         this.appComponent.resetSession();
-        this.isNavigating = false;
-      //}
+        this.isNavigating = false;      
     } catch (error) {
       console.error('Error durante el proceso de login:', error);
       this.requestTokenBasedOnPin();
@@ -292,7 +265,6 @@ export class PinPage implements OnInit {
           }else{
             this.notificationService.showError('Error interno.' + error,4000);
           }          
-          
           this.handleInput("clear");
       });     
   

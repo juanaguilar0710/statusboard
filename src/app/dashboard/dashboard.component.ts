@@ -19,7 +19,8 @@ import { NotificationService } from '../api/notification.service';
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss'],
 })
-export class DashboardComponent  implements AfterViewInit, OnInit {
+// export class DashboardComponent  implements AfterViewInit, OnInit {
+  export class DashboardComponent  implements OnInit {
   operatingRooms: any[] = []; // Array de todas las salas
   patients: any[] = []; // Array de todos los pacientes
   pageSize: number = environment.pageSizeWhitPatients; // Tamaño de cada grupo de pacientes (4 por cada grupo)
@@ -101,15 +102,21 @@ export class DashboardComponent  implements AfterViewInit, OnInit {
   }
 
   async ngOnInit() {
-    Preferences.get({ key: 'config' }).then((response: any) => {
+    await Preferences.get({ key: 'config' }).then((response: any) => {
       if (response.value) {
         this.config = (JSON.parse(response.value)); 
         this.requestsService.setToken(this.config.token);
-        this.requestsService.setAdminToken(this.config.token);               
+        this.requestsService.setAdminToken(this.config.token);   
+        console.log(this.config);
+                    
       }
     })
     
-    this.updateTime();
+     this.updateTime();
+     this.startlists();    
+  }
+
+  async startlists(){
     await this.getOperatingRoomsFromStorageOrLoadFromServer();
     await this.getTodaysPatientsFromLocal();
     this.requestsService.getTodaysPatients();
@@ -259,9 +266,6 @@ export class DashboardComponent  implements AfterViewInit, OnInit {
   stopCarousel() {
     clearInterval(this.intervalId); // Detener el intervalo
   }
-
-      
-
 
   ngAfterViewInit(): void {
         (<any>window).Pusher = Pusher;
@@ -457,14 +461,35 @@ private monitorConnection(): void {
 
   }
 
-  getOperatingRoomsFromStorageOrLoadFromServer() {
-    this.LocaldataService.getOperatingRooms().then((response: any) => {      
+ async getOperatingRoomsFromStorageOrLoadFromServer() {
+    await this.LocaldataService.getOperatingRooms().then(async (response: any) => {            
         this.operatingRooms = response;        
-        this.requestsService.getOperatingRooms().then((response: any) => {
-          this.operatingRooms = response.data.data;
-          this.getRandomColor(this.operatingRooms);
-          this.LocaldataService.setOperatingRooms(this.operatingRooms);
-        });      
+        await this.requestsService.getOperatingRooms().then((response: any) => {
+          if(response.status == 500){
+            if(response.data.error.code == 1000){
+            this.requestsService.refreshToken(this.config.token).then(async resp =>{
+              console.log(resp);              
+              if (resp?.status === 200) {
+                this.config.token = resp.data?.jwt.access_token                
+                await Preferences.set({
+                  key: 'config',
+                  value: JSON.stringify(this.config),
+                }); 
+                setTimeout(() => {
+                  this.notificationService.showInfo('Token refresh.',3000);
+                }, 3000);
+                this.startlists()
+                // window.location.reload();               
+              }
+            });                
+          }
+          }else{
+            console.log('sin error',response);
+            this.operatingRooms = response.data.data;
+            this.getRandomColor(this.operatingRooms);
+            this.LocaldataService.setOperatingRooms(this.operatingRooms);
+          }                  
+        });    
       });
   }
 
@@ -541,7 +566,7 @@ private monitorConnection(): void {
       value: JSON.stringify(this.config),
     }).then(() => {
       this.notificationService.showError('Your session has expired because the token is no longer valid. Please sign in again to continue accessing the application.',60000);
-      this.router.navigate(['/pin'], { replaceUrl: true });
+      this.router.navigate(['/login'], { replaceUrl: true });
       console.log('Token caducado eliminado y guardado en Preferences');
     }).catch(error => {
       this.notificationService.showError('An error occurred while trying to update your session. Please try signing in again. If the issue persists, contact support.',120000);
