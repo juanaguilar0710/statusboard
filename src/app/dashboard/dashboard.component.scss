@@ -144,7 +144,13 @@ ion-content {
     .holding{
       color: #48a347;
       font-weight: bold;
-    }    
+    }
+    .canceled{
+      text-decoration: line-through;
+      text-decoration-color: #c20202;
+      text-decoration-thickness: 2px;
+      color: #737373;
+    }
 
     .onlineTittle{
       font-weight: bold; 
@@ -375,6 +381,60 @@ ion-content {
       }
 
       .textUnderLine{
-        font-size: 16px;
+        font-size: 14px;
       }
     }
+
+    .highlight-updated {
+      animation: highlight-animation 3s ease-in-out infinite alternate; /* Infinite y alternate para parpadeo continuo */
+      position: relative; /* Asegurar el render del borde */
+  }
+  
+  @keyframes highlight-animation {
+    0% {
+        border: 1px solid rgba(30, 144, 255, 1); /* Azul sólido */
+        background-color: rgba(163, 204, 246, 0.571); /* Azul sólido */
+    }
+    50% {
+        border: 1px solid rgba(30, 144, 255, 0); /* Desaparece el borde */
+        background-color: rgba(163, 204, 246, 0.571); /* Azul sólido */
+    }
+    100% {
+        border: 1px solid rgba(30, 144, 255, 1); /* Azul sólido */
+    }
+}
+
+
+.circleId {
+  width: 15px;
+  height: 15px;
+  background-color: #ff5733;
+  color: white;
+  justify-content: center;
+  align-items: center;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: bold;
+  display: inline-table;
+}
+
+.badge{
+display: inline-block;
+    padding: .25em .4em;
+    font-size: 100%;
+    font-weight: 700;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: .25rem;
+    transition: color .15s ease-in-out, background-color .15s ease-in-out, border-color .15s ease-in-out, box-shadow .15s ease-in-out;
+}
+
+.ellipsis {
+  overflow: hidden;        /* Oculta el contenido desbordado */
+  white-space: nowrap;     /* No permite el salto de línea */
+  text-overflow: ellipsis; /* Muestra los puntos suspensivos */
+  display: block;          /* Asegura que funcione en contenedores inline */
+  max-width: 100%;         /* Asegura que no desborde el ancho de la celda */
+}

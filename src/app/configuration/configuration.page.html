@@ -23,15 +23,16 @@
               errorText="Station Location is Required"></ion-input>
           <br />
             <ion-select fill="outline" aria-label="Application" formControlName="aplication" interface="popover" placeholder="Application" (ionChange)="onApplicationChange($event)">
-              <ion-select-option value=1>Tablet</ion-select-option>
-              <ion-select-option value=2>Dashboard</ion-select-option>        
+              <ion-select-option value="1">Tablet</ion-select-option>
+              <ion-select-option value="2">Dashboard Card View</ion-select-option>        
+              <ion-select-option value="3">Dashboard List View</ion-select-option>        
             </ion-select>
-          <br *ngIf="selectedApplication === '2'"/>
-          <ion-select *ngIf="selectedApplication === '2'"  multiple="true" formControlName="statuses" fill="outline" aria-label="Status to Show" interface="popover" placeholder="Status to Show" (ionChange)="onStatusChange($event)">
+          <br *ngIf="selectedApplication !== '1'"/>
+          <ion-select *ngIf="selectedApplication !== '1'"  multiple="true" formControlName="statuses" fill="outline" aria-label="Status to Show" interface="popover" placeholder="Status to Show" (ionChange)="onStatusChange($event)">
             <ion-select-option [value]="status.id" *ngFor="let status of statuses">{{status.name}}</ion-select-option>              
           </ion-select>
-          <br *ngIf="selectedApplication === '2'"/>
-            <ion-input *ngIf="this.selectedApplication === '2'" fill="outline" [value]="formattedTime" placeholder="HH:MM - HH:MM" (ionFocus)="openTimeRangePicker()"></ion-input>
+          <br *ngIf="selectedApplication !== '1'"/>
+            <ion-input *ngIf="this.selectedApplication !== '1'" fill="outline" [value]="formattedTime" placeholder="HH:MM - HH:MM" (ionFocus)="openTimeRangePicker()"></ion-input>
           
         <br />
         <ion-button class="w-100" color="primary" size="large" [disabled]="form.invalid"

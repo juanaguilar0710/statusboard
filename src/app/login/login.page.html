@@ -15,9 +15,24 @@
             <ion-input tabindex="1" label="Username" formControlName="username" label-placement="floating" fill="outline"
               errorText="Username required" [readonly]="loading" [disabled]="loading"></ion-input>
             <br />
-            <ion-input tabindex="2" label="Password" formControlName="password" label-placement="floating" fill="outline"
-              [type]="showPassword ? 'text' : 'password'" errorText="Password required" (keyup.enter)="login()"
-              [readonly]="loading" [disabled]="loading"></ion-input>
+            <ion-item fill="outline">
+              <ion-input
+                tabindex="2"
+                label="Password"
+                formControlName="password"
+                label-placement="floating"
+                [type]="showPassword ? 'text' : 'password'"
+                errorText="Password required"
+                (keyup.enter)="login()"
+                [readonly]="loading"
+                [disabled]="loading"
+                style="text-align: center;">
+              </ion-input>
+              <ion-button fill="clear" slot="end" (click)="togglePassword()" style="font-size: 1.5rem;">
+                <ion-icon [name]="showPassword ? 'eye-off' : 'eye'"></ion-icon>
+              </ion-button>
+            </ion-item>
+              
             <br />
             <ion-input tabindex="3" label="2FA Code"  label-placement="floating" fill="outline"
               errorText="Code is required" (keyup.enter)="login()"

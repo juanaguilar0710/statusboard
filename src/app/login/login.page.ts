@@ -26,6 +26,7 @@ export class LoginPage implements OnInit {
     private router: Router) { }
 
   ngOnInit() {
+    Preferences.clear();
   }
 
   togglePassword() {
@@ -34,9 +35,7 @@ export class LoginPage implements OnInit {
 
   async login() {
     this.loading = true;
-    this.requestsService.login(this.form.value).then(async (response: any) => {
-      console.log(response);
-      
+    this.requestsService.login(this.form.value).then(async (response: any) => {      
       this.loading = false;
       if (response.status === 200) {
         const user = response.data.user;        

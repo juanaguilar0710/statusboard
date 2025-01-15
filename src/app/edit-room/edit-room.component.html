@@ -38,7 +38,6 @@
         <div class="container-scroll objColumn">
           <div *ngFor="let patient of assignedPatients; let i = index" class="d-flex justify-content-between align-items-center w-100">
             <div class="fs-22 d-inline-flex">
-              <div class="mx-2 opd">OPD</div> 
               <div class="mx-2 age">{{patient.age ?? '0'}}y</div>
               <div class="mx-2 namePatient">{{patient.fullName}}</div>
               <!-- <div class="mx-2">{{patient.procedure_name ?? 'Procedure'}}</div> -->
@@ -54,7 +53,6 @@
         <div class="container-scroll objColumn">
           <div *ngFor="let patient of availablePatients; let i = index" class="d-flex justify-content-between align-items-center w-100 font-size-l">
             <div class="fs-22 d-inline-flex">
-              <div class="mx-2 opd">OPD</div> 
               <div class="mx-2 age">{{patient.age ?? '0'}}y</div>
               <div class="mx-2 namePatient">{{patient.fullName}}</div>
               <!-- <div class="mx-2">{{patient.procedure_name ?? 'Procedure'}}</div> -->
@@ -75,7 +73,7 @@
             <form [formGroup]="roleForm">
               <ion-row formArrayName="roles">
                 <ng-container *ngFor="let role of roles.controls; let i = index">
-                  <ion-row [formGroupName]="i" class="room-card-row fs-22" style="align-items: center; margin-bottom: 0px;">
+                  <ion-row [formGroupName]="i" class="room-card-row prueba fs-22" style="align-items: center; margin-bottom: 0px;">
                     
                     <!-- Selector de rol con ancho fijo -->
                     <ion-col size="2">
@@ -94,8 +92,7 @@
                     <!-- Ícono para eliminar con tamaño fijo -->
                     <ion-col size="1" class="ion-text-center">
                       <ion-icon (click)="removeRole(i)" name="trash" style="color: red; cursor: pointer; font-size: 1.5em;"></ion-icon>
-                    </ion-col>
-        
+                    </ion-col>        
                   </ion-row>
                 </ng-container>
               </ion-row>

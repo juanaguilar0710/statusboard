@@ -28,6 +28,7 @@ export class UpdatePatientPage implements OnInit, OnDestroy {
   statuses: any[] = [];
   recoveryRooms: any[] = [];
   modal: any;
+  disabledToggle: boolean = true;
 
   timeList: any[] = environment.timeList;
 
@@ -72,27 +73,48 @@ export class UpdatePatientPage implements OnInit, OnDestroy {
     this.modal?.dismiss();
   }
 
-  ngOnInit() {
+  async ngOnInit() {
+    this.loading = true;
     this.storage.remove('patient');
     this.comments = this.requestsService.comments?.sort((a: any, b: any) => { return a.short_description.localeCompare(b.short_description) });    
-    this.requestsService.getOperatingRooms().then(resp => {
+    await this.requestsService.getOperatingRooms().subscribe(resp => {
+      if (resp.status === 500) {
+        Preferences.remove({ key: 'user' });
+        this.router.navigate(['/pin'], { replaceUrl: true });
+      }
       this.operatingRooms = resp.data.data?.sort((a: any, b: any) => { return a.name.localeCompare(b.name) });
-    })
-    this.requestsService.getBranchSurgeonsByWaitingRoom().then(resp => {
+    },error => {
+      console.log('error getOperatingRooms: ', error);
+      
+    });
+    await this.requestsService.getBranchSurgeonsByWaitingRoom().then(resp => {
+      if (resp.status === 500) {
+        Preferences.remove({ key: 'user' });
+        this.router.navigate(['/pin'], { replaceUrl: true });
+      }
       this.surgeons = resp.data?.sort((a: any, b: any) => { return a.name.localeCompare(b.name) });      
-    })
+    },error => {      
+      console.log('error getBranchSurgeonsByWaitingRoom: ', error);     
+    });
     this.procedures = this.requestsService.procedures?.sort((a: any, b: any) => { return a.name.localeCompare(b.name) });   
-    this.requestsService.getRecoveryRooms().then(resp => {
+    await this.requestsService.getRecoveryRooms().then(resp => {
+      if (resp.status === 500) {
+        Preferences.remove({ key: 'user' });
+        this.router.navigate(['/pin'], { replaceUrl: true });
+      }
       this.recoveryRooms = resp.data.data      
-    })
+    },error => {
+      console.log('error getRecoveryRooms: ', error);
+      
+    });
     this.form.patchValue(this.patient);
     this.form.get('comment_id')?.setValue(this.patient?.comment_Id);
     this.form.get('recovery_room_id')?.setValue(this.patient?.recovery_room);
     this.form.get('time_id')?.setValue(this.patient?.procedure_time);
     this.form.get('next_to_surgery_id')?.setValue(this.patient?.operating_room_id);
         
-    setTimeout(() => {
-      this.getBranch();      
+    setTimeout(async () => {
+      await this.getBranch();      
     }, 250);
 
     if (!this.patient.surgeon_id) {
@@ -112,6 +134,23 @@ export class UpdatePatientPage implements OnInit, OnDestroy {
         this.patient.procedure_id = procedure.id;
       }
     }
+    if(this.form.get('phone')?.value != null){
+      // this.patient.prefers_sms = true;
+      this.disabledToggle = false;
+    }else{
+      this.disabledToggle = true;
+    }   
+    
+  }
+
+  toggleSMSNotifications(tel: any) {    
+        if (tel.detail.value != "") {          
+          this.patient.prefers_sms = true;
+          this.disabledToggle = false;
+        } else {
+          this.patient.prefers_sms = false;
+          this.disabledToggle = true;
+        }
   }
 
   getBranch() {
@@ -121,6 +160,9 @@ export class UpdatePatientPage implements OnInit, OnDestroy {
         this.requestsService.getBranchStatuses(branches[0].id).subscribe(resp => {          
           this.statuses = resp.data           
           this.patientStatusUIUpdate();
+        },error => {
+          console.log('error getBranch: ', error);
+          
         });
       }
     });
@@ -236,7 +278,7 @@ export class UpdatePatientPage implements OnInit, OnDestroy {
   }
 
   updateStatus(status: any) {    
-    this.loading = true;
+    // this.loading = true;
     if (status.id != 0) {      
       this.patient.status_Id = status.id;
       this.form.get('status_Id')?.setValue(status.id);
@@ -263,8 +305,6 @@ export class UpdatePatientPage implements OnInit, OnDestroy {
   }
 
   patientStatusUIUpdate() {
-    this.loading = false;
-    
     var statusLength = this.statuses.length;
     let statusIndex = this.statuses.findIndex((status: any) => { return status.id == this.patient.status_Id });
     if (statusIndex > -1) {
@@ -282,31 +322,42 @@ export class UpdatePatientPage implements OnInit, OnDestroy {
         }
 
       });
-      if (selectedStatusSequence == 1 || selectedStatusSequence == 2) {
-        for (let index = 0; index < 2; index++) {
-          this.statuses.unshift({
-            id: 0,
-            name: '',
-            colorHex: ''
-          });
-        }
-      }
-      if (selectedStatusSequence == statusLength || selectedStatusSequence == statusLength - 1 || selectedStatusSequence == statusLength - 2) {
-        const times = selectedStatusSequence != statusLength ? selectedStatusSequence == statusLength - 2 ? 0 : selectedStatusSequence == statusLength - 1 ? 1 : 2 : 2;
-        for (let index = 0; index < times; index++) {
-          this.statuses.push({
-            id: 0,
-            name: '',
-            colorHex: ''
-          });
-        }
-      }
+      // if (selectedStatusSequence == 1 || selectedStatusSequence == 2) {
+      //   for (let index = 0; index < 2; index++) {
+      //     this.statuses.unshift({
+      //       id: 0,
+      //       name: '',
+      //       colorHex: ''
+      //     });
+      //   }
+      // }
+      // if (selectedStatusSequence == statusLength || selectedStatusSequence == statusLength - 1 || selectedStatusSequence == statusLength - 2) {
+      //   const times = selectedStatusSequence != statusLength ? selectedStatusSequence == statusLength - 2 ? 0 : selectedStatusSequence == statusLength - 1 ? 1 : 2 : 2;
+      //   for (let index = 0; index < times; index++) {
+      //     this.statuses.push({
+      //       id: 0,
+      //       name: '',
+      //       colorHex: ''
+      //     });
+      //   }
+      // }
       setTimeout(() => {
         const element = document.getElementById('status' + this.patient.status_Id);
         if (element != null) {
           element?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
         }
+        this.loading = false;
       }, 150);
+    }
+  }
+
+  onChangeSMSToggle(e: any) {
+    console.log(e);
+    
+    if (e.detail.checked == true) {
+      this.patient.prefers_sms = true;
+    } else {
+      this.patient.prefers_sms = false;
     }
   }
 

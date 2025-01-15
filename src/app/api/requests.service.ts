@@ -3,7 +3,7 @@ import { Router } from '@angular/router';
 import { CapacitorHttp, HttpResponse } from '@capacitor/core';
 import { Preferences } from '@capacitor/preferences';
 import { Platform } from '@ionic/angular';
-import { BehaviorSubject, from, Observable } from 'rxjs';
+import { BehaviorSubject, catchError, from, Observable, throwError } from 'rxjs';
 import { environment } from 'src/environments/environment';
 
 @Injectable({
@@ -84,12 +84,12 @@ export class RequestsService {
 
     async initDropdowns():Promise<boolean> {
         return new Promise(async (resolve, reject) => {
-            await this.getBranchComments().then(async (response: any) => {
+            await this.getBranchComments().subscribe(async (response: any) => {
                 if (response.status === 200) {
                     this.comments = response.data;
                 }
             });
-            await this.getOperatingRooms().then(async (response: any) => {
+            await this.getOperatingRooms().subscribe(async (response: any) => {
                 if (response.status === 200) {
                     this.operatingRooms = response.data.data;
                 }
@@ -201,54 +201,93 @@ export class RequestsService {
             }
         });
     }
+    
 
-    getTodaysPatients = async (yesterday:boolean = false): Promise<any> => {
+    getTodaysPatients(yesterday: boolean = false): Observable<any> {
         this.loadingPatients$.next(true);
-        return new Promise(async (resolve, reject) => {
-            if (this.token && this.token.length > 0) {
-                if (this.isTokenExpired(this.token)) {
-                    reject({ status: 404, message: 'Token expired', redirectUrl: '/pin' });
-                    return;
-                }
+    
+        return new Observable((observer) => {
+            if (!this.token || this.token.length === 0 || this.isTokenExpired(this.token)) {
+                observer.error({ status: 404, message: 'Token expired', redirectUrl: '/pin' });
+                return;
             }
-
-            if (this.config && this.config?.branch && this.config?.waitingRoom) {
-                const date = new Date();
-                var year = date.toLocaleString("default", { year: "numeric" });
-                var month = date.toLocaleString("default", { month: "2-digit" });
-                var day = date.toLocaleString("default", { day: "2-digit" });
-                var formatedDate = `${year}-${month}-${day}`;
-                if(yesterday){
-                    //calculate yesterday date and format it to yyyy-mm-dd
-                    date.setDate(date.getDate() - 1);
-                    year = date.toLocaleString("default", { year: "numeric" });
-                    month = date.toLocaleString("default", { month: "2-digit" });
-                    day = date.toLocaleString("default", { day: "2-digit" });
-                    formatedDate = `${year}-${month}-${day}`;
-                }
-                const options = {
-                    url: environment.url + environment.visitor +`?visit_date=${formatedDate}&orderBy=fullName&direction=asc&branchID=${this.config.branch.id}&roomID=${this.config.waitingRoom.id}`,
-                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer ' + this.token },
-                };
-                try {
-                    var result = await CapacitorHttp.get(options).catch((error) => {
-                        this.loadingPatients$.next(false);
-                        reject(error);
-                        return;
-                    });
-                    this.loadingPatients$.next(false);
+    
+            if (!this.config?.branch || !this.config?.waitingRoom) {
+                observer.error({ status: 404, message: 'Missing configuration', redirectUrl: '/settings' });
+                return;
+            }
+    
+            const date = new Date();
+            if (yesterday) {
+                date.setDate(date.getDate() - 1);
+            }
+            const formatedDate = getLocalDate(date);
+            console.log(formatedDate);
+            
+    
+            const options = {
+                url: `${environment.url}${environment.visitor}?visit_date=${formatedDate}&orderBy=fullName&direction=asc&branchID=${this.config.branch.id}&roomID=${this.config.waitingRoom.id}`,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'Authorization': `Bearer ${this.token}`,
+                },
+            };
+    
+            CapacitorHttp.get(options)
+                .then((result) => {
                     this.lastSync = new Date().toLocaleString();
-                    Preferences.set({ key: 'lastSync', value: this.lastSync });
-                    resolve(result);
-                } catch (error) {
-                    reject(error);
-                }
-            } else { 
-                this.loadingPatients$.next(false);
-                reject({ status: 404, message: 'Token expired', redirectUrl: '/pin' }); 
-            }
+                    Preferences.set({ key: 'lastSync', value: this.lastSync }).then(() => {
+                        observer.next(result);
+                        observer.complete();
+                    });
+                })
+                .catch((error) => observer.error(error))
+                .finally(() => {
+                    this.loadingPatients$.next(false);
+                });
         });
     }
+
+
+    getTodaysPatientsDashboard = async (yesterday: boolean = false): Promise<any> => {
+        this.loadingPatients$.next(true);
+    
+        try {
+            // Calcula la fecha formateada (hoy o ayer)
+            const date = new Date();
+            if (yesterday) {
+                date.setDate(date.getDate() - 1);
+            }
+            const formatedDate = getLocalDate(date);
+            console.log(formatedDate);
+    
+            const options = {
+                url: `${environment.url}${environment.visitor}?visit_date=${formatedDate}&orderBy=fullName&direction=asc&branchID=${this.config.branch.id}&roomID=${this.config.waitingRoom.id}`,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'Authorization': `Bearer ${this.token}`,
+                },
+            };
+    
+            // Realiza la llamada HTTP
+            const result = await CapacitorHttp.get(options);
+    
+            // Actualiza el estado después de una llamada exitosa
+            this.lastSync = new Date().toLocaleString();
+            await Preferences.set({ key: 'lastSync', value: this.lastSync });
+            this.loadingPatients$.next(false);
+    
+            return result;
+        } catch (error) {
+            // Manejo de errores
+            this.loadingPatients$.next(false);
+            throw error;
+        }
+    };
+
+
 
     updatePatient = async (patient: any): Promise<any> => {
         return new Promise(async (resolve, reject) => {
@@ -307,18 +346,23 @@ export class RequestsService {
         return from(CapacitorHttp.get(options));
     }
 
-    getBranchComments = async (): Promise<any> => {
-        return new Promise(async (resolve, reject) => {
-            const options = {
-                url: environment.url + environment.comments + '/' + this.config.branch.id,
-                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer ' + this.token },
-            };
-            try {
-                resolve(await CapacitorHttp.get(options));
-            } catch (error) {
-                reject(error);
-            }
-        });
+    getBranchComments(): Observable<any> {
+        const options = {
+            url: `${environment.url}${environment.comments}/${this.config.branch.id}`,
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'Authorization': `Bearer ${this.token}`,
+            },
+        };
+    
+        // Convierte la promesa en un Observable usando `from`
+        return from(CapacitorHttp.get(options)).pipe(
+            catchError((error) => {
+                // Manejo de errores
+                return throwError(error);
+            })
+        );
     }
 
     getBranchSurgeonsByWaitingRoom = async (): Promise<any> => {
@@ -335,19 +379,22 @@ export class RequestsService {
         });
     }
 
-    getOperatingRooms = async (): Promise<any> => {
-        return new Promise(async (resolve, reject) => {
-            const options = {
-                url: environment.url + environment.waitingRooms + '/' + this.config.waitingRoom.id + environment.operatingroomsschedules,//environment.operatingrooms,
-                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer ' + this.token },
-            };
-            try {
-                resolve(await CapacitorHttp.get(options));
-            } catch (error) {
-                reject(error);
-            }
-        });
-    }
+    getOperatingRooms(): Observable<any> {
+        const options = {
+            url: `${environment.url}${environment.waitingRooms}/${this.config.waitingRoom.id}${environment.operatingroomsschedules}`,
+            headers: {
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+                Authorization: `Bearer ${this.token}`,
+            },
+        };
+    
+        return from(CapacitorHttp.get(options)).pipe(
+            catchError((error) => {
+                return throwError(error);
+            })
+        );
+    }   
 
     getProcedures = async (): Promise<any> => {
         return new Promise(async (resolve, reject) => {
@@ -375,29 +422,11 @@ export class RequestsService {
                 reject(error);
             }
         });
-    }
-
-    getOperatingRoomsSchedules = (): Observable<any> => {
-        const options = {
-            url: environment.url + environment.waitingRooms + '/' + this.config.branch.id + environment.operatingroomsschedules,
-            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer ' + this.adminToken },
-        };
-    
-        return new Observable(observer => {
-            CapacitorHttp.get(options)
-                .then(response => {
-                    observer.next(response);
-                    observer.complete();
-                })
-                .catch(error => {
-                    observer.error(error);
-                });
-        });
-    }
+    }  
 
     getOperatingRoomWithUsers(idRoom:any):Observable<any>{
         const options = {
-            url: environment.url + environment.operatingroomusers + '?'+ environment.waiting_room_id +'='+1,
+            url: environment.url + environment.operatingroomusers + '?'+ environment.waiting_room_id +'='+this.config.waitingRoom.id,
             headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer ' + this.token },
         };
     
@@ -492,4 +521,11 @@ export class RequestsService {
             colorHex: '#e8e8e8'
         },
     ];
+}
+
+function getLocalDate(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0'); // Mes comienza en 0
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
 }

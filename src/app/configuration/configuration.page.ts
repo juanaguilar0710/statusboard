@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { RequestsService } from '../api/requests.service';
 import { Router } from '@angular/router';
@@ -42,9 +42,10 @@ export class ConfigurationPage implements OnInit {
     turnOffTime: [null],
   });
 
-  constructor(private _formbuilder: FormBuilder,
+ constructor(private _formbuilder: FormBuilder,
     private alertController: AlertController,
     private requestsService: RequestsService,
+    private cdr: ChangeDetectorRef,
     private router: Router) {
     this.form.get('branch')?.valueChanges.subscribe((value) => {
       if (value) {
@@ -59,32 +60,50 @@ export class ConfigurationPage implements OnInit {
   }
 
   async ngOnInit() {
-    await this.getBranch();
-
-    Preferences.get({ key: 'config' }).then((response: any) => {
-      if (response.value) {
-        const objResponse = JSON.parse(response.value)        
-        this.form.patchValue(objResponse);
-
-        if(objResponse.aplication === "2"){
-          objResponse.token = this.requestsService.getToken();   
-          console.log('configObject.token',objResponse.token);
-              
+    const configResponse = await Preferences.get({ key: 'config' });
+    if (configResponse.value) {
+      const objResponse = JSON.parse(configResponse.value);
+      this.form.patchValue(objResponse);
+  
+      if (objResponse.aplication === "2" || objResponse.aplication === "3") {
+        objResponse.token = this.requestsService.getToken();
         this.router.navigate(['/dashboard'], { replaceUrl: true });
-        }
-        
+        return;
       }
+    }
+  
+    const waitingRoomsResponse = await Preferences.get({ key: 'waiting_rooms' });
+    if (waitingRoomsResponse.value) {
+      const waitingRooms = JSON.parse(waitingRoomsResponse.value);
+      this.waiting_rooms = waitingRooms
+        .filter((room: any) => room.program === "status_board")
+        .sort((a: any, b: any) => a.name.localeCompare(b.name));
+    }
+  
+    const tempConfigString = localStorage.getItem('tempConfig');
+    if (tempConfigString) {
+      const tempConfig = JSON.parse(tempConfigString);
+      this.requestsService.setToken(tempConfig.token);
+  
+      await this.getBranch();
+  
+      const branchObj = this.branches.find((branch: any) => branch.id === tempConfig.branch.id);
+      const waitingRoomObj = this.waiting_rooms.find((room: any) => room.id === tempConfig.waitingRoom.id);
+  
+      this.form.patchValue({
+        branch: branchObj,
+        stationName: tempConfig.stationName,
+        aplication: tempConfig.aplication,
+        statuses: tempConfig.statuses,
+        waitingRoom: waitingRoomObj
+      });
+  
+      this.selectedApplication = tempConfig.aplication;
+      this.cdr.detectChanges();
 
-      // if(configObject.aplication === "2"){
-      //   configObject.token = this.requestsService.getToken();
-      //   await Preferences.set({
-      //     key: 'config',
-      //     value: JSON.stringify(configObject)
-      //   });
-      //   this.router.navigate(['/dashboard'], { replaceUrl: true });
-      // }
-
-    })
+    }else{
+      await this.getBranch();
+    }
   }
 
   async getBranch() {
@@ -92,7 +111,15 @@ export class ConfigurationPage implements OnInit {
       if (response.value) {
         this.branches = [JSON.parse(response.value)];            
         this.requestsService.getBranchStatuses(this.branches[0].id).subscribe(resp => {
-          this.statuses = resp.data 
+          if(resp.status != 500){
+            this.statuses = resp.data 
+          }else{
+            console.log(resp);
+          }
+          
+        },error => {
+          console.log(error);
+          
         });
       }
     });
@@ -104,14 +131,10 @@ export class ConfigurationPage implements OnInit {
       value: JSON.stringify(this.form.value)
     });
     this.requestsService.setConfig(this.form.value);
-
-
     const configResponse = await Preferences.get({ key: 'config' });
     const configObject = JSON.parse(configResponse.value || '{}');
-    if(configObject.aplication === "2"){
-      configObject.token = this.requestsService.getToken();
-      console.log('configObject.token',configObject.token);
-      
+    if(configObject.aplication === "2" || configObject.aplication === "3"){
+      configObject.token = this.requestsService.getToken();      
       await Preferences.set({
         key: 'config',
         value: JSON.stringify(configObject)
@@ -119,9 +142,7 @@ export class ConfigurationPage implements OnInit {
       this.router.navigate(['/dashboard'], { replaceUrl: true });
     }else{
       this.router.navigate(['/pin'], { replaceUrl: true });
-    }   
-    
-
+    }
   }
 
   async openTimeRangePicker() {
@@ -158,15 +179,14 @@ export class ConfigurationPage implements OnInit {
         }
       ]
     });
-
     alert.present();
   }
 
   convertTo12HourFormat(time: string): string {
     let [hour, minute] = time.split(':').map(Number);
     const ampm = hour >= 12 ? 'PM' : 'AM';
-    hour = hour % 12 || 12; // Convierte la hora a formato de 12 horas
-    const formattedHour = hour < 10 ? `0${hour}` : hour; // Asegura que tenga 2 dígitos
+    hour = hour % 12 || 12;
+    const formattedHour = hour < 10 ? `0${hour}` : hour;
     return `${formattedHour}:${minute < 10 ? `0${minute}` : minute} ${ampm}`;
   }
 
@@ -176,7 +196,6 @@ export class ConfigurationPage implements OnInit {
 
   onStatusChange(event: any) {
     this.selectedStatus = event.detail.value;
-    console.log(this.selectedStatus); // Aquí puedes verificar el valor
   }
 
 }

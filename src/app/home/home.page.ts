@@ -85,48 +85,41 @@ export class HomePage implements AfterViewInit, OnInit {
   }
 
   async ngOnInit() { 
+    this.LocaldataService.setPatients(this.patients);
+    
     this.appComponent.timeRemaining$.subscribe(time => {
       this.timeRemaining = time;
     });   
     this.user = await this.LocaldataService.getUser();      
     this.username = JSON.parse(localStorage.getItem('user')!);    
-    this.configuration = await this.LocaldataService.getConfiguration();    
-    // this.requestsService.getOperatingRoomWithUsers(this.configuration.waitingRoom.id).subscribe(resp => {  
-    //   console.log(resp);
-       
-    //   this.storage.set('OperatingRoomWithUsers', resp);      
-    // },error => {
-    //   console.log(error);
-    // })
-    
+    this.configuration = await this.LocaldataService.getConfiguration();        
 
     if(this.configuration.aplication == '2'){
       this.router.navigate(['/dashboard'], { replaceUrl: true });
     }
     
     this.getTodaysPatientsFromLocal().then(resp => {
-      this.storage.get('patient').then(response => {        
-       this.getOperatingRoomsFromStorageOrLoadFromServer();
+      this.storage.get('patient').then(response => {             
+        this.getOperatingRoomsFromStorageOrLoadFromServer();       
         if (response) {
           this._ngZone.run(() => {
             this.requestsService.updatePatient(response).then(async (response: any) => {
               this.storage.set('patient', null);
               if (response.status === 200) {
                 this.getTodaysPatientsFromServer();
-                this.notificationService.showInfo(response.data.message, 5000);                
+                this.notificationService.showInfo(response.data.message, 5000);
+              }else{
+                this.notificationService.showError(response.data.error.detail, 5000);
               }
             }, error =>{
               this.notificationService.showError('Error updating users.', 5000);
             });
           });
-        }  
+        }
       });
     });
+    this.letters = this.getFirstLetterFromNames();
     
-  }
-
-  ionViewWillEnter() {
-    this.ngOnInit();
   }
 
   private updatePatientList(eventType: string, patient: any) {    
@@ -135,19 +128,16 @@ export class HomePage implements AfterViewInit, OnInit {
       case 'created':
         if (index === -1) {
           this.patients.push(patient);
-          //this.patientsCopy.push(patient);
         }
         break;
       case 'updated':
         if (index > -1) {
           this.patients[index] = patient;
-          //this.patientsCopy[index] = patient;
         }
         break;
       case 'deleted':
         if (index > -1) {
           this.patients.splice(index, 1);
-          //this.patientsCopy.splice(index, 1);
         }
         break;
     }
@@ -174,30 +164,24 @@ export class HomePage implements AfterViewInit, OnInit {
         this.laravelEcho.channel(channel).listen('.patient.created', (e: any) => {
           if (this.networkStatus === "ONLINE" && !this.viewYesterdaysPatients) {             
             this.updatePatientList('created', e.patient);
+            this.getOperatingRoomsFromStorageOrLoadFromServer(); 
           }
         });
   
         this.laravelEcho.channel(channel).listen('.patient.updated', (e: any) => {
           if (this.networkStatus === "ONLINE" && !this.viewYesterdaysPatients) {
-            this.updatePatientList('updated', e.patient);            
+            this.updatePatientList('updated', e.patient);  
+            this.getOperatingRoomsFromStorageOrLoadFromServer();          
           }
         });
   
         this.laravelEcho.channel(channel).listen('.patient.deleted', (e: any) => {
           if (this.networkStatus === "ONLINE" && !this.viewYesterdaysPatients) {
             this.updatePatientList('deleted', e.patient);
+            this.getOperatingRoomsFromStorageOrLoadFromServer(); 
           }
-        });
-  
-        this.laravelEcho.channel(channel).listen('.patient.new.day', (e: any) => {
-          if (this.networkStatus === "ONLINE" && !this.viewYesterdaysPatients) {
-            this.patients = [];
-            this.patientsCopy = [];
-            this.LocaldataService.setPatients([]);
-            this.getTodaysPatientsFromServer();
-            this.requestsService.lastSync = new Date().toLocaleString();
-          }
-        });        
+        });  
+              
       });
     });
   }
@@ -213,8 +197,8 @@ export class HomePage implements AfterViewInit, OnInit {
 
   getOperatingRoomsFromStorageOrLoadFromServer() {
     this.LocaldataService.getOperatingRooms().then((response: any) => {      
-        this.operatingRooms = response;        
-        this.requestsService.getOperatingRooms().then((response: any) => {
+        this.operatingRooms = response;           
+        this.requestsService.getOperatingRooms().subscribe((response: any) => {
           this.operatingRooms = response.data.data;
           this.getRandomColor(this.operatingRooms);
           this.LocaldataService.setOperatingRooms(this.operatingRooms);
@@ -232,17 +216,11 @@ export class HomePage implements AfterViewInit, OnInit {
     });
   }
 
-  handleRefresh(event: any) {
-    this.requestsService.init().then(async () => {
-      this.getTodaysPatientsFromLocal(event);
-    });
-  }
-
   async getTodaysPatientsFromLocal(event?: any) {
     this.updating = true;
     this.LocaldataService.getPatients().then(response => {      
       if (response) {
-        this.patients = response;        
+        this.patients = response;
         this.patientsCopy = response;
         this.updating = false;
         this.letters = this.getFirstLetterFromNames();
@@ -256,7 +234,7 @@ export class HomePage implements AfterViewInit, OnInit {
   async getTodaysPatientsFromServer(event?: any, yesterday: boolean = false) {
     this.updating = true;
     this.disableYesterdaysToggle.emit(true);
-    this.requestsService.getTodaysPatients(yesterday).then(async (response: any) => {
+    this.requestsService.getTodaysPatients(yesterday).subscribe(async (response: any) => {
       if (event) {
         event.target.complete();
       }
@@ -268,13 +246,14 @@ export class HomePage implements AfterViewInit, OnInit {
         this.LocaldataService.setPatients(response.data);
         this.viewYesterdaysPatients = yesterday;
       } else {
+        this.notificationService.showInfo(response.data.message, 5000);
         if (response.status === 401) {
           Preferences.remove({ key: 'user' });
           this.router.navigate(['/pin'], { replaceUrl: true });
         }
       }
       this.updating = false;
-    }).catch((error) => {
+    }),(error:any) => {
       if (event) {
         event.target.complete();
       }
@@ -285,7 +264,7 @@ export class HomePage implements AfterViewInit, OnInit {
         });
         this.router.navigate([error.redirectUrl], { replaceUrl: true });
       }
-    });
+    };
   }
 
   filterPatients(letter: string) {

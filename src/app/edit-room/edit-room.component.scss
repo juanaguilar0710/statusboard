@@ -120,9 +120,17 @@ button {
   font-size: 18px;
   height: 55px;
 }
+//dimension de tablet grande
+// 1920 * 1056
 
-@media only screen and (min-width: 1334px) and (max-width: 1500px) and (min-height: 728px) and (max-height: 761px) {
+// dimension tablet pequeña
+// 1334 * 728
 
+@media only screen and (min-width: 1333px) and (max-height: 1056px) {
+
+  .prueba{
+    width: 100%;
+  }
     .columnAvailable{
       min-width: 445px;
      }
@@ -152,7 +160,7 @@ button {
     }
 }
 
-@media only screen and (min-width: 1280px) and (max-width: 1333px) and (max-height: 800px) {
+@media only screen and (min-width: 1250px) and (max-width: 1333px) and (max-height: 1056px) {
 
   .selectedUserDropdown{
     width: 100%; 

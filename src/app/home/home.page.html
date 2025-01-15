@@ -97,17 +97,19 @@
                           <div style="display: flex; justify-content: space-between; align-items: center;">
                             <div>
                               <span class="label">Family Phone: </span>
-                              <span class="label-value">{{patient.phone_national_format}}</span>
+                              <span class="label-value">{{patient.phone !== null? patient.phone_national_format : patient.phone}}</span>
                             </div>
                             <!-- Contenedor del ícono tachado -->
-                            <div class="icon-container" *ngIf="!patient.phone_national_format" style="position: relative; width: 50px; height: 50px; margin-right: 45px;">
-                              <!-- Ícono de teléfono -->
+                            <!-- <div class="icon-container" *ngIf="!patient.phone" style="position: relative; width: 50px; height: 50px; margin-right: 45px;">
                               <ion-icon name="call-outline" class="callPosition"></ion-icon>
-                              <!-- Círculo de prohibición -->
                               <div class="circle circleBorder"></div>
-                              <!-- Línea de tachado -->
                               <div class="line lineRedPhone" ></div>
+                            </div> -->
+
+                            <div class="icon-container" *ngIf="!patient.phone">
+                              <img src="assets/icon/Phone.png" style="width: 50%;">
                             </div>
+
                           </div>
 
 

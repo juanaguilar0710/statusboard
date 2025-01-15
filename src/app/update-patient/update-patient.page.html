@@ -116,6 +116,19 @@
               </div>
             </ion-col>
           </ion-row>
+
+
+
+
+
+
+
+
+
+
+
+
+
           <ion-row>
             <ion-col>
               <div class="d-flex">
@@ -123,26 +136,55 @@
                   <h4>Procedure:</h4>
                 </div>
                 <div class="w-100 justify-content-end">
-                  <ion-item>
+                  <ion-item class="widthProcedure">
                     <ion-input aria-label="Procedures" formControlName="procedure_name"></ion-input>
                     <!-- <ion-input aria-label="Procedures" [readonly]="true" formControlName="procedure_name" (ionFocus)="openSearchableComponentOnModal('procedure')"></ion-input> -->
                   </ion-item>
                 </div>
               </div>
             </ion-col>
-            <ion-col style="padding-left: 50px;">
+            <ion-col class="paddingProcedure">
               <div class="d-flex">
                 <div class="text-nowrap d-flex justify-content-start align-items-end">
                   <h4>Phone:</h4>
                 </div>
                 <div class="w-100 justify-content-end">
                   <ion-item>
-                    <ion-input aria-label="Telephone" [maxlength]="13" type="tel" formControlName="phone"></ion-input>
+                    <ion-input
+                      aria-label="Telephone"
+                      (ionInput)="toggleSMSNotifications($event)"
+                      [maxlength]="13" 
+                      type="tel" 
+                      formControlName="phone">
+                    </ion-input>
                   </ion-item>
                 </div>
               </div>
             </ion-col>
+            <ion-col>
+              <div class="d-flex justify-content-start align-items-center">
+                <ion-item lines="none">
+                  <ion-toggle
+                  color="primary" 
+                  aria-label="Send SMS Notification"
+                  (ionChange)="onChangeSMSToggle($event)"
+                  [disabled]="this.disabledToggle"
+                  [checked]="this.patient.prefers_sms"></ion-toggle>
+                  <label class="pl-2">Send SMS Notification</label>
+                </ion-item>
+              </div>
+            </ion-col>
           </ion-row>
+
+
+
+
+
+
+
+
+
+
           <ion-row>
             <ion-col>
               <div class="d-flex">
@@ -208,14 +250,14 @@
          
   <ion-row class="rowButton">
     <ion-col>
-      <div class="d-flex justify-content-center">
+      <div>
         <ion-button color="danger" class="w-100 mx-4 classButton" size="large" id="cancel-surgery-modal">
           <span *ngIf="!patient.visit_canceled_at">Surgery Canceled</span>
           <span *ngIf="patient.visit_canceled_at">Enable Surgery</span>
         </ion-button>
-        <ion-button color="primary" class="w-100 mx-4 classButton" size="large" (click)="openSearchableComponentOnModal('next_to_surgery')">
+        <!-- <ion-button color="primary" class="w-100 mx-4 classButton" size="large" (click)="openSearchableComponentOnModal('next_to_surgery')">
           Next To Surgery
-        </ion-button>
+        </ion-button> -->
       </div>
     </ion-col>
     <ion-col>
@@ -241,14 +283,22 @@
         <h1>{{patient.visit_canceled_at ? 'Do you want to enable this surgery?' : 'Are you sure you want to cancel this surgery?'}}</h1>
       </div>
       <br />
-      <div class="d-flex">
-        <div class="flex-fill" style="padding: 0 10px;">
-          <ion-button class="w-100 classButton" color="danger" (click)="noCancel()">No</ion-button>
+      <div class="d-flex justify-content-center align-items-center">
+        <div class="flex-fill text-center" style="padding: 0 10px;">
+          <ion-button class="w-100 classButton" color="danger" style="width: 90% !important; font-size: 1.25rem;" (click)="noCancel()">No</ion-button>
         </div>
-        <div class="flex-fill" style="padding: 0 10px;">
-          <ion-button class="w-100 classButton" color="primary" (click)="yesCancel()">Yes</ion-button>
+        <div class="flex-fill text-center" style="padding: 0 10px;">
+          <ion-button class="w-100 classButton" color="primary" style="width: 90% !important; font-size: 1.25rem" (click)="yesCancel()">Yes</ion-button>
         </div>
       </div>
     </ion-content>
   </ng-template>
 </ion-modal>
+
+
+<div class="overlay" style="margin-top: 10px;" *ngIf="this.loading">
+  <div class="loader">
+     <div class="spinner spinner-bubble spinner-bubble-primary me-3"></div>
+  </div>
+  <!-- <h6>{{this.image_url ? 'Verifying your credentials...' : 'Preparing your experience...'}}</h6> -->
+</div>
