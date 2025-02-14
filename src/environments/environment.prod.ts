@@ -1,5 +1,5 @@
 export const environment = {
-  version: "1.4.0.43",
+  version: "1.4.0.49",
   production: false,
   resetPin: '1111',
   maxInactivityTime: 20,
@@ -21,8 +21,7 @@ export const environment = {
   },
 
   pusher: {
-    //key: '7c4e353eb51fce335b63', //prod
-    
+    //key: '7c4e353eb51fce335b63', //prod    
     key: '2889bc5e0828ce2dabb2', //dev 
     cluster: 'us2',
     forceTLS: true

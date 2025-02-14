@@ -67,12 +67,16 @@ import { NotificationService } from '../api/notification.service';
         document.dispatchEvent(event);
       }, environment.timeRoomsPerPage);
       this.networkService.networkStatus$.subscribe((status: string) => {
+        console.log(status);
+        
         this.networkStatus = status;
         if (status === "OFFLINE") {
           this.deviceWasOffline = true;
+          window.alert('se quedo sin red');
         } else {
           if (this.deviceWasOffline) {
-            this.getTodaysPatientsFromServer();
+            //this.getTodaysPatientsFromServer();
+            this.ngOnInit();
             this.deviceWasOffline = false;
           }
         }
@@ -113,7 +117,9 @@ import { NotificationService } from '../api/notification.service';
 
   async startlists(){
     await this.getOperatingRoomsFromStorageOrLoadFromServer();
-    await this.getTodaysPatientsFromServer();    
+    await this.getTodaysPatientsFromServer();
+    this.startCarousel();
+    this.startCountdown();
   }
 
   refreshToken(){
@@ -171,14 +177,7 @@ import { NotificationService } from '../api/notification.service';
         this.patientsCopy = [...newPatients];
         this.LocaldataService.setPatients(newPatients);
         this.viewYesterdaysPatients = yesterday;
-
-
-        if (this.config.aplication === '3') {
-          await this.startPatientPagination();
-        }
-
-        this.startCarousel();
-        this.startCountdown();
+      
 
         updatedPatients.forEach((patient:any) => this.addUpdatedPatient(patient));
 
@@ -275,6 +274,9 @@ import { NotificationService } from '../api/notification.service';
         return this.roomsWithPatients;
   }
   startCountdown() {
+    if (this.intervalIdForPages) {
+      clearInterval(this.intervalIdForPages); // Detiene el intervalo previo si existe
+    }
     this.countdown = environment.timeRoomsPerPageWhitPatients / 1000;
     this.intervalIdForPages = setInterval(() => {
       if (this.countdown > 1) {
@@ -283,6 +285,8 @@ import { NotificationService } from '../api/notification.service';
       } else {
         this.changePageRoomsWhitPatients();
         this.updatePaginationDetails();
+        this.updatePatientPaginationDetails();
+        this.changePatientPage();
         this.countdown = environment.timeRoomsPerPageWhitPatients / 1000;
       }
     }, 1000);
@@ -502,7 +506,14 @@ isPatientUpdated(patientId: number): boolean {
     this.stopCarousel();  // Detener el carousel cuando el componente se destruya
     if (this.intervalIdForPages) {
       clearInterval(this.intervalIdForPages);
+      this.intervalIdForPages = null;
     }
+
+    if (this.intervalId) {
+      clearInterval(this.intervalId);
+      this.intervalId = null;
+    }
+    
     if (this.laravelEcho) {
       this.laravelEcho.disconnect();
     }
@@ -617,38 +628,20 @@ isPatientUpdated(patientId: number): boolean {
   totalPatientPages: number = 0;  // Total de páginas
 
   updatePatientPaginationDetails() {
-    this.totalPatientPages = Math.ceil(this.patients.length / this.patientsPerPage);
-    console.log(this.patients);
-    
+    this.totalPatientPages = Math.ceil(this.patients.length / this.patientsPerPage);    
+    console.log(this.totalPatientPages);
   }
   
   getPatientsForCurrentPage(): any[] {
-    const sortedPatients = [...this.patients].sort((a, b) => a.status.id - b.status.id);
-
+    const sortedPatients = [...this.patients].sort((a, b) => a.status.id - b.status.id);    
     const start = this.currentPagePatients * this.patientsPerPage;
     const end = start + this.patientsPerPage;
-
     return sortedPatients.slice(start, end);
   }
   
   changePatientPage() {
-    this.currentPagePatients = (this.currentPagePatients + 1) % this.totalPatientPages;
+    this.currentPagePatients = (this.currentPagePatients + 1) % (this.totalPatientPages == 0 ? 1 : this.totalPatientPages);
+    console.log(this.currentPagePatients);
   }
   
-  startPatientPagination() {
-    this.updatePatientPaginationDetails();
-    setInterval(() => {
-      this.changePatientPage();
-    }, environment.timeRoomsPerPageWhitPatients);
-  }
-
-
-
-
-
-
-
-
-
-
 }
