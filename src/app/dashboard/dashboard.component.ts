@@ -46,7 +46,7 @@ import { NotificationService } from '../api/notification.service';
   totalGroups = 0;
   roomsWithPatients:any[] = []
   clicks = 0;
-  totalPagesCurrentPatients:any
+  totalPagesCurrentPatients:any;
 
 
   constructor(private LocaldataService: LocaldataService,
@@ -72,10 +72,11 @@ import { NotificationService } from '../api/notification.service';
         this.networkStatus = status;
         if (status === "OFFLINE") {
           this.deviceWasOffline = true;
-          window.alert('se quedo sin red');
+          // this.notificationService.showInfo('System Offline',6000);
         } else {
           if (this.deviceWasOffline) {
             //this.getTodaysPatientsFromServer();
+            // this.notificationService.showInfo('System Conected',6000);
             this.ngOnInit();
             this.deviceWasOffline = false;
           }
@@ -345,22 +346,27 @@ import { NotificationService } from '../api/notification.service';
     return patientsInRoom.slice(start, end);
   }
   ngAfterViewInit(): void {
-        (<any>window).Pusher = Pusher;
-        this.laravelEcho = new Echo({
-          broadcaster: 'pusher',
-          key: environment.pusher.key,
-          cluster: environment.pusher.cluster,
-          forceTLS: environment.pusher.forceTLS,
-          disableStats: true
-        });
-        const channel = `branch.${this.requestsService.config.branch.id}.room.${this.requestsService.config.waitingRoom.id}`;        
-        
-        // Escuchar eventos de pacientes
-        this.listenToPatientEvents(channel);
-        // Manejar eventos de conexión/desconexión
-        this.handlePusherConnection();
-        // Iniciar monitoreo de la conexión
-        this.monitorConnection();
+    if(this.deviceWasOffline){
+console.log('Sin conexion');
+
+    }else{
+      (<any>window).Pusher = Pusher;
+      this.laravelEcho = new Echo({
+        broadcaster: 'pusher',
+        key: environment.pusher.key,
+        cluster: environment.pusher.cluster,
+        forceTLS: environment.pusher.forceTLS,
+        disableStats: true
+      });
+      const channel = `branch.${this.requestsService.config.branch.id}.room.${this.requestsService.config.waitingRoom.id}`;        
+      
+      // Escuchar eventos de pacientes
+      this.listenToPatientEvents(channel);
+      // Manejar eventos de conexión/desconexión
+      this.handlePusherConnection();
+      // Iniciar monitoreo de la conexión
+      this.monitorConnection();
+    }
   }
 
   hasPatientChanged(existingPatient: any, newPatient: any): boolean {

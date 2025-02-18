@@ -202,9 +202,14 @@
   </ion-grid>
   <ion-row style="align-items: center; padding-left: 5px; padding-top: 10px;">
     <!-- Online text with date -->
-    <ion-col size="3" style="text-align: left;">
+    <!-- <ion-col size="3" style="text-align: left;">
       <span class="onlineTittle">LAST UPDATE:</span>
       <span class="textUnderLine" style="padding-left: 20px;">{{ this.lastsync }}</span>
+    </ion-col> -->
+
+    <ion-col size="3" style="text-align: left;">
+      <span class="onlineTittle" *ngIf="!deviceWasOffline">ONLINE</span>
+      <span class="onlineTittle" style="color: #eb4343;" *ngIf="deviceWasOffline">OFFLINE</span>      
     </ion-col>
   
     <!-- In Holding -->
