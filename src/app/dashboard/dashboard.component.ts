@@ -14,6 +14,8 @@ import { App } from '@capacitor/app';
 import { interval, Subscription } from 'rxjs';
 import { NotificationService } from '../api/notification.service';
 
+import { Network } from '@capacitor/network';
+
 @Component({
   selector: 'app-dashboard',
   templateUrl: './dashboard.component.html',
@@ -66,23 +68,56 @@ import { NotificationService } from '../api/notification.service';
         const event = new MouseEvent('mousemove');
         document.dispatchEvent(event);
       }, environment.timeRoomsPerPage);
-      this.networkService.networkStatus$.subscribe((status: string) => {
-        console.log(status);
+        this.checkNetworkStatus();
+        this.listenToNetworkChanges();
+      // this.networkService.networkStatus$.subscribe((status: string) => {
+      //   console.log(status);
         
-        this.networkStatus = status;
-        if (status === "OFFLINE") {
-          this.deviceWasOffline = true;
-          // this.notificationService.showInfo('System Offline',6000);
-        } else {
-          if (this.deviceWasOffline) {
-            //this.getTodaysPatientsFromServer();
-            // this.notificationService.showInfo('System Conected',6000);
-            this.ngOnInit();
-            this.deviceWasOffline = false;
-          }
-        }
-      });
+      //   this.networkStatus = status;
+      //   if (status === "OFFLINE") {
+      //     this.deviceWasOffline = true;
+      //     // this.notificationService.showInfo('System Offline',6000);
+      //   } else {
+      //     if (this.deviceWasOffline) {
+      //       //this.getTodaysPatientsFromServer();
+      //       // this.notificationService.showInfo('System Conected',6000);
+      //       this.ngOnInit();
+      //       this.deviceWasOffline = false;
+      //     }
+      //   }
+      // });
     }, 3000);
+  }
+
+  async checkNetworkStatus() {
+    const status = await Network.getStatus();
+    this.networkStatus = status.connected ? "ONLINE" : "OFFLINE";    
+    if (!status.connected) {
+      this.deviceWasOffline = true;
+      console.log("OFFLINE");
+    } else {
+      if (this.deviceWasOffline) {
+        console.log("ONLINE");
+        this.ngOnInit(); // Llamar a ngOnInit solo cuando vuelve la conexión
+        this.deviceWasOffline = false;
+      }
+    }
+  }
+
+  listenToNetworkChanges() {
+    Network.addListener('networkStatusChange', (status) => {
+      this.networkStatus = status.connected ? "ONLINE" : "OFFLINE";      
+      if (!status.connected) {
+        this.deviceWasOffline = true;
+        console.log("OFFLINE");
+      } else {
+        if (this.deviceWasOffline) {
+          console.log("ONLINE");
+          this.ngOnInit(); // Llamar a ngOnInit solo cuando vuelve la conexión
+          this.deviceWasOffline = false;
+        }
+      }
+    });
   }
 
   async ngOnInit() {   
@@ -358,6 +393,8 @@ console.log('Sin conexion');
         forceTLS: environment.pusher.forceTLS,
         disableStats: true
       });
+
+      console.log('refrescando conexion');
       const channel = `branch.${this.requestsService.config.branch.id}.room.${this.requestsService.config.waitingRoom.id}`;        
       
       // Escuchar eventos de pacientes
@@ -452,7 +489,9 @@ isPatientUpdated(patientId: number): boolean {
     // Escuchar errores
     pusherInstance.connection.bind('error', (err: any) => {
       console.error('Pusher error:', err);
-      window.location.reload();
+      if(this.networkStatus === "ONLINE"){
+        window.location.reload();
+      }
 
     });
   }
