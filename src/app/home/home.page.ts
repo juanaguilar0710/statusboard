@@ -151,31 +151,50 @@ export class HomePage implements AfterViewInit, OnInit {
     this.requestsService.init().then(async () => {
       this.requestsService.initDropdowns().then((response: any) => {
         (<any>window).Pusher = Pusher;
-        this.laravelEcho = new Echo({
-          broadcaster: 'pusher',
-          key: environment.pusher.key,
-          cluster: environment.pusher.cluster,
-          forceTLS: environment.pusher.forceTLS,
-          disableStats: true
-        });
+              this.laravelEcho = new Echo({
+                broadcaster: 'pusher',
+                key: environment.pusher.key,
+                cluster: environment.pusher.cluster,
+                forceTLS: environment.pusher.forceTLS,
+                disableStats: true,
+                
+                authorizer: (channel: any, options: any) => {
+                  return {
+                    authorize: (socketId: any, callback: any) => {
+                      localStorage.setItem('socketId', socketId);
+                      this.requestsService.authorizeBroadcasting(socketId, channel.name).subscribe( response => {                        
+                        callback(false, response);
+                      }, error => {
+                        callback(true, error);
+                      });          
+                    }
+                  };
+                },      
+              });
   
-        const channel = `branch.${this.requestsService.config.branch.id}.room.${this.requestsService.config.waitingRoom.id}`;
+        // const channel = `branch.${this.requestsService.config.branch.id}.room.${this.requestsService.config.waitingRoom.id}`;
+        const channel = `rooms.${this.requestsService.config.waitingRoom.id}`;  
+
+        console.log('this.laravelEcho', this.laravelEcho);
         
-        this.laravelEcho.channel(channel).listen('.patient.created', (e: any) => {
+        this.laravelEcho?.private(channel).listen('.patient.created', (e: any) => {
+          console.log(e);          
           if (this.networkStatus === "ONLINE" && !this.viewYesterdaysPatients) {             
             this.updatePatientList('created', e.patient);
             this.getOperatingRoomsFromStorageOrLoadFromServer(); 
           }
         });
   
-        this.laravelEcho.channel(channel).listen('.patient.updated', (e: any) => {
+        this.laravelEcho?.private(channel).listen('.patient.updated', (e: any) => {
+          console.log(e);
           if (this.networkStatus === "ONLINE" && !this.viewYesterdaysPatients) {
             this.updatePatientList('updated', e.patient);  
             this.getOperatingRoomsFromStorageOrLoadFromServer();          
           }
         });
   
-        this.laravelEcho.channel(channel).listen('.patient.deleted', (e: any) => {
+        this.laravelEcho?.private(channel).listen('.patient.deleted', (e: any) => {
+          console.log(e);
           if (this.networkStatus === "ONLINE" && !this.viewYesterdaysPatients) {
             this.updatePatientList('deleted', e.patient);
             this.getOperatingRoomsFromStorageOrLoadFromServer(); 

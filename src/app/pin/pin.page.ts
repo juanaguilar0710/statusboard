@@ -10,6 +10,7 @@ import { LocaldataService } from '../api/localdata.service';
 import { NotificationService } from '../api/notification.service';
 import { AppComponent } from '../app.component';
 import { App } from '@capacitor/app';
+import { LoggerService } from '../api/logger.service';
 
 @Component({
   selector: 'app-pin',
@@ -42,6 +43,7 @@ export class PinPage implements OnInit {
     private localdataService: LocaldataService,
     public loadingController: LoadingController,
     private appComponent: AppComponent,
+    private logger: LoggerService,
     private notificationService: NotificationService
   ) {
     // Escuchar el estado de la red
@@ -140,7 +142,7 @@ export class PinPage implements OnInit {
           return; 
         }
 
-        this.configResponse = JSON.parse(this.configResponse .value)     
+        this.configResponse = JSON.parse(this.configResponse.value)     
 
         if(this.configResponse.aplication !== "1" && this.configResponse.token != ""){
           this.configResponse.token = this.requestsService.getToken();       
@@ -193,8 +195,8 @@ export class PinPage implements OnInit {
         {
           text: 'Configuration',
           handler: () => {
-            const options: RemoveOptions = { key: 'config' };
-            Preferences.remove(options);
+            // const options: RemoveOptions = { key: 'config' };
+            // Preferences.remove(options);
             this.router.navigate(['/configuration'], { replaceUrl: true });
           }
         },
@@ -215,7 +217,7 @@ export class PinPage implements OnInit {
     if (this.isNavigating) return;
     this.isNavigating = true;  
     try {
-      await this.refreshAdminToken();      
+      //await this.refreshAdminToken();      
         console.log('Token no obtenido, solicitando nuevo...');
         this.requestTokenBasedOnPin();
         this.appComponent.resetSession();
@@ -229,7 +231,7 @@ export class PinPage implements OnInit {
 
    requestTokenBasedOnPin() {
     try {
-      this.requestsService.loginWithPin(this.pin).then(response => {
+      this.requestsService.loginWithPin(this.pin).then(async response => {
 
         if (response.status === 200) {
           const user = response?.data;
@@ -237,13 +239,14 @@ export class PinPage implements OnInit {
           localStorage.setItem('user',JSON.stringify(user));
           this.localdataService.user = user;
           this.requestsService.setToken(user.jwt.access_token);
-           this.localdataService.setTokenBasedOnPin(this.pin, user.jwt.access_token);
-           Preferences.set({
+          this.localdataService.setTokenBasedOnPin(this.pin, user.jwt.access_token);
+          Preferences.set({
             key: 'user',
             value: JSON.stringify(user)
           });         
           this.loading = false; 
           this.requestsService.logout$.next(false);    
+          await this.logger.setTokenPin(user.jwt.access_token);
           this.router.navigate(['/home'], { replaceUrl: true }).then(() => {
             console.log('Navegación a /home exitosa');
           }).catch(error => {
@@ -290,28 +293,28 @@ export class PinPage implements OnInit {
     }
   }
 
-  async refreshAdminToken() {
-    const response = await Preferences.get({ key: 'admin' });
-    if (!response.value) {
-      this.navigateTo('/login');
-    } else {
-      const token = JSON.parse(response.value)?.jwt?.access_token;
-      if (token && this.localdataService.isTokenExpired(token)) {
-        const newToken = await this.requestsService.refreshToken(token);
-        if (newToken?.status === 200) {
-          this.requestsService.setAdminToken(newToken.data?.jwt.access_token);
-          await Preferences.set({
-            key: 'admin',
-            value: JSON.stringify(newToken.data),
-          });
-        }
-      } else if (token) {
-        this.requestsService.setAdminToken(token);
-      } else {
-        this.navigateTo('/login');
-      }
-    }
-  }
+  // async refreshAdminToken() {
+  //   const response = await Preferences.get({ key: 'admin' });
+  //   if (!response.value) {
+  //     this.navigateTo('/login');
+  //   } else {
+  //     const token = JSON.parse(response.value)?.jwt?.access_token;
+  //     if (token && this.localdataService.isTokenExpired(token)) {
+  //       const newToken = await this.requestsService.refreshToken(token);
+  //       if (newToken?.status === 200) {
+  //         this.requestsService.setAdminToken(newToken.data?.jwt.access_token);
+  //         await Preferences.set({
+  //           key: 'admin',
+  //           value: JSON.stringify(newToken.data),
+  //         });
+  //       }
+  //     } else if (token) {
+  //       this.requestsService.setAdminToken(token);
+  //     } else {
+  //       this.navigateTo('/login');
+  //     }
+  //   }
+  // }
 
   private async navigateTo(route: string) {
     if (this.isNavigating || this.router.url === route) return;

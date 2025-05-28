@@ -11,7 +11,7 @@ import { DashboardComponentRoutingModule } from "./dashboard-routing.module";
       CommonModule,
       FormsModule,
       IonicModule,
-      DashboardComponentRoutingModule,
+      DashboardComponentRoutingModule,      
       ReactiveFormsModule
     ],
     declarations: [DashboardComponent]

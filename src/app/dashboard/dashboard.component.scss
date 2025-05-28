@@ -438,3 +438,157 @@ display: inline-block;
   display: block;          /* Asegura que funcione en contenedores inline */
   max-width: 100%;         /* Asegura que no desborde el ancho de la celda */
 }
+
+
+
+
+
+
+
+/* SweetAlert2 personalizado para logs */
+.custom-swal-popup {
+  max-width: 800px;
+  width: 90% !important;
+}
+
+.custom-swal-container {
+  max-height: 70vh;
+  overflow-y: auto;
+  padding-right: 8px;
+  
+  .swal-logs-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+    
+    .total-logs {
+      font-size: 16px;
+    }
+    
+    .summary {
+      display: flex;
+      gap: 10px;
+      
+      .summary-item {
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: bold;
+        
+        &.success {
+          background: rgba(40, 167, 69, 0.1);
+          color: #28a745;
+        }
+        
+        &.warning {
+          background: rgba(255, 193, 7, 0.1);
+          color: #ffc107;
+        }
+        
+        &.error {
+          background: rgba(220, 53, 69, 0.1);
+          color: #dc3545;
+        }
+      }
+    }
+  }
+  
+  .swal-logs-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    
+    .log-entry {
+      padding: 12px;
+      border-radius: 6px;
+      background: #f8f9fa;
+      border-left: 4px solid #6c757d;
+      
+      &.error {
+        border-left-color: #dc3545;
+        background: rgba(220, 53, 69, 0.05);
+      }
+      
+      &.warning {
+        border-left-color: #ffc107;
+        background: rgba(255, 193, 7, 0.05);
+      }
+      
+      &.info {
+        border-left-color: #17a2b8;
+      }
+      
+      .log-header {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 8px;
+        
+        .http-method {
+          padding: 2px 6px;
+          border-radius: 3px;
+          font-size: 12px;
+          font-weight: bold;
+          text-transform: uppercase;
+          
+          &.get { background: #61affe; color: white; }
+          &.post { background: #49cc90; color: white; }
+          &.put { background: #fca130; color: white; }
+          &.delete { background: #f93e3e; color: white; }
+          &.patch { background: #50e3c2; color: white; }
+        }
+        
+        .log-action {
+          flex: 1;
+          min-width: 60%;
+          font-weight: 500;
+          word-break: break-word;
+        }
+        
+        .log-time {
+          font-size: 12px;
+          color: #6c757d;
+          white-space: nowrap;
+        }
+      }
+      
+      .log-details {
+        pre {
+          background: white;
+          padding: 8px;
+          border-radius: 4px;
+          font-size: 12px;
+          margin: 0;
+          white-space: pre-wrap;
+          word-break: break-word;
+          border: 1px solid #dee2e6;
+          max-height: 200px;
+          overflow-y: auto;
+        }
+      }
+    }
+  }
+}
+
+/* Scrollbar personalizada */
+.custom-swal-container::-webkit-scrollbar {
+  width: 6px;
+  position: relative !important;
+}
+
+.swal2-container.swal2-center.swal2-backdrop-show{
+  position: relative !important;
+}
+
+.custom-swal-container::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
+
+div:where(.swal2-container) {
+  position: relative !important;
+}

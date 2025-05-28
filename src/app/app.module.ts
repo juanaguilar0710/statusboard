@@ -14,14 +14,47 @@ import { IonicGestureConfig } from './ionicGestureConfig';
 import { LocationStrategy, PathLocationStrategy } from '@angular/common';
 import { ToastrModule } from 'ngx-toastr';
 
+import { HttpClientModule } from '@angular/common/http';
+
+import { Drivers } from '@ionic/storage';
+import { HTTP_INTERCEPTORS } from '@angular/common/http';
+import { LoggingInterceptor } from './interceptor/logging.interceptor';
+
+
 @NgModule({
   declarations: [AppComponent, NextToSurgeryComponent],
-  imports: [ToastrModule.forRoot(),BrowserAnimationsModule, BrowserModule, IonicModule.forRoot({animated: false}), AppRoutingModule, IonicStorageModule.forRoot(), HammerModule, ReactiveFormsModule, NgxMaskDirective, NgxMaskPipe],
-  providers: [{ provide: LocationStrategy, useClass: PathLocationStrategy },{ provide: RouteReuseStrategy, useClass: IonicRouteStrategy }, provideNgxMask(), 
+  imports: [
+    BrowserModule,
+    HttpClientModule,  // <-- Asegúrate que está antes de IonicModule
+    IonicModule.forRoot({ animated: false }),
+    IonicStorageModule.forRoot({
+      driverOrder: [Drivers.IndexedDB, Drivers.LocalStorage],
+      name: '__mydb',
+      storeName: 'logs',
+      dbKey: 'key',
+      version: 1
+    }),
+    AppRoutingModule,
+    HammerModule,
+    ReactiveFormsModule,
+    NgxMaskDirective, 
+    NgxMaskPipe,
+    BrowserAnimationsModule,
+    ToastrModule.forRoot()
+  ],
+  providers: [
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: LoggingInterceptor,
+      multi: true
+    },
+    { provide: LocationStrategy, useClass: PathLocationStrategy },
+    { provide: RouteReuseStrategy, useClass: IonicRouteStrategy },
+    provideNgxMask(),
     {
       provide: HAMMER_GESTURE_CONFIG,
       useClass: IonicGestureConfig
-  }
+    }
   ],
   bootstrap: [AppComponent],
 })

@@ -37,17 +37,24 @@
                   <h4>Request:</h4>
                 </div>
                 <ion-item class="w-100">
-                  <ion-input [id]="'searchCommentsInput'" [readonly]="true" aria-label="Request" formControlName="comment_custom" #searchCommentsInput (ionFocus)="openSearchableComponentOnModal('comment')"></ion-input>
+                  <ion-input
+                    [id]="'searchCommentsInput'"
+                    maxlength="70"
+                    aria-label="Request"
+                    formControlName="comment_custom"
+                    #searchCommentsInput>
+                  </ion-input>
                 </ion-item>
               </div>
             </ion-col>
-            </ion-row>
+          </ion-row>
         </div>
-        <ion-button id="add-request" style="font-size: 20px !important;" class="mt-2" fill="outline" expand="block" (click)="openSearchableComponentOnModal('comment')">Add
-          Request</ion-button>
-        <ion-button class="mt-2" style="font-size: 20px !important;" color="danger" fill="outline" expand="block" (click)="clearRequest()">Clear
-          Request</ion-button>
+        <ion-button id="add-request" style="font-size: 20px !important;" class="mt-2" fill="outline" expand="block" (click)="openSearchableComponentOnModal('comment')">          
+          <ion-icon style="margin-left: -7px;" (click)="openSearchableComponentOnModal('comment')" name="search" slot="end"></ion-icon>
+        </ion-button>
+        <ion-button class="mt-2" style="font-size: 20px !important;" color="danger" fill="outline" expand="block" (click)="clearRequest()">Clear</ion-button>
       </div>
+      <p class="char-counter">{{ remainingChars }}/{{this.maxLength}}</p>
       <div class="my-2">
         <ion-grid>
           <!-- Operating Room and Visitor Companion -->
@@ -170,7 +177,7 @@
                   (ionChange)="onChangeSMSToggle($event)"
                   [disabled]="this.disabledToggle"
                   [checked]="this.patient.prefers_sms"></ion-toggle>
-                  <label class="pl-2">Send SMS Notification</label>
+                  <label class="pl-2" style="margin-left: 10px;">SMS</label>
                 </ion-item>
               </div>
             </ion-col>

@@ -13,8 +13,11 @@ import { AlertController } from '@ionic/angular';
 import { App } from '@capacitor/app';
 import { interval, Subscription } from 'rxjs';
 import { NotificationService } from '../api/notification.service';
-
+import { Storage } from '@ionic/storage-angular';
 import { Network } from '@capacitor/network';
+
+import { LoggerService } from '../api/logger.service';
+import Swal from 'sweetalert2'
 
 @Component({
   selector: 'app-dashboard',
@@ -22,7 +25,8 @@ import { Network } from '@capacitor/network';
   styleUrls: ['./dashboard.component.scss'],
 })
 
-  export class DashboardComponent  implements OnInit, AfterViewInit {
+
+  export class DashboardComponent  implements OnInit {
   operatingRooms: any[] = [];
   patients: any[] = [];
   pageSize: number = environment.pageSizeWhitPatients;
@@ -50,19 +54,46 @@ import { Network } from '@capacitor/network';
   clicks = 0;
   totalPagesCurrentPatients:any;
 
+  currentPagePatients: number = 0; // Página actual
+  patientsPerPage: number = 16;   // Número de pacientes por página en el listview
+  totalPatientPages: number = 0;  // Total de páginas
+
+  logs: any[] = [];
+  newAction: string = '';
+  logDetails: string = '';
+  isRefreshing = false;
+  private readonly TOKEN_EXPIRATION_KEY_Admin = 'auth_token_expiration_admin';  
 
   constructor(private LocaldataService: LocaldataService,
               public requestsService: RequestsService,
               private router: Router,
               private alertController: AlertController,
               private networkService: NetworkService,
-              private notificationService: NotificationService
+              private notificationService: NotificationService,
+              private storage: Storage,
+              private logger: LoggerService
   ) { 
+    
 
     setTimeout(() => {
-      setInterval(() => {
-        this.updateTime();
-      }, 1000);  
+      setInterval(async () => {
+        this.updateTime();        
+        if (this.isRefreshing) return;        
+        const expiresAt = await this.storage.get(this.TOKEN_EXPIRATION_KEY_Admin);
+        if (!expiresAt) return;        
+        const timeLeft = expiresAt - Date.now();
+        if (timeLeft <= 60000 && timeLeft > 0) {
+          this.isRefreshing = true;
+          try {
+            await this.refreshToken();
+          } catch (error) {
+            console.error('Error al refrescar el token:', error);
+          } finally {
+            this.isRefreshing = false;
+          }
+        }
+      }, 1000);
+
       setInterval(() => {
         this.changePageRooms();
         const event = new MouseEvent('mousemove');
@@ -105,14 +136,24 @@ import { Network } from '@capacitor/network';
   }
 
   listenToNetworkChanges() {
-    Network.addListener('networkStatusChange', (status) => {
+    Network.addListener('networkStatusChange', async (status) => {
       this.networkStatus = status.connected ? "ONLINE" : "OFFLINE";      
       if (!status.connected) {
         this.deviceWasOffline = true;
         console.log("OFFLINE");
+        await this.logger.addLog('Dispositivo Sin conexión', {
+          deviceStatus: 'Offline',
+          component: 'Dashboard',
+          status: 'error',
+        }, 'error');
       } else {
         if (this.deviceWasOffline) {
           console.log("ONLINE");
+          await this.logger.addLog('Dispositivo Con conexión', {
+            deviceStatus: 'Online',
+            component: 'Dashboard',
+            status: 'success',
+          },'success');
           this.ngOnInit(); // Llamar a ngOnInit solo cuando vuelve la conexión
           this.deviceWasOffline = false;
         }
@@ -120,25 +161,31 @@ import { Network } from '@capacitor/network';
     });
   }
 
-  async ngOnInit() {   
-    await Preferences.get({ key: 'config' }).then((response: any) => {
-      if (response.value) {
-        this.config = (JSON.parse(response.value));         
-        this.requestsService.setToken(this.config.token);
-        this.requestsService.setAdminToken(this.config.token);                    
-      }
-    })    
-     this.updateTime();
-     this.startlists();
-     
-    
-
+  async ngOnInit() {
+    await this.loadLogs();
+    await Preferences.get({ key: 'config' })
+      .then((response: any) => {
+        if (response?.value) {    
+          this.config = JSON.parse(response.value);   
+          localStorage.setItem('config',this.config)
+          this.requestsService.setToken(this.config.token);
+          this.requestsService.setAdminToken(this.config.token);
+        } else {
+          console.warn('No se encontró la llave "config" en Preferences');
+          this.config = { token: null };
+        }
+      })
+      .catch((error) => {
+        console.error('Error al leer Preferences:', error);
+      });
+     await this.updateTime();
+     await this.startlists(); 
   }
 
   updateTime() {
     const now = new Date();
     const hours = now.getHours();
-    const minutes = now.getMinutes();
+    const minutes = now.getMinutes();    
     this.currentTime = now.toLocaleTimeString('es-ES', {
       hour: 'numeric',
       minute: '2-digit',
@@ -153,87 +200,151 @@ import { Network } from '@capacitor/network';
 
   async startlists(){
     await this.getOperatingRoomsFromStorageOrLoadFromServer();
-    await this.getTodaysPatientsFromServer();
     this.startCarousel();
     this.startCountdown();
   }
 
-  refreshToken(){
-    this.requestsService.refreshToken(this.config.token).then(async resp =>{
-      console.log(resp);              
-      if (resp?.status === 200) {
-        this.config.token = resp.data?.jwt.access_token 
-        this.requestsService.setToken(resp.data.jwt.access_token);
-        this.requestsService.setAdminToken(resp.data.jwt.access_token);               
-        await Preferences.set({
-          key: 'config',
-          value: JSON.stringify(this.config),
-        }); 
-        setTimeout(() => {
-          this.notificationService.showInfo('Token refresh.',3000);
-        }, 3000);
-        this.startlists()               
-      }
-    });
+  private isRefreshingToken = false;
+
+  async refreshToken(){
+    this.logger.addLog('Inicio refresco de token', {}, 'info')
+    console.log(this.config);
+      if (this.isRefreshingToken) return;
+        this.isRefreshingToken = true;
+        try {
+            const token = await this.logger.getTokenAdmin();
+            console.log(token);
+            
+          
+          this.requestsService.refreshToken(token).then(async resp =>{
+            console.log(resp);              
+            if (resp?.status === 200) {
+              this.config.token = resp.data?.jwt.access_token 
+              this.requestsService.setToken(resp.data.jwt.access_token);
+              this.logger.setTokenAdmin(
+                resp.data.jwt.access_token,
+                resp.data.jwt.expires_in
+              );
+              this.requestsService.setAdminToken(resp.data.jwt.access_token);               
+              await Preferences.set({
+                key: 'config',
+                value: JSON.stringify(this.config),
+              });        
+              setTimeout(() => {          
+                this.notificationService.showInfo('Token refresh.',3000);
+                this.startlists()
+              }, 3000);
+              this.logger.addLog('Refresco de token exitoso', {}, 'success')
+            }
+            if (resp?.status === 500) {
+              console.log(resp);
+              window.location.reload();
+            }
+
+            if (resp?.status === 401) {
+              console.log(resp);
+              this.logger.addLog('Error refrescando el token', resp, 'error')
+            }
+
+          }).catch(resp => {
+            this.logger.addLog('Error refrescando el token', resp, 'error')
+          });
+        } finally {
+          this.isRefreshingToken = false;
+        }
+
   }
-  async getOperatingRoomsFromStorageOrLoadFromServer() {           
-        await this.requestsService.getOperatingRooms().subscribe((response: any) => {
+
+  private getOperatingRooms = false;
+
+  async getOperatingRoomsFromStorageOrLoadFromServer() {    
+    
+    if (this.getOperatingRooms) return;
+    this.getOperatingRooms = true;
+    try {
+        // Log de inicio de petición
+        await this.logger.addLog('Iniciando petición getOperatingRooms', {}, 'info');
+
+        await this.requestsService.getOperatingRooms().subscribe(async (response: any) => {  
+          console.log('getoperatingrooms: ',response);
+                  
           if(response.status == 500){
             if(response.data.error.code == 1000){
+              console.log('aqui');
+              await this.logger.addLog('Fallo getOperatingRooms', {response}, 'error');
+              
               this.refreshToken();                            
           }
           }else{
             this.operatingRooms = response.data.data;
             this.LocaldataService.setOperatingRooms(this.operatingRooms);
+            await this.logger.addLog('Exitoso getOperatingRooms', {response}, 'success');
+
+            await this.getTodaysPatientsFromServer();
           }                  
         },error => {
           console.log('error getOperatingRooms',error);          
         });
+      } finally {
+        this.getOperatingRooms = false;
+      }
   } 
+
+  private getTodaysPatients = false;
   async getTodaysPatientsFromServer(event?: any, yesterday: boolean = false) {
-    this.updating = true;
-    this.requestsService.getTodaysPatientsDashboard(yesterday).then(async (response: any) => {
-      if (event) {
-        event.target.complete();
-      }
-      if (response.status === 200) {
+      if (this.getTodaysPatients) return;
+      this.getTodaysPatients = true;
+      try {
+      this.updating = true;
+      this.requestsService.getTodaysPatientsDashboard(yesterday).then(async (response: any) => {
+        if (event) {
+          event.target.complete();
+        }
+        if (response.status === 200) {
 
-        const newPatients = response.data;
-        const updatedPatients:any = [];
+          const newPatients = response.data;
+          const updatedPatients:any = [];
 
-        newPatients.forEach((newPatient:any) => {
-          const existingPatient = this.patients.find(p => p.id === newPatient.id);
-          if (!existingPatient || this.hasPatientChanged(existingPatient, newPatient)) {
-            updatedPatients.push(newPatient);
-          }
-        });
+          newPatients.forEach((newPatient:any) => {
+            const existingPatient = this.patients.find(p => p.id === newPatient.id);
+            if (!existingPatient || this.hasPatientChanged(existingPatient, newPatient)) {
+              updatedPatients.push(newPatient);
+            }
+          });
 
-        this.lastsync = new Date().toLocaleString();
-        this.patients = [...newPatients];
-        this.patientsCopy = [...newPatients];
-        this.LocaldataService.setPatients(newPatients);
-        this.viewYesterdaysPatients = yesterday;
-      
+          this.lastsync = new Date().toLocaleString();
+          this.patients = [...newPatients];
+          this.patientsCopy = [...newPatients];
+          this.LocaldataService.setPatients(newPatients);
+          this.viewYesterdaysPatients = yesterday;
+        
 
-        updatedPatients.forEach((patient:any) => this.addUpdatedPatient(patient));
+          updatedPatients.forEach((patient:any) => this.addUpdatedPatient(patient));
 
-      } 
-      if (response.status === 500) {
-        this.refreshToken();
-      }
-      this.updating = false;
-    }).catch((error) => {
-      if (event) {
-        event.target.complete();
-      }
-      if (error.status === 404) {
-        Toast.show({
-          text: error.message,
-          duration: 'long'
-        });
-        this.router.navigate([error.redirectUrl], { replaceUrl: true });
-      }
-    });
+          await this.ngAfterView();
+
+        } 
+        // if (response.status === 500) {
+        //   this.refreshToken();
+        // }
+        this.updating = false;
+      }).catch(async (error) => {
+        if (event) {
+          event.target.complete();
+        }
+        if (error.status === 404) {
+          Toast.show({
+            text: error.message,
+            duration: 'long'
+          });
+          await this.logger.addLog('Error en peticion',error,'error');
+          window.location.reload()
+          // this.router.navigate([error.redirectUrl], { replaceUrl: true });
+        }
+      });
+    } finally {
+      this.getTodaysPatients = false;
+    }
   }
   startCarousel() {
     this.updatePaginationDetails();
@@ -249,7 +360,6 @@ import { Network } from '@capacitor/network';
       this.updatePaginationDetails();        
     }, environment.timeForCardsWhitPatients);
   }  
-
   updatePaginationDetails() {
     const roomsWithPatients = this.getRoomsWithPatients();
     if (roomsWithPatients.length === 0) {
@@ -260,15 +370,12 @@ import { Network } from '@capacitor/network';
   
     this.totalPagesWithPatients = Math.ceil(roomsWithPatients.length / environment.roomsPerPageWhitPatients);
     this.currentPageWithPatients = environment.currentPageWhitPatients + 1;
-
-    console.log(this.currentPageWithPatients);
     
   }
   stopCarousel() {
     clearInterval(this.intervalId);
   }
-  getRoomsWithPatients(): any[] {
-    
+  getRoomsWithPatients(): any[] {    
     this.roomsWithPatients = this.roomsWithPatients || [];    
         this.operatingRooms.forEach(room => {
             const patientsInRoom = this.filterPatientsByRoom(room.name);
@@ -380,30 +487,124 @@ import { Network } from '@capacitor/network';
     }    
     return patientsInRoom.slice(start, end);
   }
-  ngAfterViewInit(): void {
-    if(this.deviceWasOffline){
-console.log('Sin conexion');
 
-    }else{
-      (<any>window).Pusher = Pusher;
-      this.laravelEcho = new Echo({
-        broadcaster: 'pusher',
-        key: environment.pusher.key,
-        cluster: environment.pusher.cluster,
-        forceTLS: environment.pusher.forceTLS,
-        disableStats: true
-      });
+  async getAccessToken() {
+    var adminResponse:any = await Preferences.get({ key: 'admin' });
+        adminResponse = JSON.parse(adminResponse.value);
+     return adminResponse.jwt.access_token;
+  }
 
-      console.log('refrescando conexion');
-      const channel = `branch.${this.requestsService.config.branch.id}.room.${this.requestsService.config.waitingRoom.id}`;        
-      
-      // Escuchar eventos de pacientes
-      this.listenToPatientEvents(channel);
-      // Manejar eventos de conexión/desconexión
-      this.handlePusherConnection();
-      // Iniciar monitoreo de la conexión
-      this.monitorConnection();
-    }
+  async ngAfterView() {
+    try {      
+      await this.logger.addLog('Inicio de ngAfterViewInit', {
+        deviceStatus: this.deviceWasOffline ? 'offline' : 'online',
+        component: 'Dashboard'
+      },'info');
+
+      if(this.deviceWasOffline){
+        await this.logger.addLog('Dispositivo sin conexión', {
+          action: 'Omitiendo inicialización de Pusher',
+          level: 'warn'
+        },'warning');
+        console.warn('Dispositivo sin conexión - Pusher no se inicializará');
+      }else{      
+        await this.logger.addLog('Inicio de autorizacion a pusher', {          
+          component: 'Dashboard',
+        },'info');
+
+        
+        
+        if(this.requestsService.config == null){
+          console.log('configuracion no encontrada en el ngafter: ' + this.requestsService.config);
+          
+          
+        }else{
+          console.log(this.requestsService.config);
+          
+          await this.conectionPusher();
+          // const channel = `branch.${this.requestsService.config.branch.id}.room.${this.requestsService.config.waitingRoom.id}`;        
+          const channel = `rooms.${this.requestsService.config.waitingRoom.id}`;        
+          await this.logger.addLog('Canal configurado', {
+            channel: channel,
+            config: this.sanitizeConfig(this.requestsService.config)
+          },'info');
+            
+          // Escuchar eventos de pacientes
+          await this.listenToPatientEvents(channel);
+          // Manejar eventos de conexión/desconexión
+          this.handlePusherConnection();
+          // Iniciar monitoreo de la conexión
+          this.monitorConnection();
+        }        
+      }      
+    } catch (error) {
+      console.log(error);      
+      await this.logger.addLog('Error conexion pusher', {        
+        status: 'error',
+        error: this.sanitizeError(error)
+      },'error');
+      this.ngOnInit();
+    }    
+  }
+
+  private conectionPusher(){
+    (<any>window).Pusher = Pusher;
+        this.laravelEcho = new Echo({
+          broadcaster: 'pusher',
+          key: environment.pusher.key,
+          cluster: environment.pusher.cluster,
+          forceTLS: environment.pusher.forceTLS,
+          disableStats: true,          
+          authorizer: (channel: any, options: any) => {
+            return {
+              authorize: async (socketId: any, callback: any) => {
+                localStorage.setItem('socketId', socketId);
+                await this.requestsService.authorizeBroadcasting(socketId, channel.name).subscribe( async response => {
+                  console.log(response);
+                  await this.logger.addLog('Autorización exitosa', {
+                    channel: channel.name,
+                    status: 'success',
+                    response: this.sanitizeResponse(response)
+                  },'success');
+                  callback(false, response);
+                }, async error => {
+                  await this.logger.addLog('Error en autorización, recargando y reintentando conexión.', {
+                    channel: channel.name,
+                    status: 'error',
+                    error: this.sanitizeError(error)
+                  },'error');
+                  this.ngOnInit();
+                  callback(true, error);
+                });          
+              }
+            };
+          },      
+        });
+  }
+
+
+  private sanitizeResponse(response: any): any {
+    if (!response) return null;    
+    return {
+      status: response.status,
+      channel_data: response.channel_data ? '***REDACTED***' : null
+    };
+  }
+  private sanitizeConfig(config: any): any {
+    if (!config) return null;    
+    return {
+      waitingRoomId: config.waitingRoom?.id,
+      branchId: config.branch?.id,
+      user: config.user ? { id: config.user.id } : null
+    };
+  }
+  private sanitizeError(error: any): any {
+    if (!error) return null;    
+    return {
+      message: error.message || 'Error sin mensaje',
+      code: error.code || 'unknown',
+      stack: error.stack ? error.stack.toString().substring(0, 200) + '...' : null
+    };
   }
 
   hasPatientChanged(existingPatient: any, newPatient: any): boolean {
@@ -418,24 +619,15 @@ console.log('Sin conexion');
   addUpdatedPatient(patient: any) {   
     const updatedPatients = JSON.parse(localStorage.getItem('updatedPatients') || '[]');
     const expiry = new Date().getTime() + 60000; // 60 segundos
-
-    // Añadir el paciente con tiempo de expiración
     updatedPatients.push({ ...patient, expiry });
-
-    // Guardar en localStorage
     localStorage.setItem('updatedPatients', JSON.stringify(updatedPatients));
 }
 
 getUpdatedPatients() {
   const updatedPatients = JSON.parse(localStorage.getItem('updatedPatients') || '[]');
   const currentTime = new Date().getTime();
-
-  // Filtrar solo los pacientes no expirados
   const validPatients = updatedPatients.filter((patient: any) => currentTime <= patient.expiry);
-
-  // Actualizar `localStorage` con la lista válida
   localStorage.setItem('updatedPatients', JSON.stringify(validPatients));
-
   return validPatients;
 }
 
@@ -444,100 +636,165 @@ isPatientUpdated(patientId: number): boolean {
   return updatedPatients.some((p: any) => p.id === patientId);
 }
 
+
+private async handlePatientEvent(type: 'updated' | 'created' | 'deleted', e: any): Promise<void> {
+  if (this.networkStatus !== "ONLINE") return;
+
+  // Procesa el evento
+  console.log(`Procesando evento ${type}:`, e);
+  await this.logger.addLog(`Websocket.${type}`, e.patient, 'info');
+  await this.updatePatientList(type, e.patient);
+  //await this.getRoomsWithPatients();
+  //await this.getOperatingRoomsFromStorageOrLoadFromServer();
+
+}
+
   private listenToPatientEvents(channel: string): void {
-      this.laravelEcho?.channel(channel).listen('.patient.updated', (e: any) => {
-          if (this.networkStatus === "ONLINE") {               
-              this.updatePatientList('updated', e.patient);
-              //this.addUpdatedPatient(e.patient)
-              this.getRoomsWithPatients();
-              this.getOperatingRoomsFromStorageOrLoadFromServer()
-          }
-      });
-
-      this.laravelEcho?.channel(channel).listen('.patient.created', (e: any) => {  
-          console.log(e);        
-          if (this.networkStatus === "ONLINE") {             
-              this.updatePatientList('created', e.patient);
-              this.getRoomsWithPatients();
-              this.getOperatingRoomsFromStorageOrLoadFromServer()
-          }
-      });
-
-      this.laravelEcho?.channel(channel).listen('.patient.deleted', (e: any) => {
-          console.log(e);
-          if (this.networkStatus === "ONLINE") {
-              this.updatePatientList('deleted', e.patient);
-              this.getRoomsWithPatients();
-              this.getOperatingRoomsFromStorageOrLoadFromServer()
-          }
-      });
+    this.laravelEcho?.leave(channel);    
+    const channelListeners = this.laravelEcho?.private(channel);    
+    channelListeners.listen('.patient.updated', (e: any) => {console.log('entro evento'), this.handlePatientEvent('updated', e)});
+    channelListeners.listen('.patient.created', (e: any) => {console.log('entro evento'), this.handlePatientEvent('created', e)});
+    channelListeners.listen('.patient.deleted', (e: any) => {console.log('entro evento'), this.handlePatientEvent('deleted', e)});
   }
+
+
   private handlePusherConnection(): void {
     const pusherInstance = (<any>this.laravelEcho).connector.pusher;
   
     // Escuchar cuando Pusher se conecta
-    pusherInstance.connection.bind('connected', () => {
+    pusherInstance.connection.bind('connected', async () => {
       console.log('Pusher connected');
+      await this.logger.addLog('Pusher connected', {},'success');
     });
   
     // Escuchar cuando Pusher se desconecta
-    pusherInstance.connection.bind('disconnected', () => {
+    pusherInstance.connection.bind('disconnected', async (resp:any) => {
+      await this.logger.addLog('Pusher disconnected', {resp},'error');
       console.warn('Pusher disconnected, attempting to reconnect...');
       this.retryConnection();
     });
   
     // Escuchar errores
-    pusherInstance.connection.bind('error', (err: any) => {
+    pusherInstance.connection.bind('error', async (err: any) => {
       console.error('Pusher error:', err);
+      await this.logger.addLog('Pusher error', {err},'error');
       if(this.networkStatus === "ONLINE"){
         window.location.reload();
       }
-
     });
   }
+
   private retryConnection(): void {
     let retries = 0;
     const maxRetries = 5;
-    const interval = setInterval(() => {
+    const retryInterval = 3000; // 3 segundos
+    
+    const interval = setInterval(async () => {
         if (retries >= maxRetries) {
             clearInterval(interval);
+            await this.logger.error('Max retries reached. Unable to reconnect to Pusher.', {
+                attempts: retries,
+                lastAttempt: new Date().toISOString()
+            });
             console.error('Max retries reached. Unable to reconnect to Pusher.');
             return;
         }
+
+        retries++;
+        console.log(`Reconnecting to Pusher (attempt ${retries}/${maxRetries})...`);
+        await this.logger.info(`Reconnecting to Pusher (attempt ${retries}/${maxRetries})...`);
+
         try {
-            console.log(`Reconnecting to Pusher (attempt ${retries + 1})...`);
+            // Intento de reconexión
             (<any>this.laravelEcho).connector.pusher.connect();
-            retries++;
+            
+            // Verificar estado de conexión después de un breve tiempo
+            setTimeout(() => {
+                if (this.isPusherConnected()) {
+                    clearInterval(interval);
+                    console.log('Pusher reconnected successfully!');
+                    this.logger.success('Pusher reconnected successfully', {
+                        attempts: retries,
+                        reconnectedAt: new Date().toISOString()
+                    });
+                }
+            }, 1000); // Esperar 1 segundo para verificar
+            
         } catch (error) {
-            console.error('Reconnection failed', error);
+            await this.logger.error('Reconnection attempt failed', {
+                attempt: retries,
+                error: error,
+                timestamp: new Date().toISOString()
+            });
+            console.error(`Reconnection attempt ${retries} failed:`, error);
         }
-    }, 3000);
-  }
+    }, retryInterval);
+}
+
+// Método para verificar el estado de conexión
+private isPusherConnected(): boolean {
+    try {
+        const pusher = (<any>this.laravelEcho).connector.pusher;
+        return pusher.connection.state === 'connected';
+    } catch (error) {
+        return false;
+    }
+}
 
   private monitorConnection(): void {
     const pusherInstance = (<any>this.laravelEcho).connector.pusher;
-    setInterval(() => {
+    setInterval(async () => {
         if (pusherInstance.connection.state !== 'connected') {
+            await this.logger.addLog('Pusher is not connected, attempting to reconnect...', {},'error');
             console.warn('Pusher is not connected, attempting to reconnect...');
             this.retryConnection();
         }
     }, 10000);
   }
-  private updatePatientList(eventType: string, patient: any) {     
+
+  private lastUpdateTime = 0;
+  private updateCooldown = 5000;
+
+  private async updatePatientList(eventType: string, patient: any) { 
+    const now = Date.now();
+    if (now - this.lastUpdateTime < this.updateCooldown) {
+      return;
+    }
+    this.lastUpdateTime = now;
     const index = this.patients.findIndex((p: any) => p.id === patient.id);
     switch(eventType) {
       case 'created':
         if (index === -1) {
-          this.getTodaysPatientsFromServer();
+          const updatedPatient: any = patient;
+          this.patients.push(updatedPatient);
+          this.patientsCopy = [...this.patients];
+          this.lastsync = new Date().toLocaleString();
+          this.LocaldataService.setPatients(this.patients);
+          this.addUpdatedPatient(updatedPatient);
         }
         break;
-      case 'updated':
+        case 'updated':
         if (index > -1) {
-          this.getTodaysPatientsFromServer();               
+          console.log('updated');
+          const updatedPatient: any = patient;
+          const existingPatientIndex = this.patients.findIndex(p => p.id === updatedPatient.id);
+          if (existingPatientIndex !== -1) {
+            this.patients[existingPatientIndex] = { 
+              ...this.patients[existingPatientIndex], 
+              ...updatedPatient 
+            };
+          } else {
+            this.patients.push(updatedPatient);
+          }
+          this.patientsCopy = [...this.patients];
+          this.lastsync = new Date().toLocaleString();
+          this.LocaldataService.setPatients(this.patients);
+          this.addUpdatedPatient(updatedPatient);
         }
         break;
       case 'deleted':
         if (index > -1) {
+          console.log('usuario eliminado');          
           this.patients.splice(index, 1);
         }
         break;
@@ -564,8 +821,6 @@ isPatientUpdated(patientId: number): boolean {
     }
   }
 
-
-
   getCompletedRoomPatientsCount(roomName: string): number {
     return this.patients.filter(patient => 
       patient.operating_room_name === roomName && (patient.status.type === 'completed')
@@ -576,17 +831,17 @@ isPatientUpdated(patientId: number): boolean {
       patient.operating_room_name === roomName
     ).length;
   }
-  getHoldingPatientsCount(): number {
-    return this.patients.filter(patient => patient.status.type === 'holding').length;
+  getHoldingPatientsCount(): number {    
+    return this.patients.filter(patient => patient.status?.type === 'holding').length;
   }
   getSurgeryPatientsCount(): number {
-    return this.patients.filter(patient => patient.status.type === 'surgery').length;
+    return this.patients.filter(patient => patient.status?.type === 'surgery').length;
   }
   getRecoveryPatientsCount(): number {
-    return this.patients.filter(patient => patient.status.type === 'recovery').length;
+    return this.patients.filter(patient => patient.status?.type === 'recovery').length;
   }  
   getCompletedPatientsCount(): number {
-    return this.patients.filter(patient => patient.status.type === 'completed').length;
+    return this.patients.filter(patient => patient.status?.type === 'completed').length;
   }
   getPatientsByRoom(roomName: string): any[] {
     return this.patients.filter(patient => patient.operating_room_name === roomName);
@@ -643,6 +898,7 @@ isPatientUpdated(patientId: number): boolean {
           text: 'Login',
           handler: () => {
             Preferences.clear();
+            this.logger.clearAdminAuthData();
             this.router.navigate(['/login'], { replaceUrl: true });
           }
         },
@@ -650,8 +906,8 @@ isPatientUpdated(patientId: number): boolean {
           text: 'Configuration',
           handler: () => {
             localStorage.setItem('tempConfig',JSON.stringify(this.config))
-            const options: RemoveOptions = { key: 'config' };
-            Preferences.remove(options);
+            // const options: RemoveOptions = { key: 'config' };
+            // Preferences.remove(options);
             this.router.navigate(['/configuration'], { replaceUrl: true });
           }
         },
@@ -668,17 +924,12 @@ isPatientUpdated(patientId: number): boolean {
     await alert.present();
   }
 
-  currentPagePatients: number = 0; // Página actual
-  patientsPerPage: number = 17;   // Número de pacientes por página
-  totalPatientPages: number = 0;  // Total de páginas
-
   updatePatientPaginationDetails() {
     this.totalPatientPages = Math.ceil(this.patients.length / this.patientsPerPage);    
-    console.log(this.totalPatientPages);
   }
   
   getPatientsForCurrentPage(): any[] {
-    const sortedPatients = [...this.patients].sort((a, b) => a.status.id - b.status.id);    
+    const sortedPatients = [...this.patients].sort((a, b) => a.status?.id - b.status?.id);    
     const start = this.currentPagePatients * this.patientsPerPage;
     const end = start + this.patientsPerPage;
     return sortedPatients.slice(start, end);
@@ -686,7 +937,151 @@ isPatientUpdated(patientId: number): boolean {
   
   changePatientPage() {
     this.currentPagePatients = (this.currentPagePatients + 1) % (this.totalPatientPages == 0 ? 1 : this.totalPatientPages);
-    console.log(this.currentPagePatients);
   }
+
+  async loadLogs() {
+    try {
+      this.logs = await this.logger.getLogs();
+      console.log('Logs cargados:', this.logs);
+    } catch (error) {
+      console.error('Error cargando logs:', error);
+    }
+  }
+
+  async clearLogs() {
+    const alert = await this.alertController.create({
+      header: 'Confirmar',
+      message: '¿Estás seguro de que quieres borrar TODOS los logs?',
+      buttons: [
+        {
+          text: 'Cancelar',
+          role: 'cancel'
+        },
+        {
+          text: 'Borrar',
+          handler: async () => {
+            try {
+              await this.logger.clearLogs();
+              this.logs = []; // Limpiar la lista en memoria
+              const toast = await this.alertController.create({
+                message: 'Logs borrados correctamente',
+                
+              });
+              await toast.present();
+            } catch (error) {
+              console.error('Error borrando logs:', error);
+            }
+          }
+        }
+      ]
+    });
+    
+    await alert.present();
+  }
+  async showLogsAlert() {
+    const logs = await this.logger.getLogs();    
+    const sortedLogs = [...logs].sort((a, b) => 
+      new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    );
+  
+    const logsHtml = `
+      <div class="swal-logs-table-container">
+        <table class="swal-logs-table">
+          <thead>
+            <tr>
+              <th class="col-time">Fecha/Hora</th>
+              <th class="col-action">Acción</th>
+              <th class="col-details">Detalles</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${sortedLogs.map(log => `
+              <tr class="log-row ${log.level || 'info'}">
+                <td class="log-time">${new Date(log.timestamp).toLocaleString()}</td>
+                <td class="log-action">
+                  <div class="action-content">${this.formatAction(log.action)}</div>
+                </td>
+                <td class="log-details">
+                ${log.details ? `
+                  <div class="details-container">
+                    <button class="details-toggle">
+                      <span class="toggle-icon">▼</span> Detalles
+                    </button>
+                    <div class="details-content">
+                      <pre>${JSON.stringify(log.details, null, 2)}</pre>
+                    </div>
+                  </div>
+                ` : '<span class="no-details">-</span>'}
+              </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+  
+    const { isConfirmed, isDismissed } = await Swal.fire({
+      title: 'Registro de Actividades',
+      html: `
+        <div class="swal-logs-container">
+          <div class="swal-logs-header">
+            <div class="swal-logs-count">Total de logs: ${logs.length}</div>
+            <button id="clearLogsBtn" class="clear-logs-btn">
+              <ion-icon name="trash-outline"></ion-icon> Limpiar Logs
+            </button>
+          </div>
+          ${logsHtml}
+        </div>
+      `,
+      width: '70%',
+      showConfirmButton: true,
+      confirmButtonText: 'Cerrar',
+      showCancelButton: false,
+      showCloseButton: true,
+      focusConfirm: false,
+      heightAuto: false,
+      customClass: {
+        container: 'swal2-container-ionic',
+        popup: 'swal2-popup-ionic',
+        actions: 'swal2-actions-custom'
+      },
+      didOpen: () => {
+        const clearBtn = document.getElementById('clearLogsBtn');
+        if (clearBtn) {
+          clearBtn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            Swal.close();
+            this.clearLogs();           
+          });
+        }
+
+        document.querySelectorAll('.details-toggle').forEach(button => {
+          button.addEventListener('click', function(this: HTMLButtonElement) {
+            const container = this.closest('.details-container');
+            const content = container?.querySelector('.details-content');
+            const icon = container?.querySelector('.toggle-icon');            
+            if (content && icon) {
+              content.classList.toggle('expanded');
+              icon.textContent = content.classList.contains('expanded') ? '▲' : '▼';
+            }
+          });
+        });
+      }
+    });
+  }
+
+  private formatAction(action: string): string {
+    const httpMethods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'];
+    const method = httpMethods.find(m => action.startsWith(m));
+    
+    if (method) {
+      return `
+        <span class="http-method ${method.toLowerCase()}">${method}</span>
+        <span class="http-url">${action.replace(method, '').trim()}</span>
+      `;
+    }
+    return action;
+  }
+
   
 }

@@ -32,6 +32,9 @@ export class UpdatePatientPage implements OnInit, OnDestroy {
 
   timeList: any[] = environment.timeList;
 
+  maxLength = 70;
+  remainingChars = this.maxLength;
+
   form = this._formbuilder.group({
     fullName: [null],
     status_Id: [null],
@@ -66,12 +69,18 @@ export class UpdatePatientPage implements OnInit, OnDestroy {
       console.log('this.patient',this.patient);
       
     }
+
+    this.form.get('comment_custom')?.valueChanges.subscribe((value:any) => {
+      this.remainingChars = (value ? value.length : 0);
+    });
   }
 
   ngOnDestroy(): void {
     this.modalCancelSurgery?.dismiss();
     this.modal?.dismiss();
   }
+
+
 
   async ngOnInit() {
     this.loading = true;

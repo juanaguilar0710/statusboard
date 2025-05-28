@@ -3,8 +3,10 @@ import { Router } from '@angular/router';
 import { CapacitorHttp, HttpResponse } from '@capacitor/core';
 import { Preferences } from '@capacitor/preferences';
 import { Platform } from '@ionic/angular';
-import { BehaviorSubject, catchError, from, Observable, throwError } from 'rxjs';
+import { BehaviorSubject, catchError, from, Observable, switchMap, tap, throwError } from 'rxjs';
 import { environment } from 'src/environments/environment';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { LoggerService } from './logger.service';
 
 @Injectable({
     providedIn: 'root'
@@ -28,7 +30,7 @@ export class RequestsService {
     lastSync: string = '';
 
     isTokenExpired = (token: string) => Date.now() >= (JSON.parse(atob(token.split('.')[1]))).exp * 1000;
-    constructor(private router: Router,private platform: Platform) {
+    constructor(private router: Router,private platform: Platform,private http: HttpClient,private logger: LoggerService) {
         this.init();
     }
 
@@ -135,6 +137,8 @@ export class RequestsService {
     }
 
     async refreshToken(token: string | null) {
+        console.log('dentro de refresh antes de enviar peticion: ' + token);
+        
         const options = {
             url: environment.url + environment.auth + environment.refresh,
             headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer ' + token },
@@ -143,19 +147,41 @@ export class RequestsService {
             },
         };
         const response: HttpResponse = await CapacitorHttp.post(options);
+        console.log(response);
+        
         if (response.status != 200) {
-            Preferences.remove({ key: 'user' });
-            Preferences.remove({ key: 'admin' });
-            this.router.navigate(['/login'], { replaceUrl: true });
+
+            this.logger.addLog('refreshToken', {
+                url: response.url,
+                mensaje: response,
+                action: 'Refresh con errores'
+              },'error');
+
+            // Preferences.remove({ key: 'user' });
+            // Preferences.remove({ key: 'admin' });
+            // this.router.navigate(['/login'], { replaceUrl: true });
             return;
         }
+
+        this.logger.addLog('refreshToken', {
+            url: response.url,
+            action: 'Refresh exitoso'
+          },'info');
+
+
         return response;
     }
 
-    loginWithPin = async (pin: string): Promise<any> => {        
+    loginWithPin = async (pin: string): Promise<any> => {   
+        // var token = await this.logger.getTokenPin()
+
+        // if(!token){
+          var token = await this.logger.getTokenAdmin()
+        // }
+
         const options = {
           url: environment.url + environment.auth + environment.pin,
-          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer ' + this.adminToken },          
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer ' + token },          
           data: {
             pin: pin,
             branch_id: this.config.branch.id,
@@ -209,11 +235,14 @@ export class RequestsService {
         return new Observable((observer) => {
             if (!this.token || this.token.length === 0 || this.isTokenExpired(this.token)) {
                 observer.error({ status: 404, message: 'Token expired', redirectUrl: '/pin' });
+                console.log('status: 404, message: Token expired, redirectUrl: /pin');
+                
                 return;
             }
     
             if (!this.config?.branch || !this.config?.waitingRoom) {
                 observer.error({ status: 404, message: 'Missing configuration', redirectUrl: '/settings' });
+                console.log('status: 404, message: Missing configuration');
                 return;
             }
     
@@ -250,17 +279,18 @@ export class RequestsService {
     }
 
 
-    getTodaysPatientsDashboard = async (yesterday: boolean = false): Promise<any> => {
+    async getTodaysPatientsDashboard(yesterday: boolean = false): Promise<any> {
         this.loadingPatients$.next(true);
+        const startTime = Date.now();
+        const requestId = Math.random().toString(36).substring(2, 9);
     
         try {
-            // Calcula la fecha formateada (hoy o ayer)
+            // Calcula la fecha formateada
             const date = new Date();
             if (yesterday) {
                 date.setDate(date.getDate() - 1);
             }
             const formatedDate = getLocalDate(date);
-            console.log(formatedDate);
     
             const options = {
                 url: `${environment.url}${environment.visitor}?visit_date=${formatedDate}&orderBy=fullName&direction=asc&branchID=${this.config.branch.id}&roomID=${this.config.waitingRoom.id}`,
@@ -271,21 +301,54 @@ export class RequestsService {
                 },
             };
     
+            // Log de inicio de petición
+            await this.logger.addLog('Inicio petición getTodaysPatientsDashboard', {
+                requestId,
+                url: options.url,
+                date: formatedDate,
+                branchID: this.config.branch.id,
+                roomID: this.config.waitingRoom.id,
+                headers: this.sanitizeHeaders(options.headers),
+                timestamp: new Date().toISOString()
+            }, 'info');
+    
             // Realiza la llamada HTTP
             const result = await CapacitorHttp.get(options);
+            const duration = Date.now() - startTime;
     
-            // Actualiza el estado después de una llamada exitosa
+            // Log de respuesta exitosa
+            await this.logger.addLog('Petición exitosa getTodaysPatientsDashboard', {
+                requestId,
+                status: result.status,
+                duration: `${duration}ms`,
+                dataSize: result.data?.length || 0,
+                timestamp: new Date().toISOString()
+            }, 'success');
+    
+            // Actualiza el estado
             this.lastSync = new Date().toLocaleString();
             await Preferences.set({ key: 'lastSync', value: this.lastSync });
             this.loadingPatients$.next(false);
     
             return result;
-        } catch (error) {
+        } catch (error:any) {
+            const duration = Date.now() - startTime;
+            
+            // Log de error
+            await this.logger.addLog('Error en petición getTodaysPatientsDashboard', {
+                requestId,
+                status: error.status || 500,
+                error: error.error,
+                message: error.message,
+                duration: `${duration}ms`,
+                timestamp: new Date().toISOString()
+            }, 'error');
+    
             // Manejo de errores
             this.loadingPatients$.next(false);
             throw error;
         }
-    };
+    }
 
 
 
@@ -380,21 +443,93 @@ export class RequestsService {
     }
 
     getOperatingRooms(): Observable<any> {
-        const options = {
-            url: `${environment.url}${environment.waitingRooms}/${this.config.waitingRoom.id}${environment.operatingroomsschedules}`,
-            headers: {
+        return from(this.getValidToken()).pipe(
+          switchMap((token) => {
+            if (!token) {
+              return throwError(() => new Error('No se pudo obtener un token válido'));
+            }
+      
+            const options = {
+              url: `${environment.url}${environment.waitingRooms}/${this.config.waitingRoom.id}${environment.operatingroomsschedules}`,
+              headers: {
                 'Content-Type': 'application/json',
-                Accept: 'application/json',
-                Authorization: `Bearer ${this.token}`,
-            },
-        };
-    
-        return from(CapacitorHttp.get(options)).pipe(
-            catchError((error) => {
-                return throwError(error);
-            })
+                'Accept': 'application/json',
+                'Authorization': `Bearer ${token}`,
+              },
+            };
+      
+            return from(CapacitorHttp.get(options)).pipe(
+              tap((response) => {
+                this.logger.addLog(
+                  'Petición exitosa getOperatingRooms',
+                  {
+                    url: options.url,
+                    status: response.status,
+                    data: response.data,
+                    timestamp: new Date().toISOString(),
+                  },
+                  'success'
+                );
+              }),
+              catchError((error) => {
+                this.logger.addLog(
+                  'Error en petición getOperatingRooms',
+                  {
+                    url: options.url,
+                    status: error.status,
+                    error: error.error,
+                    message: error.message,
+                    timestamp: new Date().toISOString(),
+                  },
+                  'error'
+                );
+                
+                if (error.status === 401 || error.status === 403) {
+                  return this.handleTokenError(error);
+                }
+                
+                return throwError(() => new Error(error.message));
+              })
+            );
+          })
         );
-    }   
+      }
+
+      private async getValidToken(): Promise<string | null> {
+        try {
+        //   const pinToken = await this.logger.getTokenPin();
+        //   if (pinToken) return pinToken;
+        
+      
+          const adminToken = await this.logger.getTokenAdmin();
+          return adminToken;
+        } catch (error) {
+          console.error('Error obteniendo token:', error);
+          return null;
+        }
+      }
+
+      private handleTokenError(error: any): Observable<never> {
+        this.logger.addLog(
+          'Error de autenticación en getOperatingRooms',
+          {
+            status: error.status,
+            message: 'Token inválido o expirado',
+            timestamp: new Date().toISOString(),
+          },
+          'warning'
+        );        
+        return throwError(() => new Error('Token inválido o expirado'));
+      }
+      
+      
+      private sanitizeHeaders(headers: any): any {
+        const sanitized = {...headers};
+        if (sanitized.Authorization) {
+          sanitized.Authorization = 'Bearer ***REDACTED***';
+        }
+        return sanitized;
+      }
 
     getProcedures = async (): Promise<any> => {
         return new Promise(async (resolve, reject) => {
@@ -494,6 +629,27 @@ export class RequestsService {
             }
         });
     }
+
+    authorizeBroadcasting(socketId: string, channelName: string): Observable<any> {
+        const headers = new HttpHeaders({
+            Authorization: `Bearer ${this.token}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          });
+
+          return from(
+            this.logger.addLog('Autorizando conexión a Pusher', {
+                socketId: socketId,
+                channel: channelName,
+                action: 'Autorización en progreso'
+            }, 'info')
+        ).pipe(
+            switchMap(() => this.http.post<any>(`${environment.url}/broadcasting/auth`, {
+                socket_id: socketId,
+                channel_name: channelName
+            }, { headers }))
+        );
+      }
 
     statusesColor: any[] = [
         {

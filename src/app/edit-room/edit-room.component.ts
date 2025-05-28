@@ -139,7 +139,7 @@ export class EditRoomComponent implements OnInit {
           this.filteredUsers.push(availableUsers);
         }
       });
-  
+      this.filteredUsers = this.filteredUsers.map(group => group.sort((a:any, b:any) => a.full_name.localeCompare(b.full_name)));
       this.loading = false;
     }, error => {
       console.log(error);

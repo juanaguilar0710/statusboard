@@ -46,8 +46,8 @@
                                 (patient.procedure_time.split(':')[0] >= 12 ? ' PM' : ' AM') : '')
                               }}
                         </td>
-                        <td class="textCardPatients text-ellipsis" style="padding: 8px; width: 20%;" [ngClass]="{ 'surgery': patient.status.type === 'surgery', 'holding': patient.status.type === 'holding', 'nextSurgery': patient.status.type === 'next_to_surgery', 'canceled': patient.visit_canceled_at}">
-                          {{patient.status.name}}
+                        <td class="textCardPatients text-ellipsis" style="padding: 8px; width: 20%;" [ngClass]="{ 'surgery': patient.status?.type === 'surgery', 'holding': patient.status?.type === 'holding', 'nextSurgery': patient.status?.type === 'next_to_surgery', 'canceled': patient.visit_canceled_at}">
+                          {{patient.status?.name}}
                         </td>
                         <td class="textCardPatients text-ellipsis" style="padding: 8px; width: 10%;">{{patient.recovery_room}}</td>
                         <td style="width: 20%;"> 
@@ -202,15 +202,17 @@
   </ion-grid>
   <ion-row style="align-items: center; padding-left: 5px; padding-top: 10px;">
     <!-- Online text with date -->
-    <!-- <ion-col size="3" style="text-align: left;">
-      <span class="onlineTittle">LAST UPDATE:</span>
-      <span class="textUnderLine" style="padding-left: 20px;">{{ this.lastsync }}</span>
-    </ion-col> -->
-
     <ion-col size="3" style="text-align: left;">
+      <!-- <span class="onlineTittle">LAST UPDATE:</span> -->
+      <span class="onlineTittle" *ngIf="!deviceWasOffline">ONLINE</span>
+      <span class="onlineTittle" style="color: #eb4343;" *ngIf="deviceWasOffline">OFFLINE</span> 
+      <span (click)="this.showLogsAlert();" class="textUnderLine" style="padding-left: 20px;">{{ this.lastsync }}</span>
+    </ion-col>
+
+    <!-- <ion-col size="2" style="text-align: left;">
       <span class="onlineTittle" *ngIf="!deviceWasOffline">ONLINE</span>
       <span class="onlineTittle" style="color: #eb4343;" *ngIf="deviceWasOffline">OFFLINE</span>      
-    </ion-col>
+    </ion-col> -->
   
     <!-- In Holding -->
     <ion-col size="2" style="display: flex; align-items: center;">
@@ -225,7 +227,7 @@
     </ion-col>
   
     <!-- Next to Surgery -->
-    <ion-col size="3" style="display: flex; align-items: center;">
+    <ion-col size="2" style="display: flex; align-items: center;">
       <ion-icon name="ellipse" style="color: #3e3dcc;" class="underline"></ion-icon>
       <span class="textUnderLine">NEXT TO SURGERY</span>
     </ion-col>
@@ -236,6 +238,7 @@
     </ion-col>
 
     <ion-col size="1" style="display: flex; align-items: center;" *ngIf="this.totalPagesWithPatients > 1 || totalPatientPages > 1">
+      <!-- <ion-col size="1" style="display: flex; align-items: center;"> -->
       <span class="textUnderLine">TIMER: {{this.countdown}}</span>
     </ion-col>
 

@@ -5,6 +5,7 @@ import { Toast } from '@capacitor/toast';
 import { Router } from '@angular/router';
 import { Preferences } from '@capacitor/preferences';
 import { NotificationService } from '../api/notification.service';
+import { LoggerService } from '../api/logger.service';
 
 @Component({
   selector: 'app-login',
@@ -23,6 +24,7 @@ export class LoginPage implements OnInit {
   constructor(private _formbuilder: FormBuilder,
     private requestsService: RequestsService,
     private notificationService: NotificationService,
+    private logger: LoggerService,
     private router: Router) { }
 
   ngOnInit() {
@@ -41,6 +43,10 @@ export class LoginPage implements OnInit {
         const user = response.data.user;        
         if (user.roles.length > 0 && (user.roles.find((r: any) => r.name.toLowerCase() == 'administrator') || user.roles.find((r: any) => r.name.toLowerCase() == 'manager'))) {
           this.requestsService.setToken(response.data.jwt.access_token);
+          this.logger.setTokenAdmin(
+            response.data.jwt.access_token,
+            response.data.jwt.expires_in
+          );
           this.requestsService.setAdminToken(response.data.jwt.access_token);
           
           Preferences.set({
