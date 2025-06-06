@@ -419,7 +419,7 @@ h1 {
 }
 
 
-@media only screen and (min-width: 1280px) and (max-width: 1333px) and (max-height: 800px) {
+@media only screen and (min-width: 1280px) and (max-width: 1334px) and (max-height: 800px) {
  
   .label {
     font-size: 20px !important;
@@ -529,13 +529,13 @@ h1 {
   }
 
   .logonone{
-    //display: none;
+    display: none;
   }
 
   .filternonelogo{    
-      // flex: 0 0 calc(calc(9 / var(--ion-grid-columns, 12))* 100%) !important;
-      // width: calc(calc(9 / var(--ion-grid-columns, 12))* 100%) !important;
-      // max-width: calc(calc(9 / var(--ion-grid-columns, 12))* 100%) !important;  
+      flex: 0 0 calc(calc(9 / var(--ion-grid-columns, 12))* 100%) !important;
+      width: calc(calc(9 / var(--ion-grid-columns, 12))* 100%) !important;
+      max-width: calc(calc(9 / var(--ion-grid-columns, 12))* 100%) !important;  
   }
 
   .visitCancel{

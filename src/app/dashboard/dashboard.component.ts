@@ -753,14 +753,10 @@ private isPusherConnected(): boolean {
   }
 
   private lastUpdateTime = 0;
-  private updateCooldown = 5000;
 
   private async updatePatientList(eventType: string, patient: any) { 
-    const now = Date.now();
-    if (now - this.lastUpdateTime < this.updateCooldown) {
-      return;
-    }
-    this.lastUpdateTime = now;
+   
+    this.lastUpdateTime = Date.now();
     const index = this.patients.findIndex((p: any) => p.id === patient.id);
     switch(eventType) {
       case 'created':
@@ -889,12 +885,21 @@ private isPusherConnected(): boolean {
       });
     }
   }
+
+  resolution:any;
+
+  showResolution() {
+    const width = window.screen.width;
+    const height = window.screen.height;
+    this.resolution = `Width ${width} x height ${height}`;
+  }
+
   async presentAlert() {
     const alert = await this.alertController.create({
       header: 'Admin Options',
       message: 'Select an option to proceed',
-      buttons: [
-        {
+      buttons: [        
+      {
           text: 'Login',
           handler: () => {
             Preferences.clear();
@@ -912,6 +917,13 @@ private isPusherConnected(): boolean {
           }
         },
         {
+        text: 'Show Resolution',
+        handler: () => {
+          this.showResolutionAlert(); // Mostrará la resolución en una nueva alerta
+          return false; // Evita que la alerta se cierre al tocar este botón
+        }
+        },
+        {
           text: 'Close App',
           handler: () => {
             Preferences.clear();
@@ -922,6 +934,18 @@ private isPusherConnected(): boolean {
       ]
     });
     await alert.present();
+  }
+
+  async showResolutionAlert() {
+  this.showResolution(); // Actualiza this.resolution
+  
+  const resolutionAlert = await this.alertController.create({
+      header: 'Device Resolution',
+      message: this.resolution,
+      buttons: ['OK']
+    });
+    
+    await resolutionAlert.present();
   }
 
   updatePatientPaginationDetails() {

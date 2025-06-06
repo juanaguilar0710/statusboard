@@ -179,6 +179,14 @@ export class PinPage implements OnInit {
     }
   }
 
+   resolution:any;
+
+  showResolution() {
+    const width = window.screen.width;
+    const height = window.screen.height;
+    this.resolution = `Width ${width} x height ${height}`;
+  }
+
   async presentAlert() {
     // Presentar alerta con opciones para ir a login o configuración
     const alert = await this.alertController.create({
@@ -201,6 +209,13 @@ export class PinPage implements OnInit {
           }
         },
         {
+        text: 'Show Resolution',
+        handler: () => {
+          this.showResolutionAlert(); // Mostrará la resolución en una nueva alerta
+          return false; // Evita que la alerta se cierre al tocar este botón
+        }
+        },
+        {
           text: 'Close App',
           handler: () => {
             Preferences.clear();
@@ -212,6 +227,18 @@ export class PinPage implements OnInit {
     });
     await alert.present();
   }
+
+    async showResolutionAlert() {
+      this.showResolution(); // Actualiza this.resolution
+      
+      const resolutionAlert = await this.alertController.create({
+          header: 'Device Resolution',
+          message: this.resolution,
+          buttons: ['OK']
+        });
+        
+        await resolutionAlert.present();
+      }
 
   async login() {
     if (this.isNavigating) return;

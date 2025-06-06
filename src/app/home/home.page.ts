@@ -1,4 +1,4 @@
-import { Component, AfterViewInit, ViewChild, OnInit, NgZone, EventEmitter } from '@angular/core';
+import { Component, AfterViewInit, ViewChild, OnInit, NgZone, EventEmitter, OnDestroy } from '@angular/core';
 import { AlertController, IonModal, NavController } from '@ionic/angular';
 import { RequestsService } from '../api/requests.service';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -19,7 +19,7 @@ import { NotificationService } from '../api/notification.service';
   templateUrl: 'home.page.html',
   styleUrls: ['home.page.scss'],
 })
-export class HomePage implements AfterViewInit, OnInit {
+export class HomePage implements AfterViewInit, OnInit, OnDestroy {
 
   @ViewChild('modallogout') modallogout: IonModal | undefined;
   public disableYesterdaysToggle: EventEmitter<boolean> = new EventEmitter<boolean>();
@@ -82,6 +82,7 @@ export class HomePage implements AfterViewInit, OnInit {
     const width = window.screen.width;
     const height = window.screen.height;
     this.resolution = `Resolución: ${width} x ${height}`;
+    return this.resolution;
   }
 
   async ngOnInit() { 
@@ -148,40 +149,45 @@ export class HomePage implements AfterViewInit, OnInit {
   }
   
   ngAfterViewInit(): void {
+    if (this.laravelEcho) return;
+
     this.requestsService.init().then(async () => {
       this.requestsService.initDropdowns().then((response: any) => {
-        (<any>window).Pusher = Pusher;
-              this.laravelEcho = new Echo({
-                broadcaster: 'pusher',
-                key: environment.pusher.key,
-                cluster: environment.pusher.cluster,
-                forceTLS: environment.pusher.forceTLS,
-                disableStats: true,
-                
-                authorizer: (channel: any, options: any) => {
-                  return {
-                    authorize: (socketId: any, callback: any) => {
-                      localStorage.setItem('socketId', socketId);
-                      this.requestsService.authorizeBroadcasting(socketId, channel.name).subscribe( response => {                        
-                        callback(false, response);
-                      }, error => {
-                        callback(true, error);
-                      });          
-                    }
-                  };
-                },      
-              });
+        if (!this.laravelEcho){
+          (<any>window).Pusher = Pusher;
+            this.laravelEcho = new Echo({
+              broadcaster: 'pusher',
+              key: environment.pusher.key,
+              cluster: environment.pusher.cluster,
+              forceTLS: environment.pusher.forceTLS,
+              disableStats: true,
+              
+              authorizer: (channel: any, options: any) => {
+                return {
+                  authorize: (socketId: any, callback: any) => {
+                    localStorage.setItem('socketId', socketId);
+                    this.requestsService.authorizeBroadcasting(socketId, channel.name).subscribe( response => {                        
+                      callback(false, response);
+                    }, error => {
+                      callback(true, error);
+                    });          
+                  }
+                };
+              },      
+            });
+         }
+        
   
         // const channel = `branch.${this.requestsService.config.branch.id}.room.${this.requestsService.config.waitingRoom.id}`;
         const channel = `rooms.${this.requestsService.config.waitingRoom.id}`;  
 
         console.log('this.laravelEcho', this.laravelEcho);
         
-        this.laravelEcho?.private(channel).listen('.patient.created', (e: any) => {
+        this.laravelEcho?.private(channel).listen('.patient.created',async (e: any) => {
           console.log(e);          
           if (this.networkStatus === "ONLINE" && !this.viewYesterdaysPatients) {             
             this.updatePatientList('created', e.patient);
-            this.getOperatingRoomsFromStorageOrLoadFromServer(); 
+            await this.getOperatingRoomsFromStorageOrLoadFromServer(); 
           }
         });
   
@@ -205,6 +211,13 @@ export class HomePage implements AfterViewInit, OnInit {
     });
   }
 
+  ngOnDestroy() {
+    if (this.laravelEcho) {
+      this.laravelEcho.disconnect();
+      this.laravelEcho = undefined;
+    }
+  }
+
   getUserNames(role: any): string {
     if (role.persons.length > 0) {
       // Retornar los nombres de los usuarios asignados separados por coma
@@ -214,16 +227,24 @@ export class HomePage implements AfterViewInit, OnInit {
     return 'No asignado';
   }
 
+  loadingRooms: boolean = false;
   getOperatingRoomsFromStorageOrLoadFromServer() {
-    this.LocaldataService.getOperatingRooms().then((response: any) => {      
-        this.operatingRooms = response;           
+      if (this.loadingRooms) return;
+      this.loadingRooms = true;
+      
+      this.LocaldataService.getOperatingRooms().then((response: any) => {      
+        this.operatingRooms = response;     
+        console.log('Operating Rooms from Local:', this.operatingRooms);
+              
         this.requestsService.getOperatingRooms().subscribe((response: any) => {
+          this.loadingRooms = false;
           this.operatingRooms = response.data.data;
+          console.log('Operating Rooms from Server:', this.operatingRooms);
           this.getRandomColor(this.operatingRooms);
           this.LocaldataService.setOperatingRooms(this.operatingRooms);
         });     
       });
-  }
+    }
 
   getRandomColor(operatingRooms: any[]) {
     return operatingRooms.map((room) => {
