@@ -19,6 +19,8 @@ import { Network } from '@capacitor/network';
 import { LoggerService } from '../api/logger.service';
 import Swal from 'sweetalert2'
 
+import { TextToSpeech } from '@capacitor-community/text-to-speech';
+
 @Component({
   selector: 'app-dashboard',
   templateUrl: './dashboard.component.html',
@@ -636,17 +638,42 @@ isPatientUpdated(patientId: number): boolean {
   return updatedPatients.some((p: any) => p.id === patientId);
 }
 
+async obtenerVoces() {
+  const voices = await TextToSpeech.getSupportedVoices();
+  console.log('Voces disponibles:', voices);
+}
+
+async hablarTexto(text  = '') {
+  await this.obtenerVoces();
+  // try {
+    await TextToSpeech.speak({
+      text: text,
+      lang: 'es-ES',
+      rate: 0.8,
+      pitch: 1.0,
+      volume: 1.0,
+      voice: 4,
+    });
+  // } 
+  // catch (err) {
+  //   console.error('Error en TextToSpeech:', err);
+  //   if ('speechSynthesis' in window) {
+  //     const utterance = new SpeechSynthesisUtterance(text);
+  //     window.speechSynthesis.speak(utterance);
+  //   }
+  // }
+}
+
 
 private async handlePatientEvent(type: 'updated' | 'created' | 'deleted', e: any): Promise<void> {
   if (this.networkStatus !== "ONLINE") return;
-
-  // Procesa el evento
-  console.log(`Procesando evento ${type}:`, e);
-  await this.logger.addLog(`Websocket.${type}`, e.patient, 'info');
-  await this.updatePatientList(type, e.patient);
-  //await this.getRoomsWithPatients();
-  //await this.getOperatingRoomsFromStorageOrLoadFromServer();
-
+  try {    
+    console.log(`Procesando evento ${type}:`, e);
+    await this.logger.addLog(`Websocket.${type}`, e.patient, 'info');
+    await this.updatePatientList(type, e.patient);
+  } catch (err) {
+    console.error('Error en handlePatientEvent:', err);
+  }
 }
 
   private listenToPatientEvents(channel: string): void {
@@ -767,6 +794,7 @@ private isPusherConnected(): boolean {
           this.lastsync = new Date().toLocaleString();
           this.LocaldataService.setPatients(this.patients);
           this.addUpdatedPatient(updatedPatient);
+          await this.hablarTexto('Nuevo usuario creado: ' + updatedPatient.fullName + ', con estatus ' + updatedPatient.status_name);
         }
         break;
         case 'updated':
@@ -786,12 +814,14 @@ private isPusherConnected(): boolean {
           this.lastsync = new Date().toLocaleString();
           this.LocaldataService.setPatients(this.patients);
           this.addUpdatedPatient(updatedPatient);
+          await this.hablarTexto('Usuario Actualizado: ' + updatedPatient.fullName + ', con estatus ' + updatedPatient.status_name);
         }
         break;
       case 'deleted':
         if (index > -1) {
           console.log('usuario eliminado');          
           this.patients.splice(index, 1);
+          await this.hablarTexto('Usuario eliminado: ' + patient.fullName);
         }
         break;
     }
