@@ -178,7 +178,7 @@ export class UpdatePatientPage implements OnInit, OnDestroy {
   }
 
   async openSearchableComponentOnModal(type: string) {
-    const data = (type == 'operating_room' || type == 'next_to_surgery') ? this.operatingRooms : type == 'surgeon' ? this.surgeons : type == 'procedure' ? this.procedures : type == 'time' ? this.timeList : type == 'recovery_room' ? this.recoveryRooms : this.comments;       
+    const data = (type == 'operating_room' || type == 'next_to_surgery') ? this.operatingRooms : type == 'surgeon' ? this.surgeons : type == 'procedure' ? this.procedures : type == 'time' ? this.timeList : type == 'recovery_room' ? this.recoveryRooms : this.comments;
     this.modal = await this.modalController.create({
       cssClass: 'searchable-component-modal',
       component: SearchableComponentComponent,

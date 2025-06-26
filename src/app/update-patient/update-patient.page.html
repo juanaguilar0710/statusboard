@@ -36,7 +36,7 @@
                 <div>
                   <h4>Request:</h4>
                 </div>
-                <ion-item class="w-100">
+                <ion-item class="w-100" style="margin-top: -10px;">
                   <ion-input
                     [id]="'searchCommentsInput'"
                     maxlength="70"
@@ -44,6 +44,7 @@
                     formControlName="comment_custom"
                     #searchCommentsInput>
                   </ion-input>
+                  <p class="char-counter">{{ remainingChars }}/{{this.maxLength}}</p>
                 </ion-item>
               </div>
             </ion-col>
@@ -54,7 +55,7 @@
         </ion-button>
         <ion-button class="mt-2" style="font-size: 20px !important;" color="danger" fill="outline" expand="block" (click)="clearRequest()">Clear</ion-button>
       </div>
-      <p class="char-counter">{{ remainingChars }}/{{this.maxLength}}</p>
+      
       <div class="my-2">
         <ion-grid>
           <!-- Operating Room and Visitor Companion -->
@@ -84,7 +85,7 @@
                 <div class="w-100 justify-content-end">
                   <ion-item>
                     <ion-input [readonly]="true" aria-label="Operating Room" formControlName="operating_room_name" (ionFocus)="openSearchableComponentOnModal('operating_room')"></ion-input>
-                    <ion-icon (click)="openSearchableComponentOnModal('operating_room')" name="search" slot="end"></ion-icon>
+                    <ion-icon *ngIf="this.operatingRooms.length > 0" (click)="openSearchableComponentOnModal('operating_room')" name="search" slot="end"></ion-icon>
                   </ion-item>
                 </div>
               </div>
@@ -105,7 +106,7 @@
                 <div class="w-100 justify-content-end">
                   <ion-item>
                     <ion-input aria-label="Surgeon Name" [readonly]="true" formControlName="surgeon_name"></ion-input>
-                    <ion-icon (click)="openSearchableComponentOnModal('surgeon')" name="search" slot="end"></ion-icon>
+                    <ion-icon *ngIf="this.surgeons.length > 0" (click)="openSearchableComponentOnModal('surgeon')" name="search" slot="end"></ion-icon>
                   </ion-item>
                 </div>
               </div>
@@ -169,7 +170,7 @@
               </div>
             </ion-col>
             <ion-col>
-              <div class="d-flex justify-content-start align-items-center">
+              <div class="d-flex justify-content-start align-items-center paddinglefttoggle">
                 <ion-item lines="none">
                   <ion-toggle
                   color="primary" 
@@ -201,7 +202,7 @@
                 <div class="w-100 justify-content-end">
                   <ion-item>
                     <ion-input [readonly]="true" aria-label="Procedure Time" formControlName="procedure_time" ></ion-input>
-                    <ion-icon (click)="openSearchableComponentOnModal('time')" name="search" slot="end"></ion-icon>
+                    <ion-icon *ngIf="this.timeList.length > 0" (click)="openSearchableComponentOnModal('time')" name="search" slot="end"></ion-icon>
                   </ion-item>
                 </div>
               </div>
@@ -231,7 +232,7 @@
                 <div class="w-100 justify-content-end">
                   <ion-item>
                     <ion-input aria-label="Recovery Room" formControlName="recovery_room"></ion-input>
-                    <ion-icon (click)="openSearchableComponentOnModal('recovery_room')" name="search" slot="end"></ion-icon>
+                    <ion-icon *ngIf="this.recoveryRooms.length > 0" (click)="openSearchableComponentOnModal('recovery_room')" name="search" slot="end"></ion-icon>
                   </ion-item>
                 </div>
               </div>

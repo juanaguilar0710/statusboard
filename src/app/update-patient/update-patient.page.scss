@@ -170,7 +170,7 @@ ion-input {
 
 }
 
-@media only screen and (min-width: 1280px) and (max-width: 1333px) and (max-height: 800px) {
+@media only screen and (min-width: 1280px) and (max-width: 1334px) and (max-height: 800px) {
   .cards-container {
     height: 95px;
     width: 195px;
@@ -197,7 +197,11 @@ ion-input {
     }
 
     ion-row {
-      max-height: 47px !important;
+      max-height: 48px !important;
+    }
+
+    .paddinglefttoggle{
+      padding-left: 5px;
     }
 
     .classButton{
@@ -208,16 +212,14 @@ ion-input {
     }
 
     h4{
-      font-size: 1.3rem;
+      font-size: 1.2rem;
     }
 
     .rowButton{
-      margin-top: 35px !important;
+      margin-top: 0px !important;
     }
 
-    .paddingProcedure{
-      padding-left: 285px !important;
-    }
+  
 
 
 }

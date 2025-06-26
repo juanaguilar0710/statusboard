@@ -12,6 +12,7 @@ dependencies {
     implementation project(':capacitor-community-appcenter')
     implementation project(':capacitor-community-appcenter-analytics')
     implementation project(':capacitor-community-appcenter-crashes')
+    implementation project(':capacitor-community-text-to-speech')
     implementation project(':capacitor-app')
     implementation project(':capacitor-dialog')
     implementation project(':capacitor-haptics')

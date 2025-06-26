@@ -1,8 +1,8 @@
 export const environment = {
-  version: "1.4.1.4",
+  version: "1.4.1.8",
   production: false,
   resetPin: '1111',
-  maxInactivityTime: 20000,
+  maxInactivityTime: 20,
   timeSaveScreen: 3,
 
   currentPage: 0,

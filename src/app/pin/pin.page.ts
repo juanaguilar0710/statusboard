@@ -294,6 +294,8 @@ export class PinPage implements OnInit {
             this.notificationService.showError('The PIN you entered is incorrect. Please sign in again.',6000);
           }else{
             this.notificationService.showError('Error interno.' + error,4000);
+            Preferences.clear();
+            this.router.navigate(['/login'], { replaceUrl: true });
           }          
           this.handleInput("clear");
       });     
