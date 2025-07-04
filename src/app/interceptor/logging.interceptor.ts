@@ -7,16 +7,30 @@ import {
   HttpResponse,
   HttpErrorResponse
 } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, throwError } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { LoggerService } from '../api/logger.service';
+import { RequestsService } from '../api/requests.service';
 
 @Injectable()
 export class LoggingInterceptor implements HttpInterceptor {
-  constructor(private logger: LoggerService) {}
+  constructor(private logger: LoggerService,private authService: RequestsService) {}
 
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
     
+    const authToken = this.authService.getToken();
+
+    console.log(authToken);
+    
+     let authReq = req;
+    if (authToken) {
+      authReq = req.clone({
+        setHeaders: {
+          Authorization: `Bearer ${authToken}`
+        }
+      });
+    }
+
     const startTime = Date.now();
     const requestId = Math.random().toString(36).substring(2, 9);
 
@@ -27,7 +41,7 @@ export class LoggingInterceptor implements HttpInterceptor {
       body: this.sanitizeData(req.body)
     },'info');
 
-    return next.handle(req).pipe(
+    return next.handle(authReq).pipe(
       tap(
         (event: HttpEvent<any>) => {
           if (event instanceof HttpResponse) {
@@ -41,14 +55,26 @@ export class LoggingInterceptor implements HttpInterceptor {
           }
         },
         (error: HttpErrorResponse) => {
+          console.log(error);
+          
           const duration = Date.now() - startTime;
           this.logger.addLog(`HTTP Error: ${req.method} ${req.url}`, {
             requestId,
             status: error.status,
-            error: error.message,
+            error: error.error,
             duration: `${duration}ms`,
             ...(error.error && { errorDetails: this.sanitizeData(error.error) })
           },'error');
+
+           let obj = {
+              message: error.error.message || error.statusText,
+              status: error.status,
+              body: error.error,
+              ok: error.ok
+            };       
+      
+              return throwError(obj);
+
         }
       )
     );
