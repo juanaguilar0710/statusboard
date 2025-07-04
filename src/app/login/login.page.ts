@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, ElementRef, OnInit, Renderer2, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { RequestsService } from '../api/requests.service';
 import { Toast } from '@capacitor/toast';
@@ -6,6 +6,7 @@ import { Router } from '@angular/router';
 import { Preferences } from '@capacitor/preferences';
 import { NotificationService } from '../api/notification.service';
 import { LoggerService } from '../api/logger.service';
+import { environment } from 'src/environments/environment';
 
 @Component({
   selector: 'app-login',
@@ -13,16 +14,24 @@ import { LoggerService } from '../api/logger.service';
   styleUrls: ['./login.page.scss'],
 })
 export class LoginPage implements OnInit {
+  @ViewChild('twoFactorCode', { read: ElementRef }) twoFactorCode!: ElementRef<HTMLIonInputElement>;
 
   showPassword: boolean = false;
   loading: boolean = false;
   form: FormGroup = this._formbuilder.group({
     username: [null, [Validators.required, Validators.minLength(3)]],
     password: [null, [Validators.required, Validators.minLength(3)]],
+    code: [null],
   });
+
+  two_fa_source: string = '';
+  authenticationRequired: boolean = false;
+  twoFactorCodeValue: string = '';
+  
 
   constructor(private _formbuilder: FormBuilder,
     private requestsService: RequestsService,
+    private renderer: Renderer2,
     private notificationService: NotificationService,
     private logger: LoggerService,
     private router: Router) { }
@@ -37,45 +46,25 @@ export class LoginPage implements OnInit {
 
   async login() {
     this.loading = true;
-    this.requestsService.login(this.form.value).then(async (response: any) => {      
+     let user = {
+        username: this.form.get('username')?.value,
+        password: this.form.get('password')?.value,
+        grant_type: environment.oauthObj.grantType,
+        client_id: environment.oauthObj.clientId,
+        client_secret: environment.oauthObj.clientSecret
+      };
+    this.requestsService.loginOauth(user).then(async (response: any) => {      
       this.loading = false;
-      if (response.status === 200) {
-        const user = response.data.user;        
-        if (user.roles.length > 0 && (user.roles.find((r: any) => r.name.toLowerCase() == 'administrator') || user.roles.find((r: any) => r.name.toLowerCase() == 'manager'))) {
-          this.requestsService.setToken(response.data.jwt.access_token);
-          this.logger.setTokenAdmin(
-            response.data.jwt.access_token,
-            response.data.jwt.expires_in
-          );
-          this.requestsService.setAdminToken(response.data.jwt.access_token);
-          
-          Preferences.set({
-            key: 'admin',
-            value: JSON.stringify(response.data)
-          });
-
-          
-          Preferences.set({
-            key: 'branch',
-            value: JSON.stringify(response.data.user.branch)
-          });
-          
-          
-          Preferences.set({
-            key: 'waiting_rooms',
-            value: JSON.stringify(response.data.user.waiting_rooms)
-          });
-          
-          Toast.show({
-            text: 'Login successful',
-            duration: 'long'
-          });
-
-          this.router.navigate(['/configuration'], { replaceUrl: true });
-          
-        } else {
-          this.notificationService.showError('Insufficient permissions.',6000);
-        }
+      if (response.status === 200) {        
+        this.requestsService.setToken(response.data.access_token);
+        this.requestsService.setExpiresIn(response.data.expires_in);
+        this.requestsService.setRefreshToken(response.data.refresh_token);                 
+        this.requestsService.setAdminToken(response.data.access_token);        
+         this.logger.setTokenAdmin(
+                    response.data.access_token,
+                    response.data.expires_in
+                  );
+        this.getUser();  
       } else {
         await Toast.show({
           text: 'Login failed',
@@ -86,4 +75,98 @@ export class LoginPage implements OnInit {
     });
   }
 
+  getUser() {
+       this.requestsService.getOAuthUser().subscribe(responseUser => {
+            this.requestsService.setAuthUser(responseUser.data);
+            console.log('mensaje');
+            
+            if (responseUser.data.default_2fa !== null && (responseUser.data.two_fa_enabled_at !== null || responseUser.data.two_fa_enabled_at === null)) {              
+                const user = responseUser.data;                    
+                if (user.roles.length > 0 && (user.roles.find((r: any) => r.name.toLowerCase() == 'administrator') || user.roles.find((r: any) => r.name.toLowerCase() == 'manager'))) {
+                  Preferences.set({
+                    key: 'admin',
+                    value: JSON.stringify(responseUser.data)
+                  });                  
+                  Preferences.set({
+                    key: 'branch',
+                    value: JSON.stringify(responseUser.data.branch)
+                  });                  
+                  Preferences.set({
+                    key: 'waiting_rooms',
+                    value: JSON.stringify(responseUser.data.waiting_rooms)
+                  });                  
+                  Toast.show({
+                    text: 'Login successful',
+                    duration: 'long'
+                  });
+                  this.router.navigate(['/configuration'], { replaceUrl: true });                  
+                } else {
+                    this.notificationService.showError('Insufficient permissions.',6000);
+                  }    
+          }
+        },error => {
+            console.log('Error fetching user data:', error);
+            this.two_fa_source = error.error.two_fa_source;
+             this.authenticationRequired = true;
+            setTimeout(() => {
+                this.showTwoFactorInput();
+                const card = document.getElementsByClassName('card')[0];
+                card.classList.remove('card-hidden');
+              }, 700);          
+              this.resendCode();
+          }
+        )
+
+    }
+
+    showTwoFactorInput() {
+      if (!this.twoFactorCode) return;
+      requestAnimationFrame(() => {
+        const inputEl = this.twoFactorCode.nativeElement;    
+        inputEl.hidden = false;    
+        setTimeout(() => {
+          inputEl.focus();      
+          const card = this.renderer.selectRootElement('.card', true);
+          if (card) {
+            this.renderer.removeClass(card, 'card-hidden');
+          }
+        }, 50);
+      });
+    }
+
+    resendCode(){
+      if(this.two_fa_source !== 'app'){
+        this.requestsService.sendCode().subscribe(response => {
+          console.log('Código de verificación enviado exitosamente:', response);
+        },error => {
+          console.error('Error al enviar el código de verificación:', error);
+          this.notificationService.showError(error.error.error.detail,6000);
+        });
+      }                
+    }
+
+    verifyTwoFactorCode() {
+      const code = this.form.get('code')?.value;
+      if (!code || code.trim() === '') {
+        console.error('El código 2FA está vacío');
+        return;
+      }      
+      this.requestsService.verifyTwoFactorCode(code).subscribe(
+        (success:any) => {          
+          if (success) {
+            this.getUser();
+          } else {
+            console.log('Invalid verification code');  
+            this.notificationService.showError('Invalid verification code',6000);          
+          }      
+        },
+        (error) => {
+          console.log(error);
+          this.notificationService.showError(error.error.error.detail,6000);
+          console.log('Error enviando el codigo');
+        }
+      );
+    } 
 }
+
+    

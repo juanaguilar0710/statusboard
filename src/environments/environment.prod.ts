@@ -21,8 +21,8 @@ export const environment = {
   },
 
   pusher: {
-    key: '7c4e353eb51fce335b63', //prod    
-    //key: '2889bc5e0828ce2dabb2', //dev 
+    //key: '7c4e353eb51fce335b63', //prod    
+    key: '2889bc5e0828ce2dabb2', //dev 
     cluster: 'us2',
     forceTLS: true
   },
@@ -223,9 +223,21 @@ export const environment = {
   ],
 
   
-  url: 'https://api.dtouchmedia.com',
+  //url: 'https://api.dtouchmedia.com',
   //url: 'https://api.dtouchmedia.dev',
+  url: 'https://api.dev.dtouchmedia.cloud',
+  oauth: '/oauth',
+  token: '/token',
+  oauthObj:{
+    clientId: '9f49cec9-7d3b-4ae1-a211-c0b19225e42c',
+    clientSecret: 'UGIJqcPJaXxCmY7tAmGKaBNsqeY0pxV9j008KGvd',
+    grantType: 'password',
+    grantTypeRefresh: 'refresh_token',
+  },
   auth: '/auth',
+  profile: '/profile',
+  sendCode: '/send-2fa-code',
+  verifyCode: '/verify-2fa-code',
   login: '/login',
   refresh: '/refresh',
   pin: '/pin',

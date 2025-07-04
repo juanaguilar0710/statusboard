@@ -15,6 +15,8 @@ export class RequestsService {
 
     config: any = null;
     private token: string | null = null;
+    ExpiresIn:any
+    refreshTokenKey:any
     private adminToken: string | null = null;
     timeRemaining$ = new BehaviorSubject<number>(20);
     startTimer$ = new BehaviorSubject<boolean>(false);
@@ -71,6 +73,19 @@ export class RequestsService {
     setToken(token: string | null) {
         this.token = token;        
     }
+
+    setExpiresIn(expired:any) {
+        this.ExpiresIn = expired;        
+    }
+    setRefreshToken(refresh:any) {
+        this.refreshTokenKey = refresh;        
+    }
+
+     user:any
+    setAuthUser(json:any) {
+    localStorage.setItem('user', JSON.stringify(json));
+    this.user = json;
+  }
 
     getToken() {
         return this.token;
@@ -650,6 +665,28 @@ export class RequestsService {
             }, { headers }))
         );
       }
+
+    async loginOauth(loginData: any) {
+        const options = {
+            url: environment.url + environment.oauth + environment.token,
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            data: loginData,
+        };
+        const response: HttpResponse = await CapacitorHttp.post(options);
+        return response;
+    }
+
+    getOAuthUser(): Observable<any>  {
+        return this.http.get(environment.url + environment.auth + environment.profile);
+    }
+
+    sendCode(): Observable<any> {
+        return this.http.post(environment.url + environment.auth + environment.sendCode,{});
+    }
+
+    verifyTwoFactorCode(code: string): Observable<any> {
+        return this.http.post(environment.url + environment.auth + environment.verifyCode, { code: code });
+    }
 
     statusesColor: any[] = [
         {

@@ -5,7 +5,7 @@
     </div>
     <div class="container">
       <div class="row justify-content-center">
-        <div class="col-10 col-md-6 col-lg-4">
+        <div class="col-12 col-md-8 col-lg-6">
           <form [formGroup]="form">
             <div>
               <h1><b>Welcome</b></h1>
@@ -34,12 +34,27 @@
             </ion-item>
               
             <br />
-            <ion-input tabindex="3" label="2FA Code"  label-placement="floating" fill="outline"
-              errorText="Code is required" (keyup.enter)="login()"
-              [readonly]="loading" [disabled]="true"></ion-input>
+              <p *ngIf="this.two_fa_source === 'sms'" class="text-center" style="color: black; margin-bottom: 20px;">We've sent a access code to your phone.</p> <!-- sms -->
+              <p *ngIf="this.two_fa_source === 'app'" class="text-center" style="color: black; margin-bottom: 20px;">Open you two-factor authenticator (TOTP) app or browser extension to view your authentication code.</p><!-- qr -->
+              <p *ngIf="this.two_fa_source === 'email'" class="text-center" style="color: black; margin-bottom: 20px;">We've sent a access code to your email.</p> <!-- email -->
+            
+              <ion-input 
+              hidden 
+              #twoFactorCode 
+              tabindex="3" 
+              label="2FA Code"  
+              label-placement="floating" 
+              fill="outline"
+              errorText="Code is required"
+              formControlName="code">
+            </ion-input>
               <br/>
-            <ion-button class="w-100" color="primary" size="large" [disabled]="form.invalid || loading"
+            <ion-button *ngIf="!authenticationRequired" class="w-100" color="primary" size="large" [disabled]="form.invalid || loading"
               (click)="login()"><ion-spinner name="dots" *ngIf="loading"></ion-spinner>{{loading ? '' : 'LOGIN'}}</ion-button>
+
+              <ion-button *ngIf="authenticationRequired" class="w-100" color="primary" size="large"
+              (click)="verifyTwoFactorCode()"><ion-spinner name="dots" *ngIf="loading"></ion-spinner>{{loading ? '' : 'Validate Code'}}</ion-button>
+
           </form>
         </div>
       </div>

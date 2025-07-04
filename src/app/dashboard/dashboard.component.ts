@@ -640,28 +640,25 @@ isPatientUpdated(patientId: number): boolean {
 
 async obtenerVoces() {
   const voices = await TextToSpeech.getSupportedVoices();
+
+//   await this.logger.addLog(`voces`, {
+//   name: voices.voices.,
+//   lang: voices.lang,
+// }, 'info');
+
   console.log('Voces disponibles:', voices);
 }
 
-async hablarTexto(text  = '') {
+async speak(text  = '') {
   await this.obtenerVoces();
-  // try {
     await TextToSpeech.speak({
       text: text,
-      lang: 'es-ES',
-      rate: 0.8,
+      lang: 'es-US',
+      rate: 1.0,
       pitch: 1.0,
       volume: 1.0,
-      voice: 4,
+      voice: 125,
     });
-  // } 
-  // catch (err) {
-  //   console.error('Error en TextToSpeech:', err);
-  //   if ('speechSynthesis' in window) {
-  //     const utterance = new SpeechSynthesisUtterance(text);
-  //     window.speechSynthesis.speak(utterance);
-  //   }
-  // }
 }
 
 
@@ -682,6 +679,7 @@ private async handlePatientEvent(type: 'updated' | 'created' | 'deleted', e: any
     channelListeners.listen('.patient.updated', (e: any) => {console.log('entro evento'), this.handlePatientEvent('updated', e)});
     channelListeners.listen('.patient.created', (e: any) => {console.log('entro evento'), this.handlePatientEvent('created', e)});
     channelListeners.listen('.patient.deleted', (e: any) => {console.log('entro evento'), this.handlePatientEvent('deleted', e)});
+    channelListeners.listen('.play.speech', (e: any) => {console.log('entro evento'),  this.speak(e.message)});
   }
 
 
@@ -794,7 +792,6 @@ private isPusherConnected(): boolean {
           this.lastsync = new Date().toLocaleString();
           this.LocaldataService.setPatients(this.patients);
           this.addUpdatedPatient(updatedPatient);
-          await this.hablarTexto('Nuevo usuario creado: ' + updatedPatient.fullName + ', con estatus ' + updatedPatient.status_name);
         }
         break;
         case 'updated':
@@ -814,14 +811,12 @@ private isPusherConnected(): boolean {
           this.lastsync = new Date().toLocaleString();
           this.LocaldataService.setPatients(this.patients);
           this.addUpdatedPatient(updatedPatient);
-          await this.hablarTexto('Usuario Actualizado: ' + updatedPatient.fullName + ', con estatus ' + updatedPatient.status_name);
         }
         break;
       case 'deleted':
         if (index > -1) {
           console.log('usuario eliminado');          
           this.patients.splice(index, 1);
-          await this.hablarTexto('Usuario eliminado: ' + patient.fullName);
         }
         break;
     }
