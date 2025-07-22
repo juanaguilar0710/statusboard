@@ -11,7 +11,7 @@ export class LoggerService {
   private readonly TOKEN_EXPIRATION_KEY_Admin = 'auth_token_expiration_admin';  
   private readonly TOKEN_KEY_Pin = 'auth_token_pin';
 
-  private readonly MAX_LOG_ENTRIES = 500;
+  private readonly MAX_LOG_ENTRIES = 200;
 
   constructor(private storage: Storage) {
     this.initialize();
@@ -48,7 +48,9 @@ export class LoggerService {
       currentLogs.length = this.MAX_LOG_ENTRIES;
     }
 
-    await this.storage.set(this.LOG_STORAGE_KEY, currentLogs);
+    if(level === 'error'){
+      await this.storage.set(this.LOG_STORAGE_KEY, currentLogs);
+    }
   }
 
   /**
@@ -123,15 +125,15 @@ export class LoggerService {
    * Métodos específicos para cada nivel
    */
   async info(action: string, details: any = {}) {
-    await this.addLog(action, details, 'info');
+    //await this.addLog(action, details, 'info');
   }
 
   async success(action: string, details: any = {}) {
-    await this.addLog(action, details, 'success');
+    //await this.addLog(action, details, 'success');
   }
 
   async warning(action: string, details: any = {}) {
-    await this.addLog(action, details, 'warning');
+    //await this.addLog(action, details, 'warning');
   }
 
   async error(action: string, details: any = {}) {

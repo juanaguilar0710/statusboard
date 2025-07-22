@@ -1,4 +1,13 @@
 <ion-content>
+  <!-- Loading Screen -->
+  <div class="loading-overlay" *ngIf="isLoading">
+    <div class="loading-content">
+      <div class="loading-spinner"></div>
+      <div class="loading-text">Loading patients...</div>
+      <div class="loading-subtext">Please wait</div>
+    </div>
+  </div>
+
   <ion-grid>
     <!-- Información general en la parte superior derecha -->
     <ion-row class="status-overview" style="overflow-y: scroll; height: 92vh; padding-bottom: 1px;">
@@ -122,9 +131,26 @@
       </ion-col>
 
       <ion-col size="2" size-md="2" size-lg="2" style="padding-left: 0; padding-top: 0;">
-        <div class="info-box" style="height: fit-content; border: 2px solid #d0e8f2;">
+        <div class="info-box" style="height: fit-content; border: 2px solid #d0e8f2; position: relative;">
 
-          <ion-row>
+          <!-- Header integrado con fecha, hora y pacientes como en la imagen -->
+          <div class="headerCount" (click)="headerClicked()">
+            <div class="content-wrapper" (click)="headerClicked()">
+              <!-- Fecha separada en dos líneas -->
+              <div class="date1" (click)="headerClicked()">{{ currentDate | date: 'EEEE,' : 'en' }}</div>
+              <div class="date2" (click)="headerClicked()">{{ currentDate | date: 'd MMMM Y' : 'en' }}</div>
+              <!-- Hora más grande y prominente -->
+              <div class="hour" (click)="headerClicked()">{{ currentTime }}</div>
+            </div>
+            <!-- Número de pacientes optimizado en la esquina superior derecha -->
+            <div class="count-wrapper">
+              <div class="count" (click)="headerClicked()">{{ this.patients.length }}</div>
+              <div class="count-label" (click)="headerClicked()">PATIENTS</div>
+            </div>
+          </div>
+
+          <!-- Resto del contenido original comentado -->
+          <!-- <ion-row>
             <ion-col class="patients-today" (click)="headerClicked()">
               <p class="dateTimeHeader">{{ currentDate | date: 'EEEE, d MMMM Y' : 'en' }}</p>
               <h2 class="dateTimeHeaderHour">{{ currentTime }}</h2>
@@ -139,7 +165,7 @@
                 <p style="color: white;">PATIENTS</p>
               </div>
             </ion-col>
-          </ion-row>
+          </ion-row> -->
 
          
   
@@ -204,9 +230,9 @@
     <!-- Online text with date -->
     <ion-col size="3" style="text-align: left;">
       <!-- <span class="onlineTittle">LAST UPDATE:</span> -->
-      <span class="onlineTittle" *ngIf="!deviceWasOffline">ONLINE</span>
-      <span class="onlineTittle" style="color: #eb4343;" *ngIf="deviceWasOffline">OFFLINE</span> 
-      <span (click)="this.showLogsAlert();" class="textUnderLine" style="padding-left: 20px;">{{ this.lastsync }}</span>
+      <span (click)="this.showLogsAlert();" class="onlineTittle" *ngIf="!deviceWasOffline">ONLINE</span>
+      <span (click)="this.showLogsAlert();" class="onlineTittle" style="color: #eb4343;" *ngIf="deviceWasOffline">OFFLINE</span> 
+      <!-- <span (click)="this.showLogsAlert();" class="textUnderLine" style="padding-left: 20px;">{{ this.lastsync }}</span> -->
     </ion-col>
 
     <!-- <ion-col size="2" style="text-align: left;">

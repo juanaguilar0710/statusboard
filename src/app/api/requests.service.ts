@@ -44,8 +44,9 @@ export class RequestsService {
     async init(): Promise<any> {
         try {
           const adminResponse = await Preferences.get({ key: 'admin' });
+          
           if (adminResponse.value) {
-            this.setAdminToken(JSON.parse(adminResponse.value).jwt.access_token);
+            this.setAdminToken(this.token);
           }
       
           const configResponse = await Preferences.get({ key: 'config' });
@@ -55,7 +56,7 @@ export class RequestsService {
       
           const userResponse = await Preferences.get({ key: 'user' });
           if (userResponse.value) {
-            this.setToken(JSON.parse(userResponse.value).jwt.access_token);
+            this.setToken(this.token);
           }
       
           const lastSyncResponse = await Preferences.get({ key: 'lastSync' });
@@ -207,7 +208,9 @@ export class RequestsService {
         try {
           const response = await CapacitorHttp.post(options);
           if (response && response.status === 200) {
-            this.setToken(response.data.jwt.access_token);
+            console.log('Login exitoso con PIN:', response);
+            
+            // this.setToken(response.data.jwt.access_token);
             await Preferences.set({ key: 'user', value: JSON.stringify(response.data) });
             return response;  // Resuelve la promesa con la respuesta
           } else if (response.status === 500 && response.data.error.detail === "Unauthenticated.") {

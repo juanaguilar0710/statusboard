@@ -1,4 +1,4 @@
-import { AfterViewInit, ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { AfterViewInit, ChangeDetectorRef, Component, OnInit, AfterViewChecked } from '@angular/core';
 import { LocaldataService } from '../api/localdata.service';
 import { RequestsService } from '../api/requests.service';
 import { RoomColors } from 'colors';
@@ -28,7 +28,7 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
 })
 
 
-  export class DashboardComponent  implements OnInit {
+  export class DashboardComponent  implements OnInit, AfterViewChecked {
   operatingRooms: any[] = [];
   patients: any[] = [];
   pageSize: number = environment.pageSizeWhitPatients;
@@ -64,6 +64,9 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
   newAction: string = '';
   logDetails: string = '';
   isRefreshing = false;
+  isLoading = true; // Variable para controlar el estado de loading
+  private dataLoaded = false; // Flag para controlar si los datos fueron cargados
+  private viewChecked = false; // Flag para evitar bucles infinitos en ngAfterViewChecked
   private readonly TOKEN_EXPIRATION_KEY_Admin = 'auth_token_expiration_admin';  
 
   constructor(private LocaldataService: LocaldataService,
@@ -73,7 +76,8 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
               private networkService: NetworkService,
               private notificationService: NotificationService,
               private storage: Storage,
-              private logger: LoggerService
+              private logger: LoggerService,
+              private cdr: ChangeDetectorRef
   ) { 
     
 
@@ -164,6 +168,7 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
   }
 
   async ngOnInit() {
+    this.isLoading = true; // Asegurar que el loading esté activo al inicio
     await this.loadLogs();
     await Preferences.get({ key: 'config' })
       .then((response: any) => {
@@ -184,6 +189,48 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
      await this.startlists(); 
   }
 
+  ngAfterViewChecked() {
+    // Solo verificar una vez después de que los datos se hayan cargado
+    if (this.dataLoaded && !this.viewChecked && this.isLoading) {
+      this.checkIfRenderingComplete();
+    }
+  }
+
+  private checkIfRenderingComplete() {
+    setTimeout(() => {
+      const hasConfig = this.config && this.config.aplication;
+      
+      if (!hasConfig) {
+        return; // Esperar a que la configuración esté lista
+      }
+
+      let renderingComplete = false;
+      const expectedPatients = this.patients?.length || 0;
+
+      if (this.config.aplication === '3') {
+        // Vista de tabla
+        const tableRows = document.querySelectorAll('tbody tr');
+        renderingComplete = expectedPatients === 0 || tableRows.length > 0;
+      } else if (this.config.aplication === '2') {
+        // Vista de cards
+        const roomCards = document.querySelectorAll('.ionCard');
+        const patientElements = document.querySelectorAll('.textCardPatients');
+        renderingComplete = expectedPatients === 0 || (roomCards.length > 0 || patientElements.length > 0);
+      } else {
+        renderingComplete = true;
+      }
+
+      if (renderingComplete) {
+        this.viewChecked = true;
+        // Pequeño delay final para asegurar que todo esté completamente renderizado
+        setTimeout(() => {
+          this.isLoading = false;
+          console.log('Vista completamente renderizada, ocultando loading');
+        }, 5000);
+      }
+    }, 100);
+  }
+
   updateTime() {
     const now = new Date();
     const hours = now.getHours();
@@ -201,9 +248,33 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
   }
 
   async startlists(){
-    await this.getOperatingRoomsFromStorageOrLoadFromServer();
-    this.startCarousel();
-    this.startCountdown();
+    this.isLoading = true;
+    this.dataLoaded = false;
+    this.viewChecked = false;
+    
+    try {
+      await this.getOperatingRoomsFromStorageOrLoadFromServer();
+      this.startCarousel();
+      this.startCountdown();
+      
+      // Marcar que los datos están cargados
+      this.dataLoaded = true;
+      
+      // Forzar detección de cambios
+      this.cdr.detectChanges();
+      
+      // Si ngAfterViewChecked no funciona por alguna razón, usar fallback
+      setTimeout(() => {
+        if (this.isLoading) {
+          console.log('Fallback: ocultando loading después de timeout');
+          this.isLoading = false;
+        }
+      }, 5000); // Fallback de 3 segundos máximo
+      
+    } catch (error) {
+      console.error('Error loading data:', error);
+      this.isLoading = false;
+    }
   }
 
   private isRefreshingToken = false;
@@ -936,6 +1007,8 @@ private isPusherConnected(): boolean {
           text: 'Configuration',
           handler: () => {
             localStorage.setItem('tempConfig',JSON.stringify(this.config))
+            console.log('config: ',this.config);
+            
             // const options: RemoveOptions = { key: 'config' };
             // Preferences.remove(options);
             this.router.navigate(['/configuration'], { replaceUrl: true });

@@ -65,11 +65,11 @@ export class ConfigurationPage implements OnInit {
       const objResponse = JSON.parse(configResponse.value);
       this.form.patchValue(objResponse);
   
-      if (objResponse.aplication === "2" || objResponse.aplication === "3") {
-        objResponse.token = this.requestsService.getToken();
-        this.router.navigate(['/dashboard'], { replaceUrl: true });
-        return;
-      }
+      // if (objResponse.aplication === "2" || objResponse.aplication === "3") {
+      //   objResponse.token = this.requestsService.getToken();
+      //   this.router.navigate(['/dashboard'], { replaceUrl: true });
+      //   return;
+      // }
     }
   
     const waitingRoomsResponse = await Preferences.get({ key: 'waiting_rooms' });
