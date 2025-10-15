@@ -1,14 +1,14 @@
 export const environment = {
-  version: "2.0.0.2",
+  version: "2.0.0.3",
   production: false,
   resetPin: '1111',
   maxInactivityTime: 20,
   timeSaveScreen: 3,
- 
+
   currentPage: 0,
   roomsPerPage: 3,
   timeRoomsPerPage: 10000,
-  
+
   currentPageWhitPatients: 0,
   roomsPerPageWhitPatients: 8,
   pageSizeWhitPatients: 5,
@@ -21,8 +21,8 @@ export const environment = {
   },
 
   pusher: {
-    //key: '7c4e353eb51fce335b63', //prod    
-    key: '2889bc5e0828ce2dabb2', //dev 
+    //key: '7c4e353eb51fce335b63',//prod
+    key: '2889bc5e0828ce2dabb2', //dev
     cluster: 'us2',
     forceTLS: true
   },
@@ -222,10 +222,11 @@ export const environment = {
     },
   ],
 
-  
-  //url: 'https://api.dtouchmedia.com',
-  //url: 'https://api.dtouchmedia.dev',
-  url: 'https://api.dev.dtouchmedia.cloud',
+
+  // url: 'https://api.dtouchmedia.com',
+  //url: 'https://api.dtouchmedia.cloud', //prod
+  url: 'https://api.dtouchmedia.dev', //dev
+  //url: 'https://api.dev.dtouchmedia.cloud',
   oauth: '/oauth',
   token: '/token',
   oauthObj:{
