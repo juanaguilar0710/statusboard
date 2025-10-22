@@ -1,4 +1,4 @@
-ion-input{ 
+ion-input{
     .text-input{ text-align: left !important; }
 }
 
@@ -9,4 +9,21 @@ ion-input{
     right: 8px;
     float: right;
     top: -48px;
+}
+
+.align-items {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    color: #428cff;
+    padding-right: 2%;
+    padding-top: 3%;
+}
+
+.align-item-logo {
+  align-items: center;
+}
+
+ion-button.w-100 {
+    min-height: 56px !important;
 }

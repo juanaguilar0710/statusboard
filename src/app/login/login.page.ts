@@ -7,6 +7,9 @@ import { Preferences } from '@capacitor/preferences';
 import { NotificationService } from '../api/notification.service';
 import { LoggerService } from '../api/logger.service';
 import { environment } from 'src/environments/environment';
+import { Capacitor } from '@capacitor/core';
+
+
 
 @Component({
   selector: 'app-login',
@@ -14,6 +17,12 @@ import { environment } from 'src/environments/environment';
   styleUrls: ['./login.page.scss'],
 })
 export class LoginPage implements OnInit {
+
+  platformInfo = {
+  platform: Capacitor.getPlatform(),
+  userAgent: navigator.userAgent
+  };
+
   @ViewChild('twoFactorCode', { read: ElementRef }) twoFactorCode!: ElementRef<HTMLIonInputElement>;
 
   showPassword: boolean = false;
@@ -24,10 +33,12 @@ export class LoginPage implements OnInit {
     code: [null],
   });
 
+  version: string = environment.version;
+
   two_fa_source: string = '';
   authenticationRequired: boolean = false;
   twoFactorCodeValue: string = '';
-  
+
 
   constructor(private _formbuilder: FormBuilder,
     private requestsService: RequestsService,
@@ -53,18 +64,18 @@ export class LoginPage implements OnInit {
         client_id: environment.oauthObj.clientId,
         client_secret: environment.oauthObj.clientSecret
       };
-    this.requestsService.loginOauth(user).then(async (response: any) => {      
+    this.requestsService.loginOauth(user).then(async (response: any) => {
       this.loading = false;
-      if (response.status === 200) {        
+      if (response.status === 200) {
         this.requestsService.setToken(response.data.access_token);
         this.requestsService.setExpiresIn(response.data.expires_in);
-        this.requestsService.setRefreshToken(response.data.refresh_token);                 
-        this.requestsService.setAdminToken(response.data.access_token);        
+        this.requestsService.setRefreshToken(response.data.refresh_token);
+        this.requestsService.setAdminToken(response.data.access_token);
          this.logger.setTokenAdmin(
                     response.data.access_token,
                     response.data.expires_in
                   );
-        this.getUser();  
+        this.getUser();
       } else {
         await Toast.show({
           text: 'Login failed',
@@ -79,31 +90,32 @@ export class LoginPage implements OnInit {
        this.requestsService.getOAuthUser().subscribe(responseUser => {
             this.requestsService.setAuthUser(responseUser.data);
             console.log('mensaje');
-            
-            if (responseUser.data.default_2fa !== null && (responseUser.data.two_fa_enabled_at !== null || responseUser.data.two_fa_enabled_at === null)) {              
-                const user = responseUser.data;                    
+
+            // if (responseUser.data.default_2fa !== null && (responseUser.data.two_fa_enabled_at !== null || responseUser.data.two_fa_enabled_at == null)) {
+                const user = responseUser.data;
                 if (user.roles.length > 0 && (user.roles.find((r: any) => r.name.toLowerCase() == 'administrator') || user.roles.find((r: any) => r.name.toLowerCase() == 'manager'))) {
                   Preferences.set({
                     key: 'admin',
                     value: JSON.stringify(responseUser.data)
-                  });                  
+                  });
                   Preferences.set({
                     key: 'branch',
                     value: JSON.stringify(responseUser.data.branch)
-                  });                  
+                  });
                   Preferences.set({
                     key: 'waiting_rooms',
                     value: JSON.stringify(responseUser.data.waiting_rooms)
-                  });                  
+                  });
                   Toast.show({
                     text: 'Login successful',
                     duration: 'long'
                   });
-                  this.router.navigate(['/configuration'], { replaceUrl: true });                  
+                  this.router.navigate(['/configuration'], { replaceUrl: true });
                 } else {
                     this.notificationService.showError('Insufficient permissions.',6000);
-                  }    
-          }
+                  }
+          // }
+          // this.notificationService.showError('Please enable 2FA authentication.',6000);
         },error => {
             console.log('Error fetching user data:', error);
             this.two_fa_source = error.error.two_fa_source;
@@ -112,7 +124,7 @@ export class LoginPage implements OnInit {
                 this.showTwoFactorInput();
                 const card = document.getElementsByClassName('card')[0];
                 card.classList.remove('card-hidden');
-              }, 700);          
+              }, 700);
               this.resendCode();
           }
         )
@@ -122,10 +134,10 @@ export class LoginPage implements OnInit {
     showTwoFactorInput() {
       if (!this.twoFactorCode) return;
       requestAnimationFrame(() => {
-        const inputEl = this.twoFactorCode.nativeElement;    
-        inputEl.hidden = false;    
+        const inputEl = this.twoFactorCode.nativeElement;
+        inputEl.hidden = false;
         setTimeout(() => {
-          inputEl.focus();      
+          inputEl.focus();
           const card = this.renderer.selectRootElement('.card', true);
           if (card) {
             this.renderer.removeClass(card, 'card-hidden');
@@ -142,7 +154,7 @@ export class LoginPage implements OnInit {
           console.error('Error al enviar el código de verificación:', error);
           this.notificationService.showError(error.error.error.detail,6000);
         });
-      }                
+      }
     }
 
     verifyTwoFactorCode() {
@@ -150,15 +162,15 @@ export class LoginPage implements OnInit {
       if (!code || code.trim() === '') {
         console.error('El código 2FA está vacío');
         return;
-      }      
+      }
       this.requestsService.verifyTwoFactorCode(code).subscribe(
-        (success:any) => {          
+        (success:any) => {
           if (success) {
             this.getUser();
           } else {
-            console.log('Invalid verification code');  
-            this.notificationService.showError('Invalid verification code',6000);          
-          }      
+            console.log('Invalid verification code');
+            this.notificationService.showError('Invalid verification code',6000);
+          }
         },
         (error) => {
           console.log(error);
@@ -166,7 +178,7 @@ export class LoginPage implements OnInit {
           console.log('Error enviando el codigo');
         }
       );
-    } 
+    }
 }
 
-    
+

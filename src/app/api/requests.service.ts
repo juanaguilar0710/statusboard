@@ -44,26 +44,26 @@ export class RequestsService {
     async init(): Promise<any> {
         try {
           const adminResponse = await Preferences.get({ key: 'admin' });
-          
+
           if (adminResponse.value) {
             this.setAdminToken(this.token);
           }
-      
+
           const configResponse = await Preferences.get({ key: 'config' });
           if (configResponse.value) {
             this.setConfig(JSON.parse(configResponse.value));
           }
-      
+
           const userResponse = await Preferences.get({ key: 'user' });
           if (userResponse.value) {
             this.setToken(this.token);
           }
-      
+
           const lastSyncResponse = await Preferences.get({ key: 'lastSync' });
           if (lastSyncResponse.value) {
             this.lastSync = lastSyncResponse.value;
           }
-      
+
           return true;
         } catch (error) {
           console.error('Error en init:', error);
@@ -72,14 +72,14 @@ export class RequestsService {
       }
 
     setToken(token: string | null) {
-        this.token = token;        
+        this.token = token;
     }
 
     setExpiresIn(expired:any) {
-        this.ExpiresIn = expired;        
+        this.ExpiresIn = expired;
     }
     setRefreshToken(refresh:any) {
-        this.refreshTokenKey = refresh;        
+        this.refreshTokenKey = refresh;
     }
 
      user:any
@@ -154,7 +154,7 @@ export class RequestsService {
 
     async refreshToken(token: string | null) {
         console.log('dentro de refresh antes de enviar peticion: ' + token);
-        
+
         const options = {
             url: environment.url + environment.auth + environment.refresh,
             headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer ' + token },
@@ -164,7 +164,7 @@ export class RequestsService {
         };
         const response: HttpResponse = await CapacitorHttp.post(options);
         console.log(response);
-        
+
         if (response.status != 200) {
 
             this.logger.addLog('refreshToken', {
@@ -188,7 +188,7 @@ export class RequestsService {
         return response;
     }
 
-    loginWithPin = async (pin: string): Promise<any> => {   
+    loginWithPin = async (pin: string): Promise<any> => {
         // var token = await this.logger.getTokenPin()
 
         // if(!token){
@@ -197,19 +197,19 @@ export class RequestsService {
 
         const options = {
           url: environment.url + environment.auth + environment.pin,
-          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer ' + token },          
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer ' + token },
           data: {
             pin: pin,
             branch_id: this.config.branch.id,
             room_id: this.config.waitingRoom.id
           },
         };
-      
+
         try {
           const response = await CapacitorHttp.post(options);
           if (response && response.status === 200) {
             console.log('Login exitoso con PIN:', response);
-            
+
             // this.setToken(response.data.jwt.access_token);
             await Preferences.set({ key: 'user', value: JSON.stringify(response.data) });
             return response;  // Resuelve la promesa con la respuesta
@@ -245,33 +245,33 @@ export class RequestsService {
             }
         });
     }
-    
+
 
     getTodaysPatients(yesterday: boolean = false): Observable<any> {
         this.loadingPatients$.next(true);
-    
+
         return new Observable((observer) => {
             if (!this.token || this.token.length === 0 || this.isTokenExpired(this.token)) {
                 observer.error({ status: 404, message: 'Token expired', redirectUrl: '/pin' });
                 console.log('status: 404, message: Token expired, redirectUrl: /pin');
-                
+
                 return;
             }
-    
+
             if (!this.config?.branch || !this.config?.waitingRoom) {
                 observer.error({ status: 404, message: 'Missing configuration', redirectUrl: '/settings' });
                 console.log('status: 404, message: Missing configuration');
                 return;
             }
-    
+
             const date = new Date();
             if (yesterday) {
                 date.setDate(date.getDate() - 1);
             }
             const formatedDate = getLocalDate(date);
             console.log(formatedDate);
-            
-    
+
+
             const options = {
                 url: `${environment.url}${environment.visitor}?visit_date=${formatedDate}&orderBy=fullName&direction=asc&branchID=${this.config.branch.id}&roomID=${this.config.waitingRoom.id}`,
                 headers: {
@@ -280,7 +280,7 @@ export class RequestsService {
                     'Authorization': `Bearer ${this.token}`,
                 },
             };
-    
+
             CapacitorHttp.get(options)
                 .then((result) => {
                     this.lastSync = new Date().toLocaleString();
@@ -301,7 +301,7 @@ export class RequestsService {
         this.loadingPatients$.next(true);
         const startTime = Date.now();
         const requestId = Math.random().toString(36).substring(2, 9);
-    
+
         try {
             // Calcula la fecha formateada
             const date = new Date();
@@ -309,7 +309,7 @@ export class RequestsService {
                 date.setDate(date.getDate() - 1);
             }
             const formatedDate = getLocalDate(date);
-    
+
             const options = {
                 url: `${environment.url}${environment.visitor}?visit_date=${formatedDate}&orderBy=fullName&direction=asc&branchID=${this.config.branch.id}&roomID=${this.config.waitingRoom.id}`,
                 headers: {
@@ -318,7 +318,7 @@ export class RequestsService {
                     'Authorization': `Bearer ${this.token}`,
                 },
             };
-    
+
             // Log de inicio de petición
             await this.logger.addLog('Inicio petición getTodaysPatientsDashboard', {
                 requestId,
@@ -329,11 +329,11 @@ export class RequestsService {
                 headers: this.sanitizeHeaders(options.headers),
                 timestamp: new Date().toISOString()
             }, 'info');
-    
+
             // Realiza la llamada HTTP
             const result = await CapacitorHttp.get(options);
             const duration = Date.now() - startTime;
-    
+
             // Log de respuesta exitosa
             await this.logger.addLog('Petición exitosa getTodaysPatientsDashboard', {
                 requestId,
@@ -342,16 +342,16 @@ export class RequestsService {
                 dataSize: result.data?.length || 0,
                 timestamp: new Date().toISOString()
             }, 'success');
-    
+
             // Actualiza el estado
             this.lastSync = new Date().toLocaleString();
             await Preferences.set({ key: 'lastSync', value: this.lastSync });
             this.loadingPatients$.next(false);
-    
+
             return result;
         } catch (error:any) {
             const duration = Date.now() - startTime;
-            
+
             // Log de error
             await this.logger.addLog('Error en petición getTodaysPatientsDashboard', {
                 requestId,
@@ -361,7 +361,7 @@ export class RequestsService {
                 duration: `${duration}ms`,
                 timestamp: new Date().toISOString()
             }, 'error');
-    
+
             // Manejo de errores
             this.loadingPatients$.next(false);
             throw error;
@@ -391,7 +391,7 @@ export class RequestsService {
           headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer ' + this.token },
           data: patient
         };
-    
+
         // Convertimos la promesa en un observable usando `from`
         return from(CapacitorHttp.post(options));
       }
@@ -418,12 +418,12 @@ export class RequestsService {
         });
     }
 
-    getBranchStatuses(id:any): Observable<any> {        
+    getBranchStatuses(id:any): Observable<any> {
         const options = {
             url: environment.url + environment.status + '/' + id + '?orderBy=sequence&direction=asc',
             headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer ' + this.token },
         };
-        this.statuses = from(CapacitorHttp.get(options)) 
+        this.statuses = from(CapacitorHttp.get(options))
         return from(CapacitorHttp.get(options));
     }
 
@@ -436,7 +436,7 @@ export class RequestsService {
                 'Authorization': `Bearer ${this.token}`,
             },
         };
-    
+
         // Convierte la promesa en un Observable usando `from`
         return from(CapacitorHttp.get(options)).pipe(
             catchError((error) => {
@@ -466,7 +466,7 @@ export class RequestsService {
             if (!token) {
               return throwError(() => new Error('No se pudo obtener un token válido'));
             }
-      
+
             const options = {
               url: `${environment.url}${environment.waitingRooms}/${this.config.waitingRoom.id}${environment.operatingroomsschedules}`,
               headers: {
@@ -475,7 +475,7 @@ export class RequestsService {
                 'Authorization': `Bearer ${token}`,
               },
             };
-      
+
             return from(CapacitorHttp.get(options)).pipe(
               tap((response) => {
                 this.logger.addLog(
@@ -501,11 +501,11 @@ export class RequestsService {
                   },
                   'error'
                 );
-                
+
                 if (error.status === 401 || error.status === 403) {
                   return this.handleTokenError(error);
                 }
-                
+
                 return throwError(() => new Error(error.message));
               })
             );
@@ -517,8 +517,8 @@ export class RequestsService {
         try {
         //   const pinToken = await this.logger.getTokenPin();
         //   if (pinToken) return pinToken;
-        
-      
+
+
           const adminToken = await this.logger.getTokenAdmin();
           return adminToken;
         } catch (error) {
@@ -536,11 +536,11 @@ export class RequestsService {
             timestamp: new Date().toISOString(),
           },
           'warning'
-        );        
+        );
         return throwError(() => new Error('Token inválido o expirado'));
       }
-      
-      
+
+
       private sanitizeHeaders(headers: any): any {
         const sanitized = {...headers};
         if (sanitized.Authorization) {
@@ -575,14 +575,14 @@ export class RequestsService {
                 reject(error);
             }
         });
-    }  
+    }
 
     getOperatingRoomWithUsers(idRoom:any):Observable<any>{
         const options = {
             url: environment.url + environment.operatingroomusers + '?'+ environment.waiting_room_id +'='+this.config.waitingRoom.id,
             headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer ' + this.token },
         };
-    
+
         return new Observable(observer => {
             CapacitorHttp.get(options)
                 .then(response => {
@@ -600,7 +600,7 @@ export class RequestsService {
             url: environment.url + environment.operatingrooms + '/'+orRoomId,
             headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer ' + this.token },
         };
-    
+
         return new Observable(observer => {
             CapacitorHttp.get(options)
                 .then(response => {
@@ -670,11 +670,14 @@ export class RequestsService {
       }
 
     async loginOauth(loginData: any) {
-        const options = {
-            url: environment.url + environment.oauth + environment.token,
-            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-            data: loginData,
-        };
+      //console.log(window.location.origin);
+      const options = {
+        url: environment.url + environment.oauth + environment.token,
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        data: loginData,
+      };
+      // alert('Iniciando sesión origen...' + window.location.origin);
+      // alert('url...' + options.url);
         const response: HttpResponse = await CapacitorHttp.post(options);
         return response;
     }

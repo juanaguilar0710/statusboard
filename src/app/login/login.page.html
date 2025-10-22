@@ -1,15 +1,16 @@
 <ion-content [fullscreen]="true">
   <div class="d-flex flex-column justify-content-between h-100 text-center">
-    <div>
+    <div style="margin-top: 5%;">
       <img class="img-fluid logo" src="assets/logos/StatusBoard_Black.png" alt="logo" />
     </div>
     <div class="container">
       <div class="row justify-content-center">
-        <div class="col-12 col-md-8 col-lg-6">
+        <!-- <div class="col-12 col-md-8 col-lg-6"> -->
+        <div class="col-6 col-md-4 col-lg-3">
           <form [formGroup]="form">
             <div>
               <h1><b>Welcome</b></h1>
-              <span>Please login with admin account</span>
+              <span>Please login with manager account</span>
             </div>
             <br />
             <ion-input tabindex="1" label="Username" formControlName="username" label-placement="floating" fill="outline"
@@ -32,18 +33,18 @@
                 <ion-icon [name]="showPassword ? 'eye-off' : 'eye'"></ion-icon>
               </ion-button>
             </ion-item>
-              
+
             <br />
               <p *ngIf="this.two_fa_source === 'sms'" class="text-center" style="color: black; margin-bottom: 20px;">We've sent a access code to your phone.</p> <!-- sms -->
               <p *ngIf="this.two_fa_source === 'app'" class="text-center" style="color: black; margin-bottom: 20px;">Open you two-factor authenticator (TOTP) app or browser extension to view your authentication code.</p><!-- qr -->
               <p *ngIf="this.two_fa_source === 'email'" class="text-center" style="color: black; margin-bottom: 20px;">We've sent a access code to your email.</p> <!-- email -->
-            
-              <ion-input 
-              hidden 
-              #twoFactorCode 
-              tabindex="3" 
-              label="2FA Code"  
-              label-placement="floating" 
+
+              <ion-input
+              hidden
+              #twoFactorCode
+              tabindex="3"
+              label="2FA Code"
+              label-placement="floating"
               fill="outline"
               errorText="Code is required"
               formControlName="code">
@@ -60,7 +61,31 @@
       </div>
     </div>
     <div>
-      <img class="img-fluid logo" src="assets/logos/DTouchmedia_Black.png" alt="logo" />
+      <div class="row" style="margin-bottom: 1%;">
+        <div class="col-4">
+
+        </div>
+        <div class="col-4 align-item-logo">
+          <img class="img-fluid logo" src="assets/logos/DTouchmedia_Black.png" alt="logo" />
+        </div>
+        <div class="col-4 align-items">
+          <label>V: {{this.version}}</label>
+        </div>
+      </div>
+
     </div>
   </div>
 </ion-content>
+
+
+
+
+
+
+<!-- <ion-card>
+  <ion-card-header>Información de Origen</ion-card-header>
+  <ion-card-content>
+    <p><b>Platform:</b> {{ platformInfo.platform }}</p>
+    <p><b>User-Agent:</b> {{ platformInfo.userAgent }}</p>
+  </ion-card-content>
+</ion-card> -->
