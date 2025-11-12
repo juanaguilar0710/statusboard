@@ -32,10 +32,37 @@
         <receiver
           android:name=".BootReceiver"
           android:enabled="true"
-          android:exported="false">
-          <intent-filter>
+          android:exported="true"
+          android:directBootAware="true">
+          <intent-filter android:priority="1000">
             <action android:name="android.intent.action.BOOT_COMPLETED"/>
+            <action android:name="android.intent.action.QUICKBOOT_POWERON"/>
+            <action android:name="android.intent.action.REBOOT"/>
             <category android:name="android.intent.category.DEFAULT"/>
+          </intent-filter>
+          <intent-filter>
+            <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
+            <action android:name="android.intent.action.PACKAGE_REPLACED"/>
+            <data android:scheme="package"/>
+          </intent-filter>
+        </receiver>
+
+        <service
+          android:name=".KioskService"
+          android:enabled="true"
+          android:exported="false" />
+
+        <receiver
+          android:name=".AlarmReceiver"
+          android:enabled="true"
+          android:exported="false" />
+
+        <receiver
+          android:name=".TestReceiver"
+          android:enabled="true"
+          android:exported="true">
+          <intent-filter>
+            <action android:name="io.ionic.starter.TEST_AUTO_START"/>
           </intent-filter>
         </receiver>
 
@@ -47,4 +74,9 @@
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"/>
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <uses-permission android:name="android.permission.ACCESS_DOWNLOAD_MANAGER" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
 </manifest>
