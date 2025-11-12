@@ -17,11 +17,9 @@ export class LoggingInterceptor implements HttpInterceptor {
   constructor(private logger: LoggerService,private authService: RequestsService) {}
 
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
-    
+
     const authToken = this.authService.getToken();
 
-    console.log(authToken);
-    
      let authReq = req;
     if (authToken) {
       authReq = req.clone({
@@ -56,7 +54,7 @@ export class LoggingInterceptor implements HttpInterceptor {
         },
         (error: HttpErrorResponse) => {
           console.log(error);
-          
+
           const duration = Date.now() - startTime;
           this.logger.addLog(`HTTP Error: ${req.method} ${req.url}`, {
             requestId,
@@ -71,8 +69,8 @@ export class LoggingInterceptor implements HttpInterceptor {
               status: error.status,
               body: error.error,
               ok: error.ok
-            };       
-      
+            };
+
               return throwError(obj);
 
         }
@@ -100,8 +98,8 @@ export class LoggingInterceptor implements HttpInterceptor {
   private sanitizeHeaders(headers: any): any {
     const headersObj:any = {};
     headers.keys().forEach((key:any) => {
-      headersObj[key] = key.toLowerCase().includes('auth') 
-        ? '***REDACTED***' 
+      headersObj[key] = key.toLowerCase().includes('auth')
+        ? '***REDACTED***'
         : headers.get(key);
     });
     return headersObj;

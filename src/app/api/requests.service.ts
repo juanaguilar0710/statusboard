@@ -80,6 +80,7 @@ export class RequestsService {
     }
     setRefreshToken(refresh:any) {
         this.refreshTokenKey = refresh;
+        localStorage.setItem('refresh_token', refresh);
     }
 
      user:any
@@ -153,39 +154,45 @@ export class RequestsService {
     }
 
     async refreshToken(token: string | null) {
-        console.log('dentro de refresh antes de enviar peticion: ' + token);
+         console.log('dentro de refresh antes de enviar peticion: ' + token);
+            let objRefresh = {
+                grant_type: environment.oauthObj.grantTypeRefresh,
+                client_id: environment.oauthObj.clientId,
+                client_secret: environment.oauthObj.clientSecret,
+                refresh_token: localStorage.getItem('refresh_token'),
+                // scope: '',
+                // username: 'jcamilo',
+              };
 
-        const options = {
-            url: environment.url + environment.auth + environment.refresh,
-            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer ' + token },
-            data: {
-                refresh_token: token
-            },
-        };
-        const response: HttpResponse = await CapacitorHttp.post(options);
-        console.log(response);
+            const options = {
+                url: environment.url + environment.oauth + environment.token,
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer ' + token },
+                data: objRefresh
+            };
+            const response: HttpResponse = await CapacitorHttp.post(options);
+            console.log(response);
 
-        if (response.status != 200) {
+            if (response.status != 200) {
+
+                this.logger.addLog('refreshToken', {
+                    url: response.url,
+                    mensaje: response,
+                    action: 'Refresh con errores'
+                  },'error');
+
+                // Preferences.remove({ key: 'user' });
+                // Preferences.remove({ key: 'admin' });
+                // this.router.navigate(['/login'], { replaceUrl: true });
+                return;
+            }
 
             this.logger.addLog('refreshToken', {
                 url: response.url,
-                mensaje: response,
-                action: 'Refresh con errores'
-              },'error');
-
-            // Preferences.remove({ key: 'user' });
-            // Preferences.remove({ key: 'admin' });
-            // this.router.navigate(['/login'], { replaceUrl: true });
-            return;
-        }
-
-        this.logger.addLog('refreshToken', {
-            url: response.url,
-            action: 'Refresh exitoso'
-          },'info');
+                action: 'Refresh exitoso'
+              },'info');
 
 
-        return response;
+            return response;
     }
 
     loginWithPin = async (pin: string): Promise<any> => {

@@ -1,11 +1,11 @@
 ion-content {
     --background: #f0f0f0;
   }
-  
+
   .status-overview {
     text-align: right;
   }
-  
+
   .info-box {
     background-color: white;
     // margin: 10px;
@@ -17,55 +17,55 @@ ion-content {
   .sala ul {
     padding-left: 20px;
   }
-  
+
   h2 {
     color: #007bff;
     margin-bottom: 5px;
   }
-  
+
   p {
     color: #555;
   }
-  
+
   ul li {
     list-style: none;
     padding: 5px 0;
     border-bottom: 1px solid #ddd;
   }
-  
+
   .info-box {
     text-align: center;
     font-family: Arial, sans-serif;
     margin-bottom: 10px;
   }
-  
+
   .info-box p {
     font-size: 18px;
     font-weight: normal;
     margin: 0;
   }
-  
+
   .info-box h3 {
     font-size: 36px;
     font-weight: bold;
     margin: 0;
   }
-  
+
   .status-summary {
     text-align: center;
     font-family: Arial, sans-serif;
   }
-  
+
   .patients-today-row {
     justify-content: center; /* Centrará el contenido horizontalmente */
     align-items: center; /* Centrará verticalmente si es necesario */
   }
-  
+
   .patients-today {
     text-align: center;
     margin-bottom: 10px;
   }
-  
+
   .today-box {
     background-color: #007bff;
     padding: 0;
@@ -75,24 +75,24 @@ ion-content {
     margin: 0 auto; /* Centra el cuadro dentro del ion-col */
     color: white;
   }
-  
+
   .status-box {
     margin-bottom: 0px;
   }
-  
+
   .holding-box, .surgery-box, .recovery-box, .completed-box {
     background-color: white;
     border: 2px solid #a6d1f0;
     padding: 0px;
     border-radius: 8px;
   }
-  
+
   .holding-box h2, .surgery-box h2, .recovery-box h2, .completed-box h2 {
     font-size: 30px;
     margin: 0;
     font-weight: bold;
   }
-  
+
   .holding-box p, .surgery-box p, .recovery-box p, .completed-box p {
     font-size: 16px;
     margin: 0;
@@ -107,20 +107,20 @@ ion-content {
     margin: 0px 0px 0px 0px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   }
-  
+
   .room-name h3 {
     font-size: 24px;
     font-weight: bold;
     color: #007bff;
     margin-bottom: 6px;
   }
-  
+
   .room-card-details div {
     font-size: 18px;
     margin-bottom: 5px;
     text-align: left; /* Asegura que el texto esté alineado a la izquierda */
   }
-  
+
   .room-card-details a {
     font-weight: bold;
   }
@@ -153,14 +153,14 @@ ion-content {
     }
 
     .onlineTittle{
-      font-weight: bold; 
+      font-weight: bold;
       font-size: 25px;
       color: #48a347;
     }
 
     .underline{
       margin-right: 5px;
-      font-size: 25px; 
+      font-size: 25px;
     }
 
     .textUnderLine{
@@ -168,9 +168,9 @@ ion-content {
     }
 
     .ionCard{
-      width: 100%; 
+      width: 100%;
       height: 156px;
-      border-radius: 10px 10px 5px 5px; 
+      border-radius: 10px 10px 5px 5px;
       margin-bottom: 0px;
       margin-top: 0px;
       margin-left: 0px;
@@ -197,7 +197,7 @@ ion-content {
       font-weight: bold;
     }
 
-    
+
 
     .tittleCardTextNumber{
       text-align: end;
@@ -237,7 +237,7 @@ ion-content {
       top: 3px;
       left: 8px;
     }
-    
+
 
     .circle {
       --border-radius: 50%;
@@ -256,7 +256,7 @@ ion-content {
       max-width: 20px;
       max-height: 20px;
       box-shadow: none !important;
-    } 
+    }
 
     .circleBorder{
       position: absolute;
@@ -280,38 +280,38 @@ ion-content {
     }
 
     .image-container {
-      width: 100%; 
-      height: 300px; 
-      
+      width: 100%;
+      height: 300px;
 
-      background-size: cover; 
-      background-position: center; 
+
+      background-size: cover;
+      background-position: center;
       background-repeat: no-repeat;
       border: 2px solid #ccc;
-      border-radius: 10px; 
+      border-radius: 10px;
       box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
     }
 
     @media only screen and (min-width: 1280px) and (max-height: 720px) {
 
 
-      .headerCount {  
-        
+      .headerCount {
+
           .content-wrapper {
             margin-left: -16px !important;
           }
 
           .date1 {
-            font-size: 0.9rem !important;          
+            font-size: 0.9rem !important;
           }
 
           .date2 {
-            font-size: 0.8rem !important;         
+            font-size: 0.8rem !important;
           }
 
           .hour {
-            font-size: 1rem !important;     
-          }         
+            font-size: 1rem !important;
+          }
 
           .count {
             margin-top: 5px !important;
@@ -322,7 +322,7 @@ ion-content {
             font-size: 0.6rem !important;
           }
         }
-  
+
       .tittleCardText{
         font-size: 20px;
       }
@@ -332,7 +332,7 @@ ion-content {
         text-align: center;
         font-weight: bold;
       }
-  
+
       .tittleCardTextNumber{
         font-size: 20px;
       }
@@ -349,7 +349,7 @@ ion-content {
 
       .dateTimeHeaderHour{
         font-size: 1.8rem;
-      }   
+      }
 
       .info-box {
         margin-bottom: 0px;
@@ -393,7 +393,7 @@ ion-content {
         margin: 0;
         font-weight: bold;
       }
-      
+
       .holding-box p, .surgery-box p, .recovery-box p, .completed-box p {
         font-size: 10px;
         margin: 0;
@@ -406,7 +406,7 @@ ion-content {
 
       .underline{
         margin-right: 5px;
-        font-size: 20px; 
+        font-size: 20px;
       }
 
       .textUnderLine{
@@ -418,7 +418,7 @@ ion-content {
       animation: highlight-animation 3s ease-in-out infinite alternate; /* Infinite y alternate para parpadeo continuo */
       position: relative; /* Asegurar el render del borde */
   }
-  
+
   @keyframes highlight-animation {
     0% {
         border: 1px solid rgba(30, 144, 255, 1); /* Azul sólido */
@@ -484,7 +484,7 @@ display: inline-block;
   max-height: 70vh;
   overflow-y: auto;
   padding-right: 8px;
-  
+
   .swal-logs-header {
     display: flex;
     justify-content: space-between;
@@ -492,31 +492,31 @@ display: inline-block;
     margin-bottom: 15px;
     padding-bottom: 10px;
     border-bottom: 1px solid #eee;
-    
+
     .total-logs {
       font-size: 16px;
     }
-    
+
     .summary {
       display: flex;
       gap: 10px;
-      
+
       .summary-item {
         padding: 2px 8px;
         border-radius: 12px;
         font-size: 12px;
         font-weight: bold;
-        
+
         &.success {
           background: rgba(40, 167, 69, 0.1);
           color: #28a745;
         }
-        
+
         &.warning {
           background: rgba(255, 193, 7, 0.1);
           color: #ffc107;
         }
-        
+
         &.error {
           background: rgba(220, 53, 69, 0.1);
           color: #dc3545;
@@ -524,67 +524,67 @@ display: inline-block;
       }
     }
   }
-  
+
   .swal-logs-container {
     display: flex;
     flex-direction: column;
     gap: 10px;
-    
+
     .log-entry {
       padding: 12px;
       border-radius: 6px;
       background: #f8f9fa;
       border-left: 4px solid #6c757d;
-      
+
       &.error {
         border-left-color: #dc3545;
         background: rgba(220, 53, 69, 0.05);
       }
-      
+
       &.warning {
         border-left-color: #ffc107;
         background: rgba(255, 193, 7, 0.05);
       }
-      
+
       &.info {
         border-left-color: #17a2b8;
       }
-      
+
       .log-header {
         display: flex;
         align-items: center;
         flex-wrap: wrap;
         gap: 8px;
         margin-bottom: 8px;
-        
+
         .http-method {
           padding: 2px 6px;
           border-radius: 3px;
           font-size: 12px;
           font-weight: bold;
           text-transform: uppercase;
-          
+
           &.get { background: #61affe; color: white; }
           &.post { background: #49cc90; color: white; }
           &.put { background: #fca130; color: white; }
           &.delete { background: #f93e3e; color: white; }
           &.patch { background: #50e3c2; color: white; }
         }
-        
+
         .log-action {
           flex: 1;
           min-width: 60%;
           font-weight: 500;
           word-break: break-word;
         }
-        
+
         .log-time {
           font-size: 12px;
           color: #6c757d;
           white-space: nowrap;
         }
       }
-      
+
       .log-details {
         pre {
           background: white;
@@ -687,7 +687,7 @@ display: inline-block;
 
   .loading-content {
     text-align: center;
-    
+
     .loading-spinner {
       width: 60px;
       height: 60px;
@@ -730,4 +730,187 @@ display: inline-block;
 
 div:where(.swal2-container) {
   position: relative !important;
+}
+
+// Botón flotante para test de audio
+.audio-test-btn {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  width: 40px;
+  height: 40px;
+  background: rgba(0, 123, 255, 0.8);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  cursor: pointer;
+  z-index: 1000;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+
+  &:hover {
+    background: rgba(0, 123, 255, 1);
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.5);
+  }
+
+  &:active {
+    transform: scale(0.95);
+    background: rgba(0, 100, 200, 1);
+  }
+}
+
+// Botón para abrir panel de voces
+.voice-toggle-btn {
+  position: fixed;
+  top: 70px;
+  left: 20px;
+  width: 40px;
+  height: 40px;
+  background: rgba(255, 140, 0, 0.8);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  cursor: pointer;
+  z-index: 1000;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(255, 140, 0, 0.3);
+
+  &:hover {
+    background: rgba(255, 140, 0, 1);
+    transform: scale(1.1);
+  }
+}
+
+
+
+// Panel de voces
+.voice-panel {
+  position: fixed;
+  top: 20px;
+  left: 80px;
+  width: 350px;
+  max-height: 70vh;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+  z-index: 1001;
+  overflow: hidden;
+
+  .voice-header {
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    color: white;
+    padding: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    h3 {
+      margin: 0;
+      font-size: 16px;
+    }
+
+    .close-btn {
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      color: white;
+      width: 25px;
+      height: 25px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 18px;
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.3);
+      }
+    }
+  }
+
+  .voice-content {
+    padding: 10px;
+    max-height: 50vh;
+    overflow-y: auto;
+
+    .loading-voices {
+      text-align: center;
+      padding: 20px;
+      color: #666;
+    }
+
+    .voice-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px;
+      margin: 5px 0;
+      background: #f8f9fa;
+      border-radius: 8px;
+      border: 2px solid transparent;
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background: #e3f2fd;
+        border-color: #2196f3;
+      }
+
+      &.selected {
+        background: #e8f5e8;
+        border-color: #4caf50;
+      }
+
+      .voice-info {
+        flex: 1;
+
+        .voice-name {
+          font-weight: bold;
+          color: #333;
+          font-size: 14px;
+        }
+
+        .voice-details {
+          color: #666;
+          font-size: 12px;
+          margin-top: 2px;
+        }
+      }
+
+      .voice-actions {
+        display: flex;
+        gap: 8px;
+
+        button {
+          padding: 6px 12px;
+          border: none;
+          border-radius: 5px;
+          font-size: 12px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+
+        .test-btn {
+          background: #2196f3;
+          color: white;
+
+          &:hover {
+            background: #1976d2;
+          }
+        }
+
+        .select-btn {
+          background: #4caf50;
+          color: white;
+
+          &:hover {
+            background: #388e3c;
+          }
+        }
+      }
+    }
+  }
 }

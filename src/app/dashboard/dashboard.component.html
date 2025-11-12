@@ -50,8 +50,8 @@
                         </td>
                         <td class="textCardPatients text-ellipsis ellipsis" style="padding: 8px;">{{patient.procedure_name}}</td>
                         <td class="textCardPatients text-ellipsis" style="padding: 8px; width: 10%;">{{
-                                (patient.procedure_time ? (patient.procedure_time.split(':')[0] % 12 || 12) + ':' + 
-                                patient.procedure_time.split(':')[1] + 
+                                (patient.procedure_time ? (patient.procedure_time.split(':')[0] % 12 || 12) + ':' +
+                                patient.procedure_time.split(':')[1] +
                                 (patient.procedure_time.split(':')[0] >= 12 ? ' PM' : ' AM') : '')
                               }}
                         </td>
@@ -59,10 +59,10 @@
                           {{patient.status_name === 'Cancelado' ? patient.status_name : patient.status?.name}}
                         </td>
                         <td class="textCardPatients text-ellipsis" style="padding: 8px; width: 10%;">{{patient.recovery_room}}</td>
-                        <td style="width: 20%;"> 
+                        <td style="width: 20%;">
                           <div class="icon-container" style="text-align-last: center;" *ngIf="!patient.phone_national_format">
                             <img src="assets/icon/Phone.png" width="45%">
-                          </div> 
+                          </div>
                         </td>
                       </tr>
                     </ng-container>
@@ -70,9 +70,9 @@
                 </table>
               </ion-col>
             </ion-row>
-          </div>   
-          
-          
+          </div>
+
+
 
 
 
@@ -86,7 +86,7 @@
 
 
           <ion-row *ngIf="this.operatingRooms && this.config.aplication === '2'">
-            <ion-col size="10" size-md="9" size-lg="6" *ngFor="let room of getRoomsForCurrentPagewhitpatients(); let i = index">  
+            <ion-col size="10" size-md="9" size-lg="6" *ngFor="let room of getRoomsForCurrentPagewhitpatients(); let i = index">
               <ion-card class="ionCard">
                 <ion-card-header class="ionCardHeader" [ngStyle]="{'background-color': room.patients[0].operating_room ? room.patients[0].operating_room.color : '#b5d7f0'}">
                   <ion-card-title>
@@ -95,43 +95,90 @@
                       <ion-col *ngIf="this.totalGroups > 1" size="3" size-md="3" size-lg="3" class="tittleCardTextPages"><span *ngIf="this.roomsWithPatients[i].totalpage > 1">Page: {{this.roomsWithPatients[i].actualPage}}/{{this.roomsWithPatients[i].totalpage}}</span></ion-col>
                       <ion-col *ngIf="this.totalGroups < 1" size="3" size-md="3" size-lg="3" class="tittleCardTextPages"></ion-col>
                       <!-- <ion-col size="5" size-md="5" size-lg="5" class="tittleCardTextNumber" style="text-align: end !important;">
-                        {{room.name === "TO FOLLOW"? "": "Completed:"+ getCompletedRoomPatientsCount(room.name) +"/"+ getTotalPatientsInRoom(room.name)}}                        
+                        {{room.name === "TO FOLLOW"? "": "Completed:"+ getCompletedRoomPatientsCount(room.name) +"/"+ getTotalPatientsInRoom(room.name)}}
                       </ion-col>             -->
                     </ion-row>
                   </ion-card-title>
                 </ion-card-header>
-                
+
                 <ion-card-content>
                   <!-- Llama a la función en el archivo TS para filtrar los pacientes -->
                   <div *ngFor="let patient of getPatientsGroup(room.name)">
                     <ion-row style="height: 22px;" [ngClass]="{'highlight-updated': isPatientUpdated(patient.id)}">
                       <ion-col size="1" class="textCardPatients" style="padding-right: 0px;" [ngClass]="{'canceled': patient.visit_canceled_at}"><strong>{{patient.age}}y</strong></ion-col>
                       <ion-col size="3" class="textCardPatients text-ellipsis" style="margin-left: -11px; margin-right: 11px;" [ngClass]="{ 'surgery': patient.status.type === 'surgery', 'holding': patient.status.type === 'holding', 'nextSurgery': patient.status.type === 'next_to_surgery', 'canceled': patient.visit_canceled_at}"><strong>{{patient.fullName}}</strong></ion-col>
-                      <ion-col size="4" class="textCardPatients text-ellipsis" style="text-align: left !important;" [ngClass]="{'canceled': patient.visit_canceled_at}"><strong>{{patient.procedure_name}}</strong></ion-col> 
-                      <ion-col size="3" class="textCardPatients text-ellipsis" style="text-align: left !important;" [ngClass]="{'canceled': patient.visit_canceled_at}"><strong>{{patient.surgeon_name}}</strong></ion-col> 
+                      <ion-col size="4" class="textCardPatients text-ellipsis" style="text-align: left !important;" [ngClass]="{'canceled': patient.visit_canceled_at}"><strong>{{patient.procedure_name}}</strong></ion-col>
+                      <ion-col size="3" class="textCardPatients text-ellipsis" style="text-align: left !important;" [ngClass]="{'canceled': patient.visit_canceled_at}"><strong>{{patient.surgeon_name}}</strong></ion-col>
                       <ion-col size="1" class="textCardPatients text-ellipsis" style="text-align: center !important;" [ngClass]="{'canceled': patient.visit_canceled_at}">
 
                         <div class="icon-container" style="margin-top: -3px;" *ngIf="!patient.phone_national_format">
                           <img src="assets/icon/Phone.png" style="width: 45%;">
-                        </div>                      
-                      </ion-col> 
+                        </div>
+                      </ion-col>
                     </ion-row>
                   </div>
                   <div *ngIf="getPatientsGroup(room.name).length === 0">
                     <p style="text-align: center;">No patients</p>
-                  </div>                  
+                  </div>
                 </ion-card-content>
-              </ion-card>                 
-            </ion-col>   
+              </ion-card>
+            </ion-col>
           </ion-row>
 
 
-          
+
         </ion-grid>
       </ion-col>
 
       <ion-col size="2" size-md="2" size-lg="2" style="padding-left: 0; padding-top: 0;">
         <div class="info-box" style="height: fit-content; border: 2px solid #d0e8f2; position: relative;">
+
+          <!-- Botón de test de audio flotante -->
+          <div class="audio-test-btn" #audio hidden (click)="testAudio()" title="Test Audio">
+            🔊
+          </div>
+
+          <!-- Panel de Voces -->
+          <div class="voice-panel" *ngIf="showVoicePanel">
+            <div class="voice-header">
+              <h3>🎤 Voces Disponibles</h3>
+              <button class="close-btn" (click)="toggleVoicePanel()">×</button>
+            </div>
+
+            <div class="voice-content">
+              <div *ngIf="availableVoices.length === 0" class="loading-voices">
+                Cargando voces del sistema...
+              </div>
+
+              <div *ngIf="availableVoices.length > 0">
+                <div class="voice-item" *ngFor="let voice of availableVoices"
+                     (click)="testSpecificVoice(voice.lang, voice.name)"
+                     [class.selected]="selectedVoice === voice.lang">
+
+                  <div class="voice-info">
+                    <div class="voice-name">{{voice.name}}</div>
+                    <div class="voice-details">{{voice.lang}} • {{voice.gender}}</div>
+                  </div>
+
+                  <div class="voice-actions">
+                    <button class="test-btn" (click)="testSpecificVoice(voice.lang, voice.name); $event.stopPropagation()">
+                      ▶️ Probar
+                    </button>
+                    <button class="select-btn" (click)="setPreferredVoice(voice.lang); $event.stopPropagation()">
+                      ✅ Usar
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Botón para abrir panel de voces -->
+          <div class="voice-toggle-btn" *ngIf="showVoicePanel" (click)="toggleVoicePanel()" title="Seleccionar Voz">
+            🎭
+          </div>
+
+
 
           <!-- Header integrado con fecha, hora y pacientes como en la imagen -->
           <div class="headerCount" (click)="headerClicked()">
@@ -144,7 +191,7 @@
             </div>
             <!-- Número de pacientes optimizado en la esquina superior derecha -->
             <div class="count-wrapper">
-              <div class="count" (click)="headerClicked()">{{ this.patients.length }}</div>
+              <div class="count" (click)="headerClicked()">{{ getVisiblePatients().length }}</div>
               <div class="count-label" (click)="headerClicked()">PATIENTS</div>
             </div>
           </div>
@@ -154,21 +201,21 @@
             <ion-col class="patients-today" (click)="headerClicked()">
               <p class="dateTimeHeader">{{ currentDate | date: 'EEEE, d MMMM Y' : 'en' }}</p>
               <h2 class="dateTimeHeaderHour">{{ currentTime }}</h2>
-            </ion-col>            
+            </ion-col>
           </ion-row>
 
           <ion-row class="patients-today-row">
             <ion-col class="patients-today">
               <div class="today-box">
                 <p style="color: white;">TODAY</p>
-                <h1>{{ this.patients.length }}</h1>
+                <h1>{{ getVisiblePatients().length }}</h1>
                 <p style="color: white;">PATIENTS</p>
               </div>
             </ion-col>
           </ion-row> -->
 
-         
-  
+
+
           <div style="padding-bottom: 10px;">
             <ion-row>
               <ion-col size="6" class="status-box">
@@ -185,7 +232,7 @@
               </ion-col>
             </ion-row>
 
-            <ion-row>          
+            <ion-row>
               <ion-col size="6" class="status-box">
                 <div class="recovery-box">
                   <p id="recovery">RECOVERY</p>
@@ -198,7 +245,7 @@
                   <h2>{{ this.getCompletedPatientsCount() }}</h2>
                 </div>
               </ion-col>
-            </ion-row> 
+            </ion-row>
           </div>
         </div>
 
@@ -214,44 +261,44 @@
                     <a style="font-weight: bold;">{{ role.code }}: </a><span>{{ getUserNames(role) }}</span>
                   </div>
                 </div>
-              </div>                 
+              </div>
             </div>
-          </ion-col>                
+          </ion-col>
         </ion-row>
 
       </ion-col>
 
-      
 
 
-    </ion-row>    
+
+    </ion-row>
   </ion-grid>
   <ion-row style="align-items: center; padding-left: 5px; padding-top: 10px;">
     <!-- Online text with date -->
     <ion-col size="3" style="text-align: left;">
       <!-- <span class="onlineTittle">LAST UPDATE:</span> -->
       <span (click)="this.showLogsAlert();" class="onlineTittle" *ngIf="!deviceWasOffline">ONLINE</span>
-      <span (click)="this.showLogsAlert();" class="onlineTittle" style="color: #eb4343;" *ngIf="deviceWasOffline">OFFLINE</span> 
+      <span (click)="this.showLogsAlert();" class="onlineTittle" style="color: #eb4343;" *ngIf="deviceWasOffline">OFFLINE</span>
       <!-- <span (click)="this.showLogsAlert();" class="textUnderLine" style="padding-left: 20px;">{{ this.lastsync }}</span> -->
     </ion-col>
 
     <!-- <ion-col size="2" style="text-align: left;">
       <span class="onlineTittle" *ngIf="!deviceWasOffline">ONLINE</span>
-      <span class="onlineTittle" style="color: #eb4343;" *ngIf="deviceWasOffline">OFFLINE</span>      
+      <span class="onlineTittle" style="color: #eb4343;" *ngIf="deviceWasOffline">OFFLINE</span>
     </ion-col> -->
-  
+
     <!-- In Holding -->
     <ion-col size="2" style="display: flex; align-items: center;">
       <ion-icon name="ellipse" style="color: #48a347;" class="underline"></ion-icon>
       <span class="textUnderLine">IN HOLDING</span>
     </ion-col>
-  
+
     <!-- In Surgery -->
     <ion-col size="2" style="display: flex; align-items: center;">
       <ion-icon name="ellipse" style="color: #eb4343;" class="underline"></ion-icon>
       <span class="textUnderLine">IN SURGERY</span>
     </ion-col>
-  
+
     <!-- Next to Surgery -->
     <ion-col size="2" style="display: flex; align-items: center;">
       <ion-icon name="ellipse" style="color: #3e3dcc;" class="underline"></ion-icon>

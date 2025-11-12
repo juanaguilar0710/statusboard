@@ -1,4 +1,4 @@
-import { AfterViewInit, ChangeDetectorRef, Component, OnInit, AfterViewChecked } from '@angular/core';
+import { AfterViewInit, ChangeDetectorRef, Component, OnInit, AfterViewChecked, ElementRef, ViewChild } from '@angular/core';
 import { LocaldataService } from '../api/localdata.service';
 import { RequestsService } from '../api/requests.service';
 import { RoomColors } from 'colors';
@@ -17,7 +17,10 @@ import { Storage } from '@ionic/storage-angular';
 import { Network } from '@capacitor/network';
 
 import { LoggerService } from '../api/logger.service';
+import { AudioService } from '../services/audio.service';
 import Swal from 'sweetalert2'
+
+
 
 import { TextToSpeech } from '@capacitor-community/text-to-speech';
 
@@ -29,6 +32,7 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
 
 
   export class DashboardComponent  implements OnInit, AfterViewChecked {
+    @ViewChild('audio') miBoton!: ElementRef<HTMLButtonElement>;
   operatingRooms: any[] = [];
   patients: any[] = [];
   pageSize: number = environment.pageSizeWhitPatients;
@@ -54,6 +58,13 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
   totalGroups = 0;
   roomsWithPatients:any[] = []
   clicks = 0;
+
+  // 🎤 Propiedades para manejo de voces
+  availableVoices: any[] = [];
+  availableLanguages: any[] = [];
+  selectedVoice: string = '';
+  showVoicePanel: boolean = false;
+  private audioContextInitialized: boolean = false;
   totalPagesCurrentPatients:any;
 
   currentPagePatients: number = 0; // Página actual
@@ -77,7 +88,8 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
               private notificationService: NotificationService,
               private storage: Storage,
               private logger: LoggerService,
-              private cdr: ChangeDetectorRef
+              private cdr: ChangeDetectorRef,
+              private audioService: AudioService
   ) {
 
 
@@ -169,14 +181,31 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
 
   async ngOnInit() {
     this.isLoading = true; // Asegurar que el loading esté activo al inicio
+
+    // Inicializar statuses como array vacío si no existe
+    if (!this.requestsService.statuses) {
+      this.requestsService.statuses = [];
+    }
+
+    // Configurar permisos de audio
+    this.setupAudioPermissions();
+
+    // Cargar voces disponibles del sistema
+    this.loadSystemVoicesInBackground();
+
     await this.loadLogs();
     await Preferences.get({ key: 'config' })
-      .then((response: any) => {
+      .then(async (response: any) => {
         if (response?.value) {
           this.config = JSON.parse(response.value);
           localStorage.setItem('config',this.config)
           this.requestsService.setToken(this.config.token);
           this.requestsService.setAdminToken(this.config.token);
+
+          // Cargar los estados del branch
+          if (this.config.branch?.id) {
+            await this.loadBranchStatuses(this.config.branch.id);
+          }
         } else {
           console.warn('No se encontró la llave "config" en Preferences');
           this.config = { token: null };
@@ -251,25 +280,19 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
     this.isLoading = true;
     this.dataLoaded = false;
     this.viewChecked = false;
-
     try {
       await this.getOperatingRoomsFromStorageOrLoadFromServer();
       this.startCarousel();
       this.startCountdown();
-
-      // Marcar que los datos están cargados
       this.dataLoaded = true;
-
-      // Forzar detección de cambios
       this.cdr.detectChanges();
-
-      // Si ngAfterViewChecked no funciona por alguna razón, usar fallback
       setTimeout(() => {
         if (this.isLoading) {
           console.log('Fallback: ocultando loading después de timeout');
           this.isLoading = false;
+          this.miBoton.nativeElement.click();
         }
-      }, 5000); // Fallback de 3 segundos máximo
+      }, 5000);
 
     } catch (error) {
       console.error('Error loading data:', error);
@@ -279,7 +302,7 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
 
   private isRefreshingToken = false;
 
-  async refreshToken(){
+  async refreshToken(skipReload: boolean = false){
     this.logger.addLog('Inicio refresco de token', {}, 'info')
     console.log(this.config);
       if (this.isRefreshingToken) return;
@@ -292,21 +315,25 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
           this.requestsService.refreshToken(token).then(async resp =>{
             console.log(resp);
             if (resp?.status === 200) {
-              this.config.token = resp.data?.jwt.access_token
-              this.requestsService.setToken(resp.data.jwt.access_token);
+              this.config.token = resp.data?.access_token
+              this.requestsService.setToken(resp.data.access_token);
+              this.requestsService.setRefreshToken(resp.data.refresh_token);
               this.logger.setTokenAdmin(
-                resp.data.jwt.access_token,
-                resp.data.jwt.expires_in
+                resp.data.access_token,
+                resp.data.expires_in
               );
-              this.requestsService.setAdminToken(resp.data.jwt.access_token);
+              this.requestsService.setAdminToken(resp.data.access_token);
               await Preferences.set({
                 key: 'config',
                 value: JSON.stringify(this.config),
               });
-              setTimeout(() => {
-                this.notificationService.showInfo('Token refresh.',3000);
-                this.startlists()
-              }, 3000);
+
+              if (!skipReload) {
+                setTimeout(() => {
+                  this.notificationService.showInfo('Token refresh.',3000);
+                  this.startlists()
+                }, 3000);
+              }
               this.logger.addLog('Refresco de token exitoso', {}, 'success')
             }
             if (resp?.status === 500) {
@@ -332,7 +359,11 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
 
   async getOperatingRoomsFromStorageOrLoadFromServer() {
 
-    if (this.getOperatingRooms) return;
+    if (this.getOperatingRooms) {
+      console.log('getOperatingRooms ya está en ejecución, evitando llamada duplicada');
+      await this.logger.addLog('Petición getOperatingRooms duplicada evitada', {}, 'warning');
+      return;
+    }
     this.getOperatingRooms = true;
     try {
         // Log de inicio de petición
@@ -341,12 +372,19 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
         await this.requestsService.getOperatingRooms().subscribe(async (response: any) => {
           console.log('getoperatingrooms: ',response);
 
-          if(response.status == 500){
-            if(response.data.error.code == 1000){
+          if(response.status == 500 || response.status == 403){
+            if(response.status == 403 || response.data.error.code == 1000){
               console.log('aqui');
               await this.logger.addLog('Fallo getOperatingRooms', {response}, 'error');
 
-              this.refreshToken();
+              // Usar skipReload=true para evitar llamadas duplicadas
+              await this.refreshToken(true);
+
+              // Después del refresh, intentar la petición nuevamente una sola vez
+              setTimeout(async () => {
+                this.getOperatingRooms = false; // Reset del flag
+                await this.getOperatingRoomsFromStorageOrLoadFromServer();
+              }, 1000);
           }
           }else{
             this.operatingRooms = response.data.data;
@@ -378,7 +416,12 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
           const newPatients = response.data;
           const updatedPatients:any = [];
 
-          newPatients.forEach((newPatient:any) => {
+          // Filtrar pacientes según la configuración de estados válidos
+          const filteredPatients = newPatients.filter((patient: any) =>
+            this.shouldPatientBeVisible(patient.status_Id)
+          );
+
+          filteredPatients.forEach((newPatient:any) => {
             const existingPatient = this.patients.find(p => p.id === newPatient.id);
             if (!existingPatient || this.hasPatientChanged(existingPatient, newPatient)) {
               updatedPatients.push(newPatient);
@@ -386,9 +429,9 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
           });
 
           this.lastsync = new Date().toLocaleString();
-          this.patients = [...newPatients];
-          this.patientsCopy = [...newPatients];
-          this.LocaldataService.setPatients(newPatients);
+          this.patients = [...filteredPatients];
+          this.patientsCopy = [...filteredPatients];
+          this.LocaldataService.setPatients(filteredPatients);
           this.viewYesterdaysPatients = yesterday;
 
 
@@ -633,7 +676,7 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
               authorize: async (socketId: any, callback: any) => {
                 localStorage.setItem('socketId', socketId);
                 await this.requestsService.authorizeBroadcasting(socketId, channel.name).subscribe( async response => {
-                  console.log(response);
+                  this.enableAudioContext();
                   await this.logger.addLog('Autorización exitosa', {
                     channel: channel.name,
                     status: 'success',
@@ -681,11 +724,9 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
   }
 
   hasPatientChanged(existingPatient: any, newPatient: any): boolean {
-    // Compara los atributos clave del paciente
     return (
       existingPatient.status_Id !== newPatient.status_Id ||
       existingPatient.operating_room_name !== newPatient.operating_room_name
-      // Agrega más comparaciones según sea necesario
     );
   }
 
@@ -709,28 +750,85 @@ isPatientUpdated(patientId: number): boolean {
   return updatedPatients.some((p: any) => p.id === patientId);
 }
 
-async obtenerVoces() {
-  const voices = await TextToSpeech.getSupportedVoices();
 
-//   await this.logger.addLog(`voces`, {
-//   name: voices.voices.,
-//   lang: voices.lang,
-// }, 'info');
-
-  console.log('Voces disponibles:', voices);
+async speak(text = '') {
+  try {
+    await this.audioService.playSound('notification', text);
+  } catch (error) {
+    // Error silencioso para evitar logs excesivos
+  }
 }
 
-async speak(text  = '') {
-  await this.obtenerVoces();
-    await TextToSpeech.speak({
-      text: text,
-      lang: 'es-US',
-      rate: 1.0,
-      pitch: 1.0,
-      volume: 1.0,
-      voice: 125,
-    });
-}
+
+  async testAudio() {
+    try {
+      await this.audioService.testAudio('Cargando pacientes, por favor espere');
+    } catch (error) {
+      // Error silencioso
+    }
+  }
+
+  // 🎤 Obtener y mostrar voces reales del sistema
+  async loadSystemVoices() {
+    try {
+      const voices = await this.audioService.getAvailableVoices();
+      const languages = await this.audioService.getAvailableLanguages();
+
+      return { voices, languages };
+    } catch (error) {
+      return { voices: [], languages: [] };
+    }
+  }
+
+  // 🎯 Probar una voz específica
+  async testSpecificVoice(langCode: string, voiceName: string) {
+    try {
+      const testMessage = `Esta es una prueba de la voz ${voiceName}. ¿Te gusta cómo suena?`;
+      await this.audioService.testVoiceWithLanguage(langCode, testMessage);
+    } catch (error) {
+      // Error silencioso
+    }
+  }
+
+  // ⚙️ Configurar voz preferida
+  async setPreferredVoice(langCode: string) {
+    try {
+      this.selectedVoice = langCode;
+      this.audioService.setPreferredVoice(langCode);
+      await this.audioService.testAudio('Voz configurada correctamente');
+    } catch (error) {
+      // Error silencioso
+    }
+  }
+
+  // 🔄 Cargar voces en segundo plano
+  private async loadSystemVoicesInBackground() {
+    try {
+      setTimeout(async () => {
+        const result = await this.loadSystemVoices();
+        this.availableVoices = result.voices;
+        this.availableLanguages = result.languages;
+      }, 2000); // Cargar después de 2 segundos
+    } catch (error) {
+      // Error silencioso
+    }
+  }
+
+  // 🎛️ Mostrar/ocultar panel de voces
+  toggleVoicePanel() {
+    this.showVoicePanel = !this.showVoicePanel;
+
+    if (this.showVoicePanel && this.availableVoices.length === 0) {
+      this.loadSystemVoices().then(result => {
+        this.availableVoices = result.voices;
+        this.availableLanguages = result.languages;
+      });
+    }
+  }
+
+
+
+
 
 
 private async handlePatientEvent(type: 'updated' | 'created' | 'deleted', e: any): Promise<void> {
@@ -750,28 +848,78 @@ private async handlePatientEvent(type: 'updated' | 'created' | 'deleted', e: any
     channelListeners.listen('.patient.updated', (e: any) => {console.log('entro evento'), this.handlePatientEvent('updated', e)});
     channelListeners.listen('.patient.created', (e: any) => {console.log('entro evento'), this.handlePatientEvent('created', e)});
     channelListeners.listen('.patient.deleted', (e: any) => {console.log('entro evento'), this.handlePatientEvent('deleted', e)});
-    channelListeners.listen('.play.speech', (e: any) => {console.log('entro evento'),  this.speak(e.message)});
+    channelListeners.listen('.play.speech', async (e: any) => {
+      try {
+        const patientMatch = e.message.match(/paciente\s+número\s+(\d+)/i);
+        const patientNumber = patientMatch ? Number(patientMatch[1]) : null;
+      const statusMatch = e.message.match(/se\s+encuentra\s+(.+?)\.?$/i);
+      const statusName = statusMatch ? statusMatch[1].trim() : null;
+
+      let statusId = null;
+      if (statusName && Array.isArray(this.requestsService.statuses) && this.requestsService.statuses.length > 0) {
+        statusId = this.getStatusIdByName(statusName);
+      } else if (statusName) {
+        console.warn('No se puede buscar estado - estados no cargados aún:', statusName);
+      }
+
+      if (patientNumber) {
+        const index = this.patients.findIndex((p: any) => p.identifier === patientNumber);
+
+        if (index > -1) {
+          const statusToCheck = statusId !== null ? statusId : this.patients[index].status_Id;
+          const shouldShowPatient = this.shouldPatientBeVisible(statusToCheck);
+          if (shouldShowPatient) {
+            await this.speak(e.message);
+          }
+        } else {
+          console.log('Paciente no encontrado en la lista, verificando por estado');
+          if (statusId !== null) {
+            const shouldShowPatient = this.shouldPatientBeVisible(statusId);
+            if (shouldShowPatient) {
+              await this.speak(e.message);
+            } else {
+              console.log('Paciente no debe mostrarse según configuración de estados');
+            }
+          } else {
+            console.log('Reproduciéndose por defecto - no se pudo determinar estado');
+            await this.speak(e.message);
+          }
+        }
+      } else {
+        console.log('No se pudo extraer número de paciente, reproduciéndose por defecto');
+        await this.speak(e.message);
+      }
+
+      } catch (speechError) {
+        console.error('Error en procesamiento de speech:', speechError);
+        await this.logger.addLog('Error Speech Processing', {
+          error: speechError,
+          message: e.message
+        }, 'error');
+
+        try {
+          await this.speak(e.message);
+        } catch (fallbackError) {
+          console.error('Error en fallback de speech:', fallbackError);
+        }
+      }
+    });
   }
 
 
   private handlePusherConnection(): void {
     const pusherInstance = (<any>this.laravelEcho).connector.pusher;
-
-    // Escuchar cuando Pusher se conecta
     pusherInstance.connection.bind('connected', async () => {
       console.log('Pusher connected');
       await this.logger.addLog('Pusher connected', {},'success');
     });
 
-
-    // Escuchar cuando Pusher se desconecta
     pusherInstance.connection.bind('disconnected', async (resp:any) => {
       await this.logger.addLog('Pusher disconnected', {resp},'error');
       console.warn('Pusher disconnected, attempting to reconnect...');
       this.retryConnection();
     });
 
-    // Escuchar errores
     pusherInstance.connection.bind('error', async (err: any) => {
       console.error('Pusher error:', err);
       await this.logger.addLog('Pusher error', {err},'error');
@@ -855,9 +1003,11 @@ private isPusherConnected(): boolean {
 
     this.lastUpdateTime = Date.now();
     const index = this.patients.findIndex((p: any) => p.id === patient.id);
+    const shouldBeVisible = this.shouldPatientBeVisible(patient.status_Id);
+
     switch(eventType) {
       case 'created':
-        if (index === -1) {
+        if (index === -1 && shouldBeVisible) {
           const updatedPatient: any = patient;
           this.patients.push(updatedPatient);
           this.patientsCopy = [...this.patients];
@@ -870,19 +1020,39 @@ private isPusherConnected(): boolean {
         if (index > -1) {
           console.log('updated');
           const updatedPatient: any = patient;
-          const existingPatientIndex = this.patients.findIndex(p => p.id === updatedPatient.id);
-          if (existingPatientIndex !== -1) {
-            this.patients[existingPatientIndex] = {
-              ...this.patients[existingPatientIndex],
-              ...updatedPatient
-            };
+
+          if (shouldBeVisible) {
+            // El paciente debe estar visible - actualizar o agregar
+            const existingPatientIndex = this.patients.findIndex(p => p.id === updatedPatient.id);
+            if (existingPatientIndex !== -1) {
+              this.patients[existingPatientIndex] = {
+                ...this.patients[existingPatientIndex],
+                ...updatedPatient
+              };
+            } else {
+              this.patients.push(updatedPatient);
+            }
+            this.addUpdatedPatient(updatedPatient);
           } else {
-            this.patients.push(updatedPatient);
+            // El paciente NO debe estar visible - remover si existe
+            const existingPatientIndex = this.patients.findIndex(p => p.id === updatedPatient.id);
+            if (existingPatientIndex !== -1) {
+              console.log('Removiendo paciente del listado - estado no válido:', updatedPatient.status_Id);
+              this.patients.splice(existingPatientIndex, 1);
+            }
           }
+
           this.patientsCopy = [...this.patients];
           this.lastsync = new Date().toLocaleString();
           this.LocaldataService.setPatients(this.patients);
-          this.addUpdatedPatient(updatedPatient);
+        } else if (shouldBeVisible) {
+          // Paciente no existe en la lista pero debería estar visible - agregarlo
+          console.log('Agregando paciente al listado - nuevo estado válido:', patient.status_Id);
+          this.patients.push(patient);
+          this.patientsCopy = [...this.patients];
+          this.lastsync = new Date().toLocaleString();
+          this.LocaldataService.setPatients(this.patients);
+          this.addUpdatedPatient(patient);
         }
         break;
       case 'deleted':
@@ -1048,11 +1218,96 @@ private isPusherConnected(): boolean {
   }
 
   updatePatientPaginationDetails() {
-    this.totalPatientPages = Math.ceil(this.patients.length / this.patientsPerPage);
+    const filteredPatients = this.getVisiblePatients();
+    this.totalPatientPages = Math.ceil(filteredPatients.length / this.patientsPerPage);
+  }
+
+
+  shouldPatientBeVisible(statusId: number): boolean {
+    if (!this.config || !this.config.statuses) {
+      return true; // Si no hay configuración, mostrar todos
+    }
+    return this.config.statuses.includes(statusId);
+  }
+
+
+  getVisiblePatients(): any[] {
+    return this.patients.filter(patient => this.shouldPatientBeVisible(patient.status_Id));
+  }
+
+  async loadBranchStatuses(branchId: number): Promise<void> {
+    return new Promise((resolve, reject) => {
+      try {
+        this.requestsService.getBranchStatuses(branchId).subscribe(
+          (response: any) => {
+            if (response.status === 200) {
+              // Asegurar que los datos sean un array válido
+              if (Array.isArray(response.data)) {
+                this.requestsService.statuses = response.data;
+                console.log('Estados cargados exitosamente:', this.requestsService.statuses);
+              } else {
+                console.warn('Los datos de estados no son un array:', response.data);
+                this.requestsService.statuses = [];
+              }
+            } else {
+              console.warn('Respuesta no exitosa al cargar estados:', response);
+              this.requestsService.statuses = [];
+            }
+            resolve();
+          },
+          (error: any) => {
+            console.error('Error cargando estados:', error);
+            this.requestsService.statuses = [];
+            resolve(); // No hacer reject para que el flujo continúe
+          }
+        );
+      } catch (error) {
+        console.error('Error en loadBranchStatuses:', error);
+        this.requestsService.statuses = [];
+        resolve(); // No hacer reject para que el flujo continúe
+      }
+    });
+  }
+
+  getStatusIdByName(statusName: string): number | null {
+    if (!this.requestsService.statuses ||
+        !Array.isArray(this.requestsService.statuses) ||
+        this.requestsService.statuses.length === 0) {
+      return null;
+    }
+
+    const normalizedSearchName = statusName
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '') // Remover acentos
+      .trim();
+
+    try {
+      const status = this.requestsService.statuses.find((s: any) => {
+        if (!s || !s.name) {
+          console.warn('Estado inválido encontrado:', s);
+          return false;
+        }
+
+        const normalizedStatusName = s.name
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '') // Remover acentos
+          .trim();
+
+        return normalizedStatusName === normalizedSearchName;
+      });
+
+      return status ? status.id : null;
+    } catch (error) {
+      console.error('Error al buscar estado por nombre:', error);
+      return null;
+    }
   }
 
   getPatientsForCurrentPage(): any[] {
-    const sortedPatients = [...this.patients].sort((a, b) => a.status?.id - b.status?.id);
+    const visiblePatients = this.getVisiblePatients();
+    const sortedPatients = [...visiblePatients].sort((a, b) => a.status?.id - b.status?.id);
     const start = this.currentPagePatients * this.patientsPerPage;
     const end = start + this.patientsPerPage;
     return sortedPatients.slice(start, end);
@@ -1206,5 +1461,45 @@ private isPusherConnected(): boolean {
     return action;
   }
 
+  private setupAudioPermissions() {
+    if (this.audioContextInitialized) return;
+
+    // Solo agregar un listener que se ejecute una sola vez
+    document.addEventListener('click', this.enableAudioContext.bind(this), { once: true });
+  }
+
+  private async enableAudioContext() {
+    if (this.audioContextInitialized) return;
+
+    try {
+      // Activar contexto de audio web
+      const AudioContext = (window as any).AudioContext || (window as any).webkitAudioContext;
+      if (AudioContext) {
+        const context = new AudioContext();
+        if (context.state === 'suspended') {
+          await context.resume();
+        }
+      }
+
+      // Hacer una prueba silenciosa de TTS para activarlo
+      try {
+        await TextToSpeech.speak({
+          text: '',
+          lang: 'es-ES',
+          rate: 1.0,
+          pitch: 1.0,
+          volume: 0.01 // Volumen muy bajo
+        });
+      } catch (ttsError) {
+        // TTS no disponible, usar solo audio context
+      }
+
+      this.audioContextInitialized = true;
+      console.log('✅ Contexto de audio y TTS activados');
+
+    } catch (error) {
+      console.log('⚠️ No se pudo activar el contexto de audio:', error);
+    }
+  }
 
 }
