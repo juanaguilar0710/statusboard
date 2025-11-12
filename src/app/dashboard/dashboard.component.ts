@@ -67,7 +67,7 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
   isLoading = true; // Variable para controlar el estado de loading
   private dataLoaded = false; // Flag para controlar si los datos fueron cargados
   private viewChecked = false; // Flag para evitar bucles infinitos en ngAfterViewChecked
-  private readonly TOKEN_EXPIRATION_KEY_Admin = 'auth_token_expiration_admin';  
+  private readonly TOKEN_EXPIRATION_KEY_Admin = 'auth_token_expiration_admin';
 
   constructor(private LocaldataService: LocaldataService,
               public requestsService: RequestsService,
@@ -78,15 +78,15 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
               private storage: Storage,
               private logger: LoggerService,
               private cdr: ChangeDetectorRef
-  ) { 
-    
+  ) {
+
 
     setTimeout(() => {
       setInterval(async () => {
-        this.updateTime();        
-        if (this.isRefreshing) return;        
+        this.updateTime();
+        if (this.isRefreshing) return;
         const expiresAt = await this.storage.get(this.TOKEN_EXPIRATION_KEY_Admin);
-        if (!expiresAt) return;        
+        if (!expiresAt) return;
         const timeLeft = expiresAt - Date.now();
         if (timeLeft <= 60000 && timeLeft > 0) {
           this.isRefreshing = true;
@@ -109,7 +109,7 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
         this.listenToNetworkChanges();
       // this.networkService.networkStatus$.subscribe((status: string) => {
       //   console.log(status);
-        
+
       //   this.networkStatus = status;
       //   if (status === "OFFLINE") {
       //     this.deviceWasOffline = true;
@@ -128,7 +128,7 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
 
   async checkNetworkStatus() {
     const status = await Network.getStatus();
-    this.networkStatus = status.connected ? "ONLINE" : "OFFLINE";    
+    this.networkStatus = status.connected ? "ONLINE" : "OFFLINE";
     if (!status.connected) {
       this.deviceWasOffline = true;
       console.log("OFFLINE");
@@ -143,7 +143,7 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
 
   listenToNetworkChanges() {
     Network.addListener('networkStatusChange', async (status) => {
-      this.networkStatus = status.connected ? "ONLINE" : "OFFLINE";      
+      this.networkStatus = status.connected ? "ONLINE" : "OFFLINE";
       if (!status.connected) {
         this.deviceWasOffline = true;
         console.log("OFFLINE");
@@ -172,8 +172,8 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
     await this.loadLogs();
     await Preferences.get({ key: 'config' })
       .then((response: any) => {
-        if (response?.value) {    
-          this.config = JSON.parse(response.value);   
+        if (response?.value) {
+          this.config = JSON.parse(response.value);
           localStorage.setItem('config',this.config)
           this.requestsService.setToken(this.config.token);
           this.requestsService.setAdminToken(this.config.token);
@@ -186,7 +186,7 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
         console.error('Error al leer Preferences:', error);
       });
      await this.updateTime();
-     await this.startlists(); 
+     await this.startlists();
   }
 
   ngAfterViewChecked() {
@@ -199,7 +199,7 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
   private checkIfRenderingComplete() {
     setTimeout(() => {
       const hasConfig = this.config && this.config.aplication;
-      
+
       if (!hasConfig) {
         return; // Esperar a que la configuración esté lista
       }
@@ -234,12 +234,12 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
   updateTime() {
     const now = new Date();
     const hours = now.getHours();
-    const minutes = now.getMinutes();    
+    const minutes = now.getMinutes();
     this.currentTime = now.toLocaleTimeString('es-ES', {
       hour: 'numeric',
       minute: '2-digit',
       hour12: true,
-    }).replace(' ', ' ').toUpperCase();    
+    }).replace(' ', ' ').toUpperCase();
     if (hours === 23 && minutes === 59) {
       setTimeout(() => {
         window.location.reload();
@@ -251,18 +251,18 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
     this.isLoading = true;
     this.dataLoaded = false;
     this.viewChecked = false;
-    
+
     try {
       await this.getOperatingRoomsFromStorageOrLoadFromServer();
       this.startCarousel();
       this.startCountdown();
-      
+
       // Marcar que los datos están cargados
       this.dataLoaded = true;
-      
+
       // Forzar detección de cambios
       this.cdr.detectChanges();
-      
+
       // Si ngAfterViewChecked no funciona por alguna razón, usar fallback
       setTimeout(() => {
         if (this.isLoading) {
@@ -270,7 +270,7 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
           this.isLoading = false;
         }
       }, 5000); // Fallback de 3 segundos máximo
-      
+
     } catch (error) {
       console.error('Error loading data:', error);
       this.isLoading = false;
@@ -287,23 +287,23 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
         try {
             const token = await this.logger.getTokenAdmin();
             console.log(token);
-            
-          
+
+
           this.requestsService.refreshToken(token).then(async resp =>{
-            console.log(resp);              
+            console.log(resp);
             if (resp?.status === 200) {
-              this.config.token = resp.data?.jwt.access_token 
+              this.config.token = resp.data?.jwt.access_token
               this.requestsService.setToken(resp.data.jwt.access_token);
               this.logger.setTokenAdmin(
                 resp.data.jwt.access_token,
                 resp.data.jwt.expires_in
               );
-              this.requestsService.setAdminToken(resp.data.jwt.access_token);               
+              this.requestsService.setAdminToken(resp.data.jwt.access_token);
               await Preferences.set({
                 key: 'config',
                 value: JSON.stringify(this.config),
-              });        
-              setTimeout(() => {          
+              });
+              setTimeout(() => {
                 this.notificationService.showInfo('Token refresh.',3000);
                 this.startlists()
               }, 3000);
@@ -330,23 +330,23 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
 
   private getOperatingRooms = false;
 
-  async getOperatingRoomsFromStorageOrLoadFromServer() {    
-    
+  async getOperatingRoomsFromStorageOrLoadFromServer() {
+
     if (this.getOperatingRooms) return;
     this.getOperatingRooms = true;
     try {
         // Log de inicio de petición
         await this.logger.addLog('Iniciando petición getOperatingRooms', {}, 'info');
 
-        await this.requestsService.getOperatingRooms().subscribe(async (response: any) => {  
+        await this.requestsService.getOperatingRooms().subscribe(async (response: any) => {
           console.log('getoperatingrooms: ',response);
-                  
+
           if(response.status == 500){
             if(response.data.error.code == 1000){
               console.log('aqui');
               await this.logger.addLog('Fallo getOperatingRooms', {response}, 'error');
-              
-              this.refreshToken();                            
+
+              this.refreshToken();
           }
           }else{
             this.operatingRooms = response.data.data;
@@ -354,14 +354,14 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
             await this.logger.addLog('Exitoso getOperatingRooms', {response}, 'success');
 
             await this.getTodaysPatientsFromServer();
-          }                  
+          }
         },error => {
-          console.log('error getOperatingRooms',error);          
+          console.log('error getOperatingRooms',error);
         });
       } finally {
         this.getOperatingRooms = false;
       }
-  } 
+  }
 
   private getTodaysPatients = false;
   async getTodaysPatientsFromServer(event?: any, yesterday: boolean = false) {
@@ -390,13 +390,13 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
           this.patientsCopy = [...newPatients];
           this.LocaldataService.setPatients(newPatients);
           this.viewYesterdaysPatients = yesterday;
-        
+
 
           updatedPatients.forEach((patient:any) => this.addUpdatedPatient(patient));
 
           await this.ngAfterView();
 
-        } 
+        }
         // if (response.status === 500) {
         //   this.refreshToken();
         // }
@@ -421,18 +421,18 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
   }
   startCarousel() {
     this.updatePaginationDetails();
-    this.intervalId = setInterval(() => {                  
+    this.intervalId = setInterval(() => {
       this.getRoomsWithPatients().forEach(room => {
-        const patientsInRoom = this.filterPatientsByRoom(room.name);    
+        const patientsInRoom = this.filterPatientsByRoom(room.name);
         if (patientsInRoom.length > this.pageSize) {
           const currentGroup = this.currentGroups[room.name] || 0;
-          this.totalGroups = Math.ceil(patientsInRoom.length / this.pageSize);                   
-          this.currentGroups[room.name] = (currentGroup + 1) % this.totalGroups;                
+          this.totalGroups = Math.ceil(patientsInRoom.length / this.pageSize);
+          this.currentGroups[room.name] = (currentGroup + 1) % this.totalGroups;
         }
       });
-      this.updatePaginationDetails();        
+      this.updatePaginationDetails();
     }, environment.timeForCardsWhitPatients);
-  }  
+  }
   updatePaginationDetails() {
     const roomsWithPatients = this.getRoomsWithPatients();
     if (roomsWithPatients.length === 0) {
@@ -440,16 +440,16 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
       this.currentPageWithPatients = 0;
       return;
     }
-  
+
     this.totalPagesWithPatients = Math.ceil(roomsWithPatients.length / environment.roomsPerPageWhitPatients);
     this.currentPageWithPatients = environment.currentPageWhitPatients + 1;
-    
+
   }
   stopCarousel() {
     clearInterval(this.intervalId);
   }
-  getRoomsWithPatients(): any[] {    
-    this.roomsWithPatients = this.roomsWithPatients || [];    
+  getRoomsWithPatients(): any[] {
+    this.roomsWithPatients = this.roomsWithPatients || [];
         this.operatingRooms.forEach(room => {
             const patientsInRoom = this.filterPatientsByRoom(room.name);
             const existingRoom = this.roomsWithPatients.find(r => r.name === room.name);
@@ -463,12 +463,12 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
                     totalpage: Math.ceil(patientsInRoom.length / this.pageSize),
                     actualPage: 1,
                     patients: patientsInRoom,
-                });                
+                });
             }
         });
-        const patientsWithoutRoom = this.patients.filter(patient => 
+        const patientsWithoutRoom = this.patients.filter(patient =>
             !this.operatingRooms.some(room => room.name === patient.operating_room_name)
-        );        
+        );
         const existingUnassignedRoom = this.roomsWithPatients.find(room => room.name === 'TO FOLLOW');
         if (patientsWithoutRoom.length > 0) {
             if (existingUnassignedRoom) {
@@ -481,12 +481,12 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
                     totalpage: Math.ceil(patientsWithoutRoom.length / this.pageSize),
                     actualPage: 1,
                     patients: patientsWithoutRoom,
-                });                
+                });
             }
         } else if (existingUnassignedRoom) {
-            this.roomsWithPatients = this.roomsWithPatients.filter(room => room.name !== 'TO FOLLOW');            
+            this.roomsWithPatients = this.roomsWithPatients.filter(room => room.name !== 'TO FOLLOW');
         }
-        this.roomsWithPatients = this.roomsWithPatients.filter(room => room.patients && room.patients.length > 0);                      
+        this.roomsWithPatients = this.roomsWithPatients.filter(room => room.patients && room.patients.length > 0);
         return this.roomsWithPatients;
   }
   startCountdown() {
@@ -497,7 +497,7 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
     this.intervalIdForPages = setInterval(() => {
       if (this.countdown > 1) {
         this.countdown--;
-        
+
       } else {
         this.changePageRoomsWhitPatients();
         this.updatePaginationDetails();
@@ -509,8 +509,8 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
   }
   changePageRooms() {
     const totalPages = this.operatingRooms && this.operatingRooms.length > 0 ? Math.ceil(this.operatingRooms.length / environment.roomsPerPage) : 0;
-    environment.currentPage = (environment.currentPage + 1) % totalPages;     
-  }  
+    environment.currentPage = (environment.currentPage + 1) % totalPages;
+  }
   changePageRoomsWhitPatients() {
   const roomsWithPatients = this.getRoomsWithPatients();
   if (roomsWithPatients.length === 0) {
@@ -527,37 +527,37 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
     const start = environment.currentPage * environment.roomsPerPage;
     const end = start + environment.roomsPerPage;
     return this.operatingRooms.slice(start, end);
-  } 
+  }
   getRoomsForCurrentPagewhitpatients() {
-    const start = environment.currentPageWhitPatients * environment.roomsPerPageWhitPatients;    
-    const end = start + environment.roomsPerPageWhitPatients;    
-    this.totalPages = end    
+    const start = environment.currentPageWhitPatients * environment.roomsPerPageWhitPatients;
+    const end = start + environment.roomsPerPageWhitPatients;
+    this.totalPages = end
     return this.getRoomsWithPatients().slice(start, end);
-  }  
+  }
   filterPatientsByRoom(roomName: string): any[] {
-    if (roomName === 'TO FOLLOW') {     
+    if (roomName === 'TO FOLLOW') {
       return this.patients.filter(patient =>
         !this.operatingRooms.some(room => room.name === patient.operating_room_name)
       );
     }
-    return this.patients.filter(patient => 
-      patient.operating_room_name === roomName && 
+    return this.patients.filter(patient =>
+      patient.operating_room_name === roomName &&
       this.config.statuses.includes(patient.status_Id)
     );
   }
-  getPatientsGroup(roomName: string): any[] {    
-    const patientsInRoom = this.filterPatientsByRoom(roomName);    
-    if (!patientsInRoom.length) return []; 
-    const currentGroup = this.currentGroups[roomName] || 0;     
+  getPatientsGroup(roomName: string): any[] {
+    const patientsInRoom = this.filterPatientsByRoom(roomName);
+    if (!patientsInRoom.length) return [];
+    const currentGroup = this.currentGroups[roomName] || 0;
     const start = currentGroup * this.pageSize;
-    const end = start + this.pageSize; 
+    const end = start + this.pageSize;
     const room = this.roomsWithPatients.find(r => r.name === roomName);
     if (room) {
         room.actualPage = currentGroup + 1;
     }
     if (patientsInRoom.length <= this.pageSize) {
       return patientsInRoom;
-    }    
+    }
     return patientsInRoom.slice(start, end);
   }
 
@@ -568,7 +568,7 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
   }
 
   async ngAfterView() {
-    try {      
+    try {
       await this.logger.addLog('Inicio de ngAfterViewInit', {
         deviceStatus: this.deviceWasOffline ? 'offline' : 'online',
         component: 'Dashboard'
@@ -580,44 +580,44 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
           level: 'warn'
         },'warning');
         console.warn('Dispositivo sin conexión - Pusher no se inicializará');
-      }else{      
-        await this.logger.addLog('Inicio de autorizacion a pusher', {          
+      }else{
+        await this.logger.addLog('Inicio de autorizacion a pusher', {
           component: 'Dashboard',
         },'info');
 
-        
-        
+
+
         if(this.requestsService.config == null){
           console.log('configuracion no encontrada en el ngafter: ' + this.requestsService.config);
-          
-          
+
+
         }else{
           console.log(this.requestsService.config);
-          
+
           await this.conectionPusher();
-          // const channel = `branch.${this.requestsService.config.branch.id}.room.${this.requestsService.config.waitingRoom.id}`;        
-          const channel = `rooms.${this.requestsService.config.waitingRoom.id}`;        
+          // const channel = `branch.${this.requestsService.config.branch.id}.room.${this.requestsService.config.waitingRoom.id}`;
+          const channel = `rooms.${this.requestsService.config.waitingRoom.id}`;
           await this.logger.addLog('Canal configurado', {
             channel: channel,
             config: this.sanitizeConfig(this.requestsService.config)
           },'info');
-            
+
           // Escuchar eventos de pacientes
           await this.listenToPatientEvents(channel);
           // Manejar eventos de conexión/desconexión
           this.handlePusherConnection();
           // Iniciar monitoreo de la conexión
           this.monitorConnection();
-        }        
-      }      
+        }
+      }
     } catch (error) {
-      console.log(error);      
-      await this.logger.addLog('Error conexion pusher', {        
+      console.log(error);
+      await this.logger.addLog('Error conexion pusher', {
         status: 'error',
         error: this.sanitizeError(error)
       },'error');
       this.ngOnInit();
-    }    
+    }
   }
 
   private conectionPusher(){
@@ -627,7 +627,7 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
           key: environment.pusher.key,
           cluster: environment.pusher.cluster,
           forceTLS: environment.pusher.forceTLS,
-          disableStats: true,          
+          disableStats: true,
           authorizer: (channel: any, options: any) => {
             return {
               authorize: async (socketId: any, callback: any) => {
@@ -648,23 +648,23 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
                   },'error');
                   this.ngOnInit();
                   callback(true, error);
-                });          
+                });
               }
             };
-          },      
+          },
         });
   }
 
 
   private sanitizeResponse(response: any): any {
-    if (!response) return null;    
+    if (!response) return null;
     return {
       status: response.status,
       channel_data: response.channel_data ? '***REDACTED***' : null
     };
   }
   private sanitizeConfig(config: any): any {
-    if (!config) return null;    
+    if (!config) return null;
     return {
       waitingRoomId: config.waitingRoom?.id,
       branchId: config.branch?.id,
@@ -672,7 +672,7 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
     };
   }
   private sanitizeError(error: any): any {
-    if (!error) return null;    
+    if (!error) return null;
     return {
       message: error.message || 'Error sin mensaje',
       code: error.code || 'unknown',
@@ -689,7 +689,7 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
     );
   }
 
-  addUpdatedPatient(patient: any) {   
+  addUpdatedPatient(patient: any) {
     const updatedPatients = JSON.parse(localStorage.getItem('updatedPatients') || '[]');
     const expiry = new Date().getTime() + 60000; // 60 segundos
     updatedPatients.push({ ...patient, expiry });
@@ -735,7 +735,7 @@ async speak(text  = '') {
 
 private async handlePatientEvent(type: 'updated' | 'created' | 'deleted', e: any): Promise<void> {
   if (this.networkStatus !== "ONLINE") return;
-  try {    
+  try {
     console.log(`Procesando evento ${type}:`, e);
     await this.logger.addLog(`Websocket.${type}`, e.patient, 'info');
     await this.updatePatientList(type, e.patient);
@@ -745,8 +745,8 @@ private async handlePatientEvent(type: 'updated' | 'created' | 'deleted', e: any
 }
 
   private listenToPatientEvents(channel: string): void {
-    this.laravelEcho?.leave(channel);    
-    const channelListeners = this.laravelEcho?.private(channel);    
+    this.laravelEcho?.leave(channel);
+    const channelListeners = this.laravelEcho?.private(channel);
     channelListeners.listen('.patient.updated', (e: any) => {console.log('entro evento'), this.handlePatientEvent('updated', e)});
     channelListeners.listen('.patient.created', (e: any) => {console.log('entro evento'), this.handlePatientEvent('created', e)});
     channelListeners.listen('.patient.deleted', (e: any) => {console.log('entro evento'), this.handlePatientEvent('deleted', e)});
@@ -756,20 +756,21 @@ private async handlePatientEvent(type: 'updated' | 'created' | 'deleted', e: any
 
   private handlePusherConnection(): void {
     const pusherInstance = (<any>this.laravelEcho).connector.pusher;
-  
+
     // Escuchar cuando Pusher se conecta
     pusherInstance.connection.bind('connected', async () => {
       console.log('Pusher connected');
       await this.logger.addLog('Pusher connected', {},'success');
     });
-  
+
+
     // Escuchar cuando Pusher se desconecta
     pusherInstance.connection.bind('disconnected', async (resp:any) => {
       await this.logger.addLog('Pusher disconnected', {resp},'error');
       console.warn('Pusher disconnected, attempting to reconnect...');
       this.retryConnection();
     });
-  
+
     // Escuchar errores
     pusherInstance.connection.bind('error', async (err: any) => {
       console.error('Pusher error:', err);
@@ -784,7 +785,7 @@ private async handlePatientEvent(type: 'updated' | 'created' | 'deleted', e: any
     let retries = 0;
     const maxRetries = 5;
     const retryInterval = 3000; // 3 segundos
-    
+
     const interval = setInterval(async () => {
         if (retries >= maxRetries) {
             clearInterval(interval);
@@ -803,7 +804,7 @@ private async handlePatientEvent(type: 'updated' | 'created' | 'deleted', e: any
         try {
             // Intento de reconexión
             (<any>this.laravelEcho).connector.pusher.connect();
-            
+
             // Verificar estado de conexión después de un breve tiempo
             setTimeout(() => {
                 if (this.isPusherConnected()) {
@@ -815,7 +816,7 @@ private async handlePatientEvent(type: 'updated' | 'created' | 'deleted', e: any
                     });
                 }
             }, 1000); // Esperar 1 segundo para verificar
-            
+
         } catch (error) {
             await this.logger.error('Reconnection attempt failed', {
                 attempt: retries,
@@ -850,8 +851,8 @@ private isPusherConnected(): boolean {
 
   private lastUpdateTime = 0;
 
-  private async updatePatientList(eventType: string, patient: any) { 
-   
+  private async updatePatientList(eventType: string, patient: any) {
+
     this.lastUpdateTime = Date.now();
     const index = this.patients.findIndex((p: any) => p.id === patient.id);
     switch(eventType) {
@@ -871,9 +872,9 @@ private isPusherConnected(): boolean {
           const updatedPatient: any = patient;
           const existingPatientIndex = this.patients.findIndex(p => p.id === updatedPatient.id);
           if (existingPatientIndex !== -1) {
-            this.patients[existingPatientIndex] = { 
-              ...this.patients[existingPatientIndex], 
-              ...updatedPatient 
+            this.patients[existingPatientIndex] = {
+              ...this.patients[existingPatientIndex],
+              ...updatedPatient
             };
           } else {
             this.patients.push(updatedPatient);
@@ -886,7 +887,7 @@ private isPusherConnected(): boolean {
         break;
       case 'deleted':
         if (index > -1) {
-          console.log('usuario eliminado');          
+          console.log('usuario eliminado');
           this.patients.splice(index, 1);
         }
         break;
@@ -907,23 +908,23 @@ private isPusherConnected(): boolean {
       clearInterval(this.intervalId);
       this.intervalId = null;
     }
-    
+
     if (this.laravelEcho) {
       this.laravelEcho.disconnect();
     }
   }
 
   getCompletedRoomPatientsCount(roomName: string): number {
-    return this.patients.filter(patient => 
+    return this.patients.filter(patient =>
       patient.operating_room_name === roomName && (patient.status.type === 'completed')
     ).length;
   }
-  getTotalPatientsInRoom(roomName: string): number {    
-    return this.patients.filter(patient => 
+  getTotalPatientsInRoom(roomName: string): number {
+    return this.patients.filter(patient =>
       patient.operating_room_name === roomName
     ).length;
   }
-  getHoldingPatientsCount(): number {    
+  getHoldingPatientsCount(): number {
     return this.patients.filter(patient => patient.status?.type === 'holding').length;
   }
   getSurgeryPatientsCount(): number {
@@ -931,7 +932,7 @@ private isPusherConnected(): boolean {
   }
   getRecoveryPatientsCount(): number {
     return this.patients.filter(patient => patient.status?.type === 'recovery').length;
-  }  
+  }
   getCompletedPatientsCount(): number {
     return this.patients.filter(patient => patient.status?.type === 'completed').length;
   }
@@ -994,7 +995,7 @@ private isPusherConnected(): boolean {
     const alert = await this.alertController.create({
       header: 'Admin Options',
       message: 'Select an option to proceed',
-      buttons: [        
+      buttons: [
       {
           text: 'Login',
           handler: () => {
@@ -1008,7 +1009,7 @@ private isPusherConnected(): boolean {
           handler: () => {
             localStorage.setItem('tempConfig',JSON.stringify(this.config))
             console.log('config: ',this.config);
-            
+
             // const options: RemoveOptions = { key: 'config' };
             // Preferences.remove(options);
             this.router.navigate(['/configuration'], { replaceUrl: true });
@@ -1036,27 +1037,27 @@ private isPusherConnected(): boolean {
 
   async showResolutionAlert() {
   this.showResolution(); // Actualiza this.resolution
-  
+
   const resolutionAlert = await this.alertController.create({
       header: 'Device Resolution',
       message: this.resolution,
       buttons: ['OK']
     });
-    
+
     await resolutionAlert.present();
   }
 
   updatePatientPaginationDetails() {
-    this.totalPatientPages = Math.ceil(this.patients.length / this.patientsPerPage);    
+    this.totalPatientPages = Math.ceil(this.patients.length / this.patientsPerPage);
   }
-  
+
   getPatientsForCurrentPage(): any[] {
-    const sortedPatients = [...this.patients].sort((a, b) => a.status?.id - b.status?.id);    
+    const sortedPatients = [...this.patients].sort((a, b) => a.status?.id - b.status?.id);
     const start = this.currentPagePatients * this.patientsPerPage;
     const end = start + this.patientsPerPage;
     return sortedPatients.slice(start, end);
   }
-  
+
   changePatientPage() {
     this.currentPagePatients = (this.currentPagePatients + 1) % (this.totalPatientPages == 0 ? 1 : this.totalPatientPages);
   }
@@ -1087,7 +1088,7 @@ private isPusherConnected(): boolean {
               this.logs = []; // Limpiar la lista en memoria
               const toast = await this.alertController.create({
                 message: 'Logs borrados correctamente',
-                
+
               });
               await toast.present();
             } catch (error) {
@@ -1097,15 +1098,15 @@ private isPusherConnected(): boolean {
         }
       ]
     });
-    
+
     await alert.present();
   }
   async showLogsAlert() {
-    const logs = await this.logger.getLogs();    
-    const sortedLogs = [...logs].sort((a, b) => 
+    const logs = await this.logger.getLogs();
+    const sortedLogs = [...logs].sort((a, b) =>
       new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
     );
-  
+
     const logsHtml = `
       <div class="swal-logs-table-container">
         <table class="swal-logs-table">
@@ -1141,7 +1142,7 @@ private isPusherConnected(): boolean {
         </table>
       </div>
     `;
-  
+
     const { isConfirmed, isDismissed } = await Swal.fire({
       title: 'Registro de Actividades',
       html: `
@@ -1173,7 +1174,7 @@ private isPusherConnected(): boolean {
           clearBtn.addEventListener('click', async (e) => {
             e.stopPropagation();
             Swal.close();
-            this.clearLogs();           
+            this.clearLogs();
           });
         }
 
@@ -1181,7 +1182,7 @@ private isPusherConnected(): boolean {
           button.addEventListener('click', function(this: HTMLButtonElement) {
             const container = this.closest('.details-container');
             const content = container?.querySelector('.details-content');
-            const icon = container?.querySelector('.toggle-icon');            
+            const icon = container?.querySelector('.toggle-icon');
             if (content && icon) {
               content.classList.toggle('expanded');
               icon.textContent = content.classList.contains('expanded') ? '▲' : '▼';
@@ -1195,7 +1196,7 @@ private isPusherConnected(): boolean {
   private formatAction(action: string): string {
     const httpMethods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'];
     const method = httpMethods.find(m => action.startsWith(m));
-    
+
     if (method) {
       return `
         <span class="http-method ${method.toLowerCase()}">${method}</span>
@@ -1205,5 +1206,5 @@ private isPusherConnected(): boolean {
     return action;
   }
 
-  
+
 }
