@@ -14,17 +14,20 @@ import { RequestsService } from '../api/requests.service';
 
 @Injectable()
 export class LoggingInterceptor implements HttpInterceptor {
+  authToken: string | null = null;
   constructor(private logger: LoggerService,private authService: RequestsService) {}
+
 
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
 
-    const authToken = this.authService.getToken();
+    
+    this.authToken = this.authService.getToken();
 
      let authReq = req;
-    if (authToken) {
+    if (this.authToken) {
       authReq = req.clone({
         setHeaders: {
-          Authorization: `Bearer ${authToken}`
+          Authorization: `Bearer ${this.authToken}`
         }
       });
     }

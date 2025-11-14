@@ -426,13 +426,16 @@ export class RequestsService {
     }
 
     getBranchStatuses(id:any): Observable<any> {
-        const options = {
-            url: environment.url + environment.status + '/' + id + '?orderBy=sequence&direction=asc',
-            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer ' + this.token },
-        };
-        this.statuses = from(CapacitorHttp.get(options))
-        return from(CapacitorHttp.get(options));
+        // const options = {
+        //     url: environment.url + environment.status + '/' + id + '?orderBy=sequence&direction=asc',
+        //     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer '},
+        // };
+        // this.statuses = from(CapacitorHttp.get(options))
+        // return from(CapacitorHttp.get(options));
+        return this.http.get(environment.url + environment.status + '/' + id + '?orderBy=sequence&direction=asc',);
     }
+
+
 
     getBranchComments(): Observable<any> {
         const options = {

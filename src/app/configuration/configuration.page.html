@@ -7,17 +7,26 @@
       <form [formGroup]="form">
         <div class="text-center">
           <h1><b>Configuration Mode</b></h1>
-          <span>Please select Branch Name and Waiting Room:</span>
+          <!-- <span *ngIf="waiting_rooms.length > 1">Please select Waiting Room:</span> -->
+          <span *ngIf="waiting_rooms.length <= 1">Configuration for: {{ selectedBranchName }}</span>
         </div>
         <br />
         <br />
-            <ion-select fill="outline" aria-label="Branches" formControlName="branch" interface="popover" placeholder="Select Branch">
-              <ion-select-option [value]="branch" *ngFor="let branch of branches">{{branch.name}}</ion-select-option>
-            </ion-select>
-          <br/>
-            <ion-select fill="outline" aria-label="Waiting Rooms" formControlName="waitingRoom" interface="popover" placeholder="Select Waiting Room">
+            <!-- Mostrar selector solo si hay más de un waiting room -->
+            <ion-select *ngIf="waiting_rooms.length > 1" fill="outline" aria-label="Waiting Rooms" formControlName="waitingRoom" interface="popover" placeholder="Select Waiting Room">
               <ion-select-option [value]="room" *ngFor="let room of waiting_rooms">{{room.name}}</ion-select-option>
             </ion-select>
+            
+            <!-- Mostrar info del waiting room seleccionado automáticamente -->
+            <div *ngIf="waiting_rooms.length <= 1 && selectedWaitingRoomName" class="selected-room-info">
+              <ion-item lines="none">
+                <ion-icon name="checkmark-circle" color="success" slot="start"></ion-icon>
+                <ion-label>
+                  <h3>Waiting Room: {{ selectedWaitingRoomName }}</h3>
+                  <p>Automatically selected</p>
+                </ion-label>
+              </ion-item>
+            </div>
           <br/>
             <ion-input fill="outline" label="Station Location" formControlName="stationName" label-placement="floating"
               errorText="Station Location is Required"></ion-input>
@@ -32,7 +41,7 @@
             <ion-select-option [value]="status.id" *ngFor="let status of statuses">{{status.name}}</ion-select-option>              
           </ion-select>
           <br *ngIf="selectedApplication !== '1'"/>
-            <ion-input *ngIf="this.selectedApplication !== '1'" fill="outline" [value]="formattedTime" placeholder="HH:MM - HH:MM" (ionFocus)="openTimeRangePicker()"></ion-input>
+            <!-- <ion-input *ngIf="this.selectedApplication !== '1'" fill="outline" [value]="formattedTime" placeholder="HH:MM - HH:MM" (ionFocus)="openTimeRangePicker()"></ion-input> -->
           
         <br />
         <ion-button class="w-100" color="primary" size="large" [disabled]="form.invalid"

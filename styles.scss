@@ -21,6 +21,14 @@
     background-color: #28a745; /* Color verde para éxito */
 }
 
+.custom-SuccessToastEvent {
+    @extend .custom-ToastBase;
+    background-color: #28a745; /* Color verde para éxito */
+    width: 300px !important;
+    height: 100px !important;
+    font-size: 1em !important;
+}
+
 .custom-InfoToast {
     @extend .custom-ToastBase;
     background-color: #17a2b8; /* Color azul para información */

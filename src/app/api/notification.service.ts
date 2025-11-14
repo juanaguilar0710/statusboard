@@ -17,11 +17,16 @@ export class NotificationService {
       tapToDismiss: true,
       progressAnimation: 'increasing',
       toastClass: toastClass,
+      enableHtml: true
     });
   }
 
   showSuccess(message: string, duration: number) {
     this.showToast(message, duration, 'custom-SuccessToast', 'success');
+  }
+
+  showSuccessEvent(message: string, duration: number) {
+    this.showToast(message, duration, 'custom-SuccessToastEvent', 'success');
   }
 
   showInfo(message: string, duration: number) {

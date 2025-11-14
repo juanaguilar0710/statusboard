@@ -180,9 +180,7 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
   }
 
   async ngOnInit() {
-    this.isLoading = true; // Asegurar que el loading esté activo al inicio
-
-    // Inicializar statuses como array vacío si no existe
+    this.isLoading = true;
     if (!this.requestsService.statuses) {
       this.requestsService.statuses = [];
     }
@@ -845,9 +843,32 @@ private async handlePatientEvent(type: 'updated' | 'created' | 'deleted', e: any
   private listenToPatientEvents(channel: string): void {
     this.laravelEcho?.leave(channel);
     const channelListeners = this.laravelEcho?.private(channel);
-    channelListeners.listen('.patient.updated', (e: any) => {console.log('entro evento'), this.handlePatientEvent('updated', e)});
     channelListeners.listen('.patient.created', (e: any) => {console.log('entro evento'), this.handlePatientEvent('created', e)});
     channelListeners.listen('.patient.deleted', (e: any) => {console.log('entro evento'), this.handlePatientEvent('deleted', e)});
+    
+    
+    
+    
+    //necesito encolarlos
+    //se debe reproducir el sonido uno tras de otro
+    //amedida que se van reproduciendo los sonidos se deben ir desencolando
+    //si llega un nuevo sonido mientras se esta reproduciendo otro se debe encolar
+    //si el sonido es para un paciente que no se muestra no se debe encolar ni reproducir
+    //si el sonido es para un paciente que se muestra se debe encolar y reproducir siempre y cuando el anterios ya halla terminado
+    //si el sonido es para un paciente que no se muestra pero su estado si se muestra se debe encolar y reproducir
+    //si el sonido es para un paciente que no se muestra y su estado tampoco se muestra no se debe encolar ni reproducir
+    //si el sonido no tiene paciente no se debe reproducir ni encolar siempre
+    //si el sonido falla al reproducirse se debe intentar reproducir el siguiente sonido en la cola
+    //las notificaciones se deben mostrar siempre una sobre otra sin importar si se reproducen los sonidos o no
+    //las notificaciones deben tener un tiempo de duración de 10 segundos
+    //las notificaciones se deben mostrar siempre en el mismo orden que llegan los eventos
+    //las notificaciones no tienen validacion de estado, siempre se muestran
+    //las notificaciones no se encolan, se muestran al instante
+    //una vez se reproduce un sonido se debe eliminar de la cola y reproducir el siguiente si existe
+
+
+    
+    channelListeners.listen('.patient.updated', (e: any) => {console.log('entro evento'), this.handlePatientEvent('updated', e), this.notificationService.showSuccessEvent('<strong>Patient Updated: </strong><br>&ensp;&ensp;'+e.patient.fullName+'<br>&ensp;&ensp;'+e.patient.status_name,10000)});
     channelListeners.listen('.play.speech', async (e: any) => {
       try {
         const patientMatch = e.message.match(/paciente\s+número\s+(\d+)/i);
@@ -904,6 +925,12 @@ private async handlePatientEvent(type: 'updated' | 'created' | 'deleted', e: any
         }
       }
     });
+
+
+
+
+
+
   }
 
 

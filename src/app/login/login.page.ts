@@ -49,13 +49,14 @@ export class LoginPage implements OnInit {
 
   ngOnInit() {
     Preferences.clear();
+    localStorage.clear();
   }
 
   togglePassword() {
     this.showPassword = !this.showPassword;
   }
 
-  async login() {
+  async login() {    
     this.loading = true;
      let user = {
         username: this.form.get('username')?.value,
@@ -93,6 +94,8 @@ export class LoginPage implements OnInit {
 
             // if (responseUser.data.default_2fa !== null && (responseUser.data.two_fa_enabled_at !== null || responseUser.data.two_fa_enabled_at == null)) {
                 const user = responseUser.data;
+                console.log(responseUser);
+                
                 if (user.roles.length > 0 && (user.roles.find((r: any) => r.name.toLowerCase() == 'administrator') || user.roles.find((r: any) => r.name.toLowerCase() == 'manager'))) {
                   Preferences.set({
                     key: 'admin',
