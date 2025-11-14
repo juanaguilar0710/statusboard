@@ -167,7 +167,7 @@ export class UpdatePatientPage implements OnInit, OnDestroy {
       if (response.value) {
         const branches = [JSON.parse(response.value)];            
         this.requestsService.getBranchStatuses(branches[0].id).subscribe(resp => {          
-          this.statuses = resp.data           
+          this.statuses = resp           
           this.patientStatusUIUpdate();
         },error => {
           console.log('error getBranch: ', error);
