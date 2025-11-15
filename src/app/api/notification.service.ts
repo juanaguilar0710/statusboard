@@ -25,9 +25,18 @@ export class NotificationService {
     this.showToast(message, duration, 'custom-SuccessToast', 'success');
   }
 
-  showSuccessEvent(message: string, duration: number) {
-    this.showToast(message, duration, 'custom-SuccessToastEvent', 'success');
-  }
+showSuccessEvent(message: string, duration: number) {
+  this.toastr.success(message, '', {
+    timeOut: duration,
+    positionClass: 'toast-container-event', // 👈 usar contenedor especial
+    toastClass: 'custom-SuccessToastEvent',
+    closeButton: false,
+    progressBar: true,
+    tapToDismiss: true,
+    progressAnimation: 'increasing',
+    enableHtml: true
+  });
+}
 
   showInfo(message: string, duration: number) {
     this.showToast(message, duration, 'custom-InfoToast', 'info');

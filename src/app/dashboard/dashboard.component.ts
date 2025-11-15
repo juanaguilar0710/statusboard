@@ -122,22 +122,6 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
       }, environment.timeRoomsPerPage);
         this.checkNetworkStatus();
         this.listenToNetworkChanges();
-      // this.networkService.networkStatus$.subscribe((status: string) => {
-      //   console.log(status);
-
-      //   this.networkStatus = status;
-      //   if (status === "OFFLINE") {
-      //     this.deviceWasOffline = true;
-      //     // this.notificationService.showInfo('System Offline',6000);
-      //   } else {
-      //     if (this.deviceWasOffline) {
-      //       //this.getTodaysPatientsFromServer();
-      //       // this.notificationService.showInfo('System Conected',6000);
-      //       this.ngOnInit();
-      //       this.deviceWasOffline = false;
-      //     }
-      //   }
-      // });
     }, 3000);
   }
 
@@ -150,7 +134,7 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
     } else {
       if (this.deviceWasOffline) {
         console.log("ONLINE");
-        this.ngOnInit(); // Llamar a ngOnInit solo cuando vuelve la conexión
+        this.ngOnInit();
         this.deviceWasOffline = false;
       }
     }
@@ -175,7 +159,7 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
             component: 'Dashboard',
             status: 'success',
           },'success');
-          this.ngOnInit(); // Llamar a ngOnInit solo cuando vuelve la conexión
+          this.ngOnInit(); 
           this.deviceWasOffline = false;
         }
       }
@@ -187,13 +171,8 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
     if (!this.requestsService.statuses) {
       this.requestsService.statuses = [];
     }
-
-    // Configurar permisos de audio
     this.setupAudioPermissions();
-
-    // Cargar voces disponibles del sistema
     this.loadSystemVoicesInBackground();
-
     await this.loadLogs();
     await Preferences.get({ key: 'config' })
       .then(async (response: any) => {
@@ -202,8 +181,6 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
           localStorage.setItem('config',this.config)
           this.requestsService.setToken(this.config.token);
           this.requestsService.setAdminToken(this.config.token);
-
-          // Cargar los estados del branch
           if (this.config.branch?.id) {
             await this.loadBranchStatuses(this.config.branch.id);
           }
@@ -220,7 +197,6 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
   }
 
   ngAfterViewChecked() {
-    // Solo verificar una vez después de que los datos se hayan cargado
     if (this.dataLoaded && !this.viewChecked && this.isLoading) {
       this.checkIfRenderingComplete();
     }
@@ -229,9 +205,8 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
   private checkIfRenderingComplete() {
     setTimeout(() => {
       const hasConfig = this.config && this.config.aplication;
-
       if (!hasConfig) {
-        return; // Esperar a que la configuración esté lista
+        return;
       }
 
       let renderingComplete = false;
@@ -252,10 +227,8 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
 
       if (renderingComplete) {
         this.viewChecked = true;
-        // Pequeño delay final para asegurar que todo esté completamente renderizado
         setTimeout(() => {
           this.isLoading = false;
-          console.log('Vista completamente renderizada, ocultando loading');
         }, 5000);
       }
     }, 100);
@@ -305,14 +278,10 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
 
   async refreshToken(skipReload: boolean = false){
     this.logger.addLog('Inicio refresco de token', {}, 'info')
-    console.log(this.config);
       if (this.isRefreshingToken) return;
         this.isRefreshingToken = true;
         try {
-            const token = await this.logger.getTokenAdmin();
-            console.log(token);
-
-
+          const token = await this.logger.getTokenAdmin();
           this.requestsService.refreshToken(token).then(async resp =>{
             console.log(resp);
             if (resp?.status === 200) {
@@ -341,49 +310,36 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
               console.log(resp);
               window.location.reload();
             }
-
             if (resp?.status === 401) {
               console.log(resp);
               this.logger.addLog('Error refrescando el token', resp, 'error')
             }
-
           }).catch(resp => {
             this.logger.addLog('Error refrescando el token', resp, 'error')
           });
         } finally {
           this.isRefreshingToken = false;
         }
-
   }
 
   private getOperatingRooms = false;
-
   async getOperatingRoomsFromStorageOrLoadFromServer() {
 
     if (this.getOperatingRooms) {
-      console.log('getOperatingRooms ya está en ejecución, evitando llamada duplicada');
       await this.logger.addLog('Petición getOperatingRooms duplicada evitada', {}, 'warning');
       return;
     }
     this.getOperatingRooms = true;
     try {
-        // Log de inicio de petición
         await this.logger.addLog('Iniciando petición getOperatingRooms', {}, 'info');
-
         await this.requestsService.getOperatingRooms().subscribe(async (response: any) => {
-          console.log('getoperatingrooms: ',response);
-
           if(response.status == 500 || response.status == 403){
             if(response.status == 403 || response.data.error.code == 1000){
               console.log('aqui');
               await this.logger.addLog('Fallo getOperatingRooms', {response}, 'error');
-
-              // Usar skipReload=true para evitar llamadas duplicadas
               await this.refreshToken(true);
-
-              // Después del refresh, intentar la petición nuevamente una sola vez
               setTimeout(async () => {
-                this.getOperatingRooms = false; // Reset del flag
+                this.getOperatingRooms = false;
                 await this.getOperatingRoomsFromStorageOrLoadFromServer();
               }, 1000);
           }
@@ -391,7 +347,6 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
             this.operatingRooms = response.data.data;
             this.LocaldataService.setOperatingRooms(this.operatingRooms);
             await this.logger.addLog('Exitoso getOperatingRooms', {response}, 'success');
-
             await this.getTodaysPatientsFromServer();
           }
         },error => {
@@ -413,37 +368,26 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
           event.target.complete();
         }
         if (response.status === 200) {
-
           const newPatients = response.data;
           const updatedPatients:any = [];
-
-          // Filtrar pacientes según la configuración de estados válidos
           const filteredPatients = newPatients.filter((patient: any) =>
             this.shouldPatientBeVisible(patient.status_Id)
           );
-
           filteredPatients.forEach((newPatient:any) => {
             const existingPatient = this.patients.find(p => p.id === newPatient.id);
             if (!existingPatient || this.hasPatientChanged(existingPatient, newPatient)) {
               updatedPatients.push(newPatient);
             }
           });
-
           this.lastsync = new Date().toLocaleString();
           this.patients = [...filteredPatients];
           this.patientsCopy = [...filteredPatients];
           this.LocaldataService.setPatients(filteredPatients);
           this.viewYesterdaysPatients = yesterday;
-
-
           updatedPatients.forEach((patient:any) => this.addUpdatedPatient(patient));
-
           await this.ngAfterView();
 
         }
-        // if (response.status === 500) {
-        //   this.refreshToken();
-        // }
         this.updating = false;
       }).catch(async (error) => {
         if (event) {
@@ -456,7 +400,6 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
           });
           await this.logger.addLog('Error en peticion',error,'error');
           window.location.reload()
-          // this.router.navigate([error.redirectUrl], { replaceUrl: true });
         }
       });
     } finally {
@@ -484,10 +427,8 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
       this.currentPageWithPatients = 0;
       return;
     }
-
     this.totalPagesWithPatients = Math.ceil(roomsWithPatients.length / environment.roomsPerPageWhitPatients);
     this.currentPageWithPatients = environment.currentPageWhitPatients + 1;
-
   }
   stopCarousel() {
     clearInterval(this.intervalId);
@@ -535,13 +476,12 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
   }
   startCountdown() {
     if (this.intervalIdForPages) {
-      clearInterval(this.intervalIdForPages); // Detiene el intervalo previo si existe
+      clearInterval(this.intervalIdForPages);
     }
     this.countdown = environment.timeRoomsPerPageWhitPatients / 1000;
     this.intervalIdForPages = setInterval(() => {
       if (this.countdown > 1) {
         this.countdown--;
-
       } else {
         this.changePageRoomsWhitPatients();
         this.updatePaginationDetails();
@@ -562,7 +502,6 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
     environment.currentPageWhitPatients = 0;
     return;
   }
-
   this.totalPagesWhitPatients = Math.ceil(roomsWithPatients.length / environment.roomsPerPageWhitPatients);
   environment.currentPageWhitPatients = (environment.currentPageWhitPatients + 1) % this.totalPagesWhitPatients;
   this.totalPagesCurrentPatients = environment.currentPageWhitPatients;
@@ -604,13 +543,11 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
     }
     return patientsInRoom.slice(start, end);
   }
-
   async getAccessToken() {
     var adminResponse:any = await Preferences.get({ key: 'admin' });
         adminResponse = JSON.parse(adminResponse.value);
      return adminResponse.jwt.access_token;
   }
-
   async ngAfterView() {
     try {
       await this.logger.addLog('Inicio de ngAfterViewInit', {
@@ -629,28 +566,18 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
           component: 'Dashboard',
         },'info');
 
-
-
         if(this.requestsService.config == null){
           console.log('configuracion no encontrada en el ngafter: ' + this.requestsService.config);
-
-
         }else{
           console.log(this.requestsService.config);
-
           await this.conectionPusher();
-          // const channel = `branch.${this.requestsService.config.branch.id}.room.${this.requestsService.config.waitingRoom.id}`;
           const channel = `rooms.${this.requestsService.config.waitingRoom.id}`;
           await this.logger.addLog('Canal configurado', {
             channel: channel,
             config: this.sanitizeConfig(this.requestsService.config)
           },'info');
-
-          // Escuchar eventos de pacientes
           await this.listenToPatientEvents(channel);
-          // Manejar eventos de conexión/desconexión
           this.handlePusherConnection();
-          // Iniciar monitoreo de la conexión
           this.monitorConnection();
         }
       }
@@ -769,12 +696,10 @@ async speak(text = '') {
     }
   }
 
-  // 🎤 Obtener y mostrar voces reales del sistema
   async loadSystemVoices() {
     try {
       const voices = await this.audioService.getAvailableVoices();
       const languages = await this.audioService.getAvailableLanguages();
-
       return { voices, languages };
     } catch (error) {
       return { voices: [], languages: [] };
@@ -818,7 +743,6 @@ async speak(text = '') {
   // 🎛️ Mostrar/ocultar panel de voces
   toggleVoicePanel() {
     this.showVoicePanel = !this.showVoicePanel;
-
     if (this.showVoicePanel && this.availableVoices.length === 0) {
       this.loadSystemVoices().then(result => {
         this.availableVoices = result.voices;
@@ -826,10 +750,6 @@ async speak(text = '') {
       });
     }
   }
-
-
-
-
 
 
 private async handlePatientEvent(type: 'updated' | 'created' | 'deleted', e: any): Promise<void> {
@@ -847,9 +767,11 @@ private async handlePatientEvent(type: 'updated' | 'created' | 'deleted', e: any
     this.laravelEcho?.leave(channel);
     const channelListeners = this.laravelEcho?.private(channel);
     channelListeners.listen('.patient.created', (e: any) => {console.log('entro evento'), this.handlePatientEvent('created', e)});
-    channelListeners.listen('.patient.deleted', (e: any) => {console.log('entro evento'), this.handlePatientEvent('deleted', e)});   
-    
-    channelListeners.listen('.patient.updated', (e: any) => {console.log('entro evento'), this.handlePatientEvent('updated', e), this.notificationService.showSuccessEvent('<strong>Patient Updated: </strong><br>&ensp;&ensp;'+e.patient.fullName+'<br>&ensp;&ensp;'+e.patient.status_name,10000)});
+    channelListeners.listen('.patient.deleted', (e: any) => {console.log('entro evento'), this.handlePatientEvent('deleted', e)});    
+    channelListeners.listen('.patient.updated', (e: any) => {
+      console.log('entro evento'), this.handlePatientEvent('updated', e), 
+      this.notificationService.showSuccessEvent('<strong>Patient Updated: </strong><br>&ensp;&ensp;'+e.patient.fullName+'<br>&ensp;&ensp;'+e.patient.status_name,1000000)
+    });
     channelListeners.listen('.play.speech', async (e: any) => {
       console.log("🎤 Evento recibido:", e);
       const enqueued = await this.enqueueSpeechEventSafe(e);
@@ -857,10 +779,8 @@ private async handlePatientEvent(type: 'updated' | 'created' | 'deleted', e: any
         console.log("🚫 Evento duplicado:", e.message);
         return;
       }
-      // Procesar la cola completa
       this.processQueue();
     });
-
   }
 
   private async enqueueSpeechEventSafe(event: any): Promise<boolean> {

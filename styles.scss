@@ -23,11 +23,39 @@
 
 .custom-SuccessToastEvent {
     @extend .custom-ToastBase;
-    background-color: #28a745; /* Color verde para éxito */
-    width: 300px !important;
-    height: 100px !important;
+
+    position: static !important;
+    top: auto !important;
+    right: auto !important;
+
+    background-color: #28a745d4 !important;
+
+    width: auto !important;
+    max-width: 420px !important;
+    min-width: 220px !important;
+    height: auto !important;
+
     font-size: 1em !important;
+    padding: 16px 20px !important;
+    border-radius: 15px !important;
+    line-height: 1.3;
 }
+
+/* Contenedor exclusivo para los EVENTOS */
+.toast-container-event {
+    position: fixed !important;
+    top: 20px !important;
+    right: 10px !important;
+    z-index: 99999 !important;
+}
+
+/* Separación entre los toasts apilados */
+.toast-container-event > div {
+    margin-bottom: 5px !important;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.18);
+}
+
+
 
 .custom-InfoToast {
     @extend .custom-ToastBase;
