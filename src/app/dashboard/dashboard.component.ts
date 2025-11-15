@@ -79,6 +79,9 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
   private dataLoaded = false; // Flag para controlar si los datos fueron cargados
   private viewChecked = false; // Flag para evitar bucles infinitos en ngAfterViewChecked
   private readonly TOKEN_EXPIRATION_KEY_Admin = 'auth_token_expiration_admin';
+  
+  // 🎤 Sistema de cola de speech
+  private readonly SPEECH_QUEUE_KEY = 'speech_queue';
 
   constructor(private LocaldataService: LocaldataService,
               public requestsService: RequestsService,
@@ -844,94 +847,167 @@ private async handlePatientEvent(type: 'updated' | 'created' | 'deleted', e: any
     this.laravelEcho?.leave(channel);
     const channelListeners = this.laravelEcho?.private(channel);
     channelListeners.listen('.patient.created', (e: any) => {console.log('entro evento'), this.handlePatientEvent('created', e)});
-    channelListeners.listen('.patient.deleted', (e: any) => {console.log('entro evento'), this.handlePatientEvent('deleted', e)});
-    
-    
-    
-    
-    //necesito encolarlos
-    //se debe reproducir el sonido uno tras de otro
-    //amedida que se van reproduciendo los sonidos se deben ir desencolando
-    //si llega un nuevo sonido mientras se esta reproduciendo otro se debe encolar
-    //si el sonido es para un paciente que no se muestra no se debe encolar ni reproducir
-    //si el sonido es para un paciente que se muestra se debe encolar y reproducir siempre y cuando el anterios ya halla terminado
-    //si el sonido es para un paciente que no se muestra pero su estado si se muestra se debe encolar y reproducir
-    //si el sonido es para un paciente que no se muestra y su estado tampoco se muestra no se debe encolar ni reproducir
-    //si el sonido no tiene paciente no se debe reproducir ni encolar siempre
-    //si el sonido falla al reproducirse se debe intentar reproducir el siguiente sonido en la cola
-    //las notificaciones se deben mostrar siempre una sobre otra sin importar si se reproducen los sonidos o no
-    //las notificaciones deben tener un tiempo de duración de 10 segundos
-    //las notificaciones se deben mostrar siempre en el mismo orden que llegan los eventos
-    //las notificaciones no tienen validacion de estado, siempre se muestran
-    //las notificaciones no se encolan, se muestran al instante
-    //una vez se reproduce un sonido se debe eliminar de la cola y reproducir el siguiente si existe
-
-
+    channelListeners.listen('.patient.deleted', (e: any) => {console.log('entro evento'), this.handlePatientEvent('deleted', e)});   
     
     channelListeners.listen('.patient.updated', (e: any) => {console.log('entro evento'), this.handlePatientEvent('updated', e), this.notificationService.showSuccessEvent('<strong>Patient Updated: </strong><br>&ensp;&ensp;'+e.patient.fullName+'<br>&ensp;&ensp;'+e.patient.status_name,10000)});
     channelListeners.listen('.play.speech', async (e: any) => {
-      try {
-        const patientMatch = e.message.match(/paciente\s+número\s+(\d+)/i);
-        const patientNumber = patientMatch ? Number(patientMatch[1]) : null;
-      const statusMatch = e.message.match(/se\s+encuentra\s+(.+?)\.?$/i);
-      const statusName = statusMatch ? statusMatch[1].trim() : null;
-
-      let statusId = null;
-      if (statusName && Array.isArray(this.requestsService.statuses) && this.requestsService.statuses.length > 0) {
-        statusId = this.getStatusIdByName(statusName);
-      } else if (statusName) {
-        console.warn('No se puede buscar estado - estados no cargados aún:', statusName);
+      console.log("🎤 Evento recibido:", e);
+      const enqueued = await this.enqueueSpeechEventSafe(e);
+      if (!enqueued) {
+        console.log("🚫 Evento duplicado:", e.message);
+        return;
       }
-
-      if (patientNumber) {
-        const index = this.patients.findIndex((p: any) => p.identifier === patientNumber);
-
-        if (index > -1) {
-          const statusToCheck = statusId !== null ? statusId : this.patients[index].status_Id;
-          const shouldShowPatient = this.shouldPatientBeVisible(statusToCheck);
-          if (shouldShowPatient) {
-            await this.speak(e.message);
-          }
-        } else {
-          console.log('Paciente no encontrado en la lista, verificando por estado');
-          if (statusId !== null) {
-            const shouldShowPatient = this.shouldPatientBeVisible(statusId);
-            if (shouldShowPatient) {
-              await this.speak(e.message);
-            } else {
-              console.log('Paciente no debe mostrarse según configuración de estados');
-            }
-          } else {
-            console.log('Reproduciéndose por defecto - no se pudo determinar estado');
-            await this.speak(e.message);
-          }
-        }
-      } else {
-        console.log('No se pudo extraer número de paciente, reproduciéndose por defecto');
-        await this.speak(e.message);
-      }
-
-      } catch (speechError) {
-        console.error('Error en procesamiento de speech:', speechError);
-        await this.logger.addLog('Error Speech Processing', {
-          error: speechError,
-          message: e.message
-        }, 'error');
-
-        try {
-          await this.speak(e.message);
-        } catch (fallbackError) {
-          console.error('Error en fallback de speech:', fallbackError);
-        }
-      }
+      // Procesar la cola completa
+      this.processQueue();
     });
 
-
-
-
-
-
   }
+
+  private async enqueueSpeechEventSafe(event: any): Promise<boolean> {
+      await this.acquireLock();
+      try {
+        const queueData = await this.storage.get(this.SPEECH_QUEUE_KEY);
+        const queue = queueData ? JSON.parse(queueData) : [];
+
+        // Verificar duplicados
+        const isDuplicate = queue.some((item: any) =>
+          item.message === event.message &&
+          item.waitingRoomId === event.waitingRoomId &&
+          item.branchId === event.branchId
+        );
+
+        if (isDuplicate) {
+          return false; // No encolar duplicados
+        }
+
+        // Construir item
+        const speechItem = {
+          id: Date.now() + Math.random(),
+          message: event.message,
+          waitingRoomId: event.waitingRoomId,
+          branchId: event.branchId,
+          timestamp: new Date().toISOString(),
+          processed: false
+        };
+
+        queue.push(speechItem);
+
+        await this.storage.set(this.SPEECH_QUEUE_KEY, JSON.stringify(queue));
+
+        console.log("✅ Evento encolado:", speechItem);
+
+        return true;
+
+      } catch (error) {
+        console.error("❌ Error encolando evento:", error);
+        return false;
+      } finally {
+        this.releaseLock();
+      }
+    }
+
+    private speechMutex = false;
+
+    private async acquireLock() {
+        while (this.speechMutex) {
+          await new Promise(res => setTimeout(res, 5));
+        }
+        this.speechMutex = true;
+    }
+
+    private releaseLock() {
+        this.speechMutex = false;
+    }
+
+    private queueProcessing = false;
+
+    private async processQueue() {
+      if (this.queueProcessing) return; // ya corriendo
+
+      this.queueProcessing = true;
+
+      try {
+        while (true) {
+          await this.acquireLock();
+          let queue: any[] = [];
+
+          try {
+            const raw = await this.storage.get(this.SPEECH_QUEUE_KEY);
+            queue = raw ? JSON.parse(raw) : [];
+          } finally {
+            this.releaseLock();
+          }
+
+          if (queue.length === 0) break;
+
+          // Tomar el primer item sin quitarlo aún
+          const item = queue[0];
+
+          try {
+            await this.processSpeechEvent(item.message, item);
+          } catch (e) {
+            console.error("Error procesando item:", e);
+          }
+
+          // Quitar el elemento procesado y guardar
+          await this.acquireLock();
+          try {
+            const raw = await this.storage.get(this.SPEECH_QUEUE_KEY);
+            const q = raw ? JSON.parse(raw) : [];
+            q.shift(); // eliminar primero
+            await this.storage.set(this.SPEECH_QUEUE_KEY, JSON.stringify(q));
+          } finally {
+            this.releaseLock();
+          }
+        }
+
+      } finally {
+        this.queueProcessing = false;
+      }
+    }
+
+    private async processSpeechEvent(message: string, event: any): Promise<void> {
+      try {
+        const patientMatch = message.match(/paciente\s+número\s+(\d+)/i);
+        const patientNumber = patientMatch ? Number(patientMatch[1]) : null;
+
+        const statusMatch = message.match(/se\s+encuentra\s+(.+?)\.?$/i);
+        const statusName = statusMatch ? statusMatch[1].trim() : null;
+
+        let statusId = null;
+
+        // Intentar resolver status ID
+        if (statusName && Array.isArray(this.requestsService.statuses)) {
+          statusId = await this.getStatusIdByName(statusName);
+        }
+
+        if (patientNumber) {
+          const index = this.patients.findIndex((p: any) => p.identifier === patientNumber);
+
+          if (index > -1) {
+            const resolvedStatusId = statusId ?? this.patients[index].status_Id;
+            if (this.shouldPatientBeVisible(resolvedStatusId)) {
+              await this.speak(message);
+            }
+          } else {
+            if (statusId && this.shouldPatientBeVisible(statusId)) {
+              await this.speak(message);
+            } else {
+              console.log("Paciente no visible según configuración");
+            }
+          }
+        } else {
+          console.log("Paciente no encontrado, reproduciendo por defecto");
+          await this.speak(message);
+        }
+
+      } catch (error) {
+        console.error("❌ Error procesando speech:", error);
+        await this.speak(message); // fallback
+      }
+    }
+
+
 
 
   private handlePusherConnection(): void {
@@ -1267,13 +1343,15 @@ private isPusherConnected(): boolean {
       try {
         this.requestsService.getBranchStatuses(branchId).subscribe(
           (response: any) => {
-            if (response.status === 200) {
+            console.log(response);
+            
+            if (response.length > 0) {
               // Asegurar que los datos sean un array válido
-              if (Array.isArray(response.data)) {
-                this.requestsService.statuses = response.data;
+              if (Array.isArray(response)) {
+                this.requestsService.statuses = response;
                 console.log('Estados cargados exitosamente:', this.requestsService.statuses);
               } else {
-                console.warn('Los datos de estados no son un array:', response.data);
+                console.warn('Los datos de estados no son un array:', response);
                 this.requestsService.statuses = [];
               }
             } else {
