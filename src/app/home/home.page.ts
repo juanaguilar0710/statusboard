@@ -123,7 +123,7 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
     
   }
 
-  private updatePatientList(eventType: string, patient: any) {    
+  private updatePatientList(eventType: string, patient: any) {      
     const index = this.patients.findIndex((p: any) => p.id === patient.id);
     switch(eventType) {
       case 'created':

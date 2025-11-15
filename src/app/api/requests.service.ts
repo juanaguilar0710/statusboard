@@ -640,7 +640,7 @@ export class RequestsService {
     }
 
     //Assign and remove one or more patients from a operating room
-    assignPatients = async (roomId:number, addPatients: number[] | null, removePatients:number[] | null): Promise<any> => {
+    assignPatients = async (roomId:number, addPatients: {id: number}[] | null, removePatients: {id: number}[] | null): Promise<any> => {
         return new Promise(async (resolve, reject) => {
             const options = {
                 url: environment.url + environment.operatingrooms + '/' + roomId + environment.patients,

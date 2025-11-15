@@ -1,5 +1,5 @@
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { RequestsService } from '../api/requests.service';
 import { Router } from '@angular/router';
 import { Preferences } from '@capacitor/preferences';
@@ -43,7 +43,20 @@ export class ConfigurationPage implements OnInit {
     statuses: [null],
     turnOnTime: [null],
     turnOffTime: [null],
-  });
+  }, { validators: this.statusRequiredValidator.bind(this) });
+
+  // Validador personalizado para requerir al menos un estado cuando no es Tablet
+  statusRequiredValidator(control: AbstractControl): ValidationErrors | null {
+    const aplication = control.get('aplication')?.value;
+    const statuses = control.get('statuses')?.value;
+    
+    // Si la aplicación no es "1" (Tablet) y no hay estados seleccionados
+    if (aplication !== '1' && aplication !== null && (!statuses || statuses.length === 0)) {
+      return { statusRequired: true };
+    }
+    
+    return null;
+  }
 
  constructor(private _formbuilder: FormBuilder,
     private alertController: AlertController,
@@ -212,10 +225,18 @@ export class ConfigurationPage implements OnInit {
 
   onApplicationChange(event: any) {
     this.selectedApplication = event.detail.value;
+    // Si cambia a Tablet (valor 1), limpiar los estados seleccionados
+    if (this.selectedApplication === '1') {
+      this.form.get('statuses')?.setValue(null);
+    }
+    // Actualizar validación del formulario
+    this.form.updateValueAndValidity();
   }
 
   onStatusChange(event: any) {
     this.selectedStatus = event.detail.value;
+    // Actualizar validación del formulario cuando cambian los estados
+    this.form.updateValueAndValidity();
   }
 
 }

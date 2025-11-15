@@ -50,12 +50,40 @@ export class EditRoomComponent implements OnInit {
     this.roleForm = this.fb.group({
       roles: this.fb.array([])  // Array dinámico de roles
     });
+
+    this.originalRoom = JSON.parse(JSON.stringify(this.room));
+    this.originalAssignedPatients = JSON.parse(JSON.stringify(this.assignedPatients));
   }
+
 
   // Obtener el FormArray de roles
   get roles(): FormArray {
     return this.roleForm.get('roles') as FormArray;
   }
+
+  // Compara roles de la sala (array pequeño, stringify es aceptable)
+rolesChanged(originalRoom: any, newRoom: any): boolean {
+  return JSON.stringify(originalRoom.roles) !== JSON.stringify(newRoom.roles);
+}
+
+// Detecta pacientes agregados y removidos por ID
+getPatientChanges(originalList: any[], newList: any[]) {
+  const originalIds = originalList.map(p => p.id);
+  const newIds = newList.map(p => p.id);
+
+  const added = newIds.filter(id => !originalIds.includes(id));
+  const removed = originalIds.filter(id => !newIds.includes(id));
+
+  return { added, removed };
+}
+
+// Detecta pacientes con cambio en operating_room_id
+getUpdatedPatients(original: any[], current: any[]) {
+  return current.filter(p => {
+    const old = original.find(o => o.id === p.id);
+    return old && old.operating_room_id !== p.operating_room_id;
+  });
+}
 
   // Añadir una nueva fila de selección de rol y usuario
   addRole() {
@@ -151,68 +179,99 @@ export class EditRoomComponent implements OnInit {
     this.navController.navigateForward(['/home'], { replaceUrl: true });
   }
 
-  async update() {
-    this.loading = true;   
-    const rolesMap:any = {};
-    this.roles.controls.forEach((roleControl, index) => {
-      const roleType = roleControl.get('roleType')?.value;
-      const selectedUser = roleControl.get('selectedUser')?.value;
-      const role = this.allUsers.find((r:any) => r.code === roleType);  
-      if (role && selectedUser) {
-        if (rolesMap[role.id]) {
-          rolesMap[role.id].persons.push({ id: selectedUser });
-        } else {
-          rolesMap[role.id] = {
-            id: role.id,
-            persons: [{ id: selectedUser }]
-          };
-        }
+  originalRoom = null;
+originalAssignedPatients = [];
+
+
+async update() {
+  this.loading = true;
+
+  // Construir roles nuevos desde formulario
+  const rolesMap: any = {};
+  this.roles.controls.forEach((roleControl) => {
+    const roleType = roleControl.get('roleType')?.value;
+    const selectedUser = roleControl.get('selectedUser')?.value;
+    const role = this.allUsers.find((r: any) => r.code === roleType);
+    if (role && selectedUser) {
+      if (rolesMap[role.id]) {
+        rolesMap[role.id].persons.push({ id: selectedUser });
+      } else {
+        rolesMap[role.id] = {
+          id: role.id,
+          persons: [{ id: selectedUser }]
+        };
       }
-    });  
-    const rolesToUpdate = Object.values(rolesMap);  
-    this.room.roles = rolesToUpdate;    
-    const room = this.room;
-    await this.requestsService.updateWaitingRoom(room).then(async (response: any) => {
-      if (response.status === 200) {
-        this.LocaldataService.getOperatingRooms().then((rooms: any) => {
-          const index = rooms.findIndex((r: any) => r.id === room.id);
-          rooms[index] = room;
-        });
-      }
+    }
+  });
+
+  const rolesToUpdate = Object.values(rolesMap);
+
+  // Verificamos si roles cambiaron
+  const roomChanged = this.rolesChanged(this.originalRoom, { ...(this.originalRoom || {}), roles: rolesToUpdate });
+
+  // Detectamos cambios en pacientes asignados
+  const patientDiff = this.getPatientChanges(this.originalAssignedPatients, this.assignedPatients);
+  const updatedPatients = this.getUpdatedPatients(this.originalAssignedPatients, this.assignedPatients);
+
+  // Si no hay cambios, salir rápido
+  if (!roomChanged && patientDiff.added.length === 0 && patientDiff.removed.length === 0 && updatedPatients.length === 0) {
+    this.showToast('No changes to save');
+    this.loading = false;
+    return;
+  }
+
+  // Actualizar sala solo si cambió
+  if (roomChanged) {
+    this.room.roles = rolesToUpdate;
+    const response = await this.requestsService.updateWaitingRoom(this.room);
+    if (response.status !== 200) {
+      this.showToast('Failed to update room');
+      this.loading = false;
+      return;
+    }
+    // Actualizar copia original
+    this.originalRoom = JSON.parse(JSON.stringify(this.room));
+  }
+
+  // Actualizar pacientes solo si hubo cambios
+  if (patientDiff.added.length || patientDiff.removed.length || updatedPatients.length) {
+    // 🔄 Crear estructura correcta para la API
+    const addPatientsPayload = patientDiff.added.map((id: any) => ({ id: Number(id) }));
+    const removePatientsPayload = patientDiff.removed.map((id: any) => ({ id: Number(id) }));
+
+    console.log('📤 Enviando datos de pacientes:', {
+      add_patients: addPatientsPayload,
+      remove_patients: removePatientsPayload
     });
-    let assignedIds: any = [];
-    let toBeRemovedIds: any = [];
-    this.assignedPatients.forEach((p: any) => {
-      assignedIds.push({ id: p.id });
-    });
-    this.availablePatients.forEach((p: any) => {
-      toBeRemovedIds.push({ id: p.id });
-    });
-    await this.requestsService.assignPatients(room.id, assignedIds, toBeRemovedIds).then(async (response: any) => {
-      if (response.status === 200) {
-        this.patients = [...this.assignedPatients, ...this.availablePatients];
-        this.patientsToUpdate.forEach((p: any) => {
-          const index = this.patients.findIndex((pt: any) => pt.id === p.id);
+
+    const response = await this.requestsService.assignPatients(this.room.id, addPatientsPayload, removePatientsPayload);
+    if (response.status === 200) {
+      // Actualizar pacientes internos
+      this.patients = [...this.assignedPatients, ...this.availablePatients];
+
+      updatedPatients.forEach(p => {
+        const index = this.patients.findIndex(pt => pt.id === p.id);
+        if (index > -1) {
           this.patients[index].operating_room_id = p.operating_room_id;
           this.patients[index].operating_room_name = p.operating_room_name;
-        });
-        this.LocaldataService.setPatients(this.patients);
-        this.LocaldataService.getOperatingRooms().then((rooms: any) => {
-          const index = rooms.findIndex((r: any) => r.id === room.id);
-          rooms[index] = room;
-          this.navController.navigateForward(['/home'], { replaceUrl: true });
-          this.showToast('Patients assigned successfully');
-          this.loading = false;
-        });
-      } else {
-        this.showToast('Failed to update patients');
-        this.loading = false;
-      }
-    }, (error: any) => {
+        }
+      });
+
+      this.LocaldataService.setPatients(this.patients);
+
+      // Actualizar copia original de pacientes
+      this.originalAssignedPatients = JSON.parse(JSON.stringify(this.assignedPatients));
+    } else {
       this.showToast('Failed to update patients');
       this.loading = false;
-    });
+      return;
+    }
   }
+
+  this.showToast('Changes saved successfully');
+  this.navController.navigateForward(['/home'], { replaceUrl: true });
+  this.loading = false;
+}
 
   async showToast(message: string) {
     await Toast.show({

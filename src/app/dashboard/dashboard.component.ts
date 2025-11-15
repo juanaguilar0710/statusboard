@@ -770,7 +770,7 @@ private async handlePatientEvent(type: 'updated' | 'created' | 'deleted', e: any
     channelListeners.listen('.patient.deleted', (e: any) => {console.log('entro evento'), this.handlePatientEvent('deleted', e)});    
     channelListeners.listen('.patient.updated', (e: any) => {
       console.log('entro evento'), this.handlePatientEvent('updated', e), 
-      this.notificationService.showSuccessEvent('<strong>Patient Updated: </strong><br>&ensp;&ensp;'+e.patient.fullName+'<br>&ensp;&ensp;'+e.patient.status_name,1000000)
+      this.notificationService.showSuccessEvent('<strong>Patient Updated: </strong><br>&ensp;&ensp;'+e.patient.fullName+'<br>&ensp;&ensp;'+e.patient.status_name,10000)
     });
     channelListeners.listen('.play.speech', async (e: any) => {
       console.log("🎤 Evento recibido:", e);
