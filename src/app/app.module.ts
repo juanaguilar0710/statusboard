@@ -37,10 +37,15 @@ import { LoggingInterceptor } from './interceptor/logging.interceptor';
     AppRoutingModule,
     HammerModule,
     ReactiveFormsModule,
-    NgxMaskDirective, 
+    NgxMaskDirective,
     NgxMaskPipe,
     BrowserAnimationsModule,
-    ToastrModule.forRoot()
+    ToastrModule.forRoot({
+      disableTimeOut: false,
+      tapToDismiss: true,
+      newestOnTop: true,
+      preventDuplicates: false,
+    })
   ],
   providers: [
     {

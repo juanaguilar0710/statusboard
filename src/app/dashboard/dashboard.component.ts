@@ -79,7 +79,7 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
   private dataLoaded = false; // Flag para controlar si los datos fueron cargados
   private viewChecked = false; // Flag para evitar bucles infinitos en ngAfterViewChecked
   private readonly TOKEN_EXPIRATION_KEY_Admin = 'auth_token_expiration_admin';
-  
+
   // 🎤 Sistema de cola de speech
   private readonly SPEECH_QUEUE_KEY = 'speech_queue';
 
@@ -159,7 +159,7 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
             component: 'Dashboard',
             status: 'success',
           },'success');
-          this.ngOnInit(); 
+          this.ngOnInit();
           this.deviceWasOffline = false;
         }
       }
@@ -358,6 +358,7 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
   }
 
   private getTodaysPatients = false;
+  listPatients: any[] = [];
   async getTodaysPatientsFromServer(event?: any, yesterday: boolean = false) {
       if (this.getTodaysPatients) return;
       this.getTodaysPatients = true;
@@ -381,6 +382,7 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
           });
           this.lastsync = new Date().toLocaleString();
           this.patients = [...filteredPatients];
+          this.listPatients = response.data;
           this.patientsCopy = [...filteredPatients];
           this.LocaldataService.setPatients(filteredPatients);
           this.viewYesterdaysPatients = yesterday;
@@ -766,10 +768,11 @@ private async handlePatientEvent(type: 'updated' | 'created' | 'deleted', e: any
   private listenToPatientEvents(channel: string): void {
     this.laravelEcho?.leave(channel);
     const channelListeners = this.laravelEcho?.private(channel);
-    channelListeners.listen('.patient.created', (e: any) => {console.log('entro evento'), this.handlePatientEvent('created', e)});
-    channelListeners.listen('.patient.deleted', (e: any) => {console.log('entro evento'), this.handlePatientEvent('deleted', e)});    
+    channelListeners.listen('.patient.created', (e: any) => {console.log('entro evento'), this.handlePatientEvent('created', e), this.listPatients.push(e.patient);});
+    channelListeners.listen('.patient.deleted', (e: any) => {console.log('entro evento'), this.handlePatientEvent('deleted', e), this.listPatients = this.listPatients.filter((patient: any) => patient.id !== e.patient.id);});
     channelListeners.listen('.patient.updated', (e: any) => {
-      console.log('entro evento'), this.handlePatientEvent('updated', e), 
+      console.log('entro evento');
+      this.handlePatientEvent('updated', e);
       this.notificationService.showSuccessEvent('<strong>Patient Updated: </strong><br>&ensp;&ensp;'+e.patient.fullName+'<br>&ensp;&ensp;'+e.patient.status_name,10000)
     });
     channelListeners.listen('.play.speech', async (e: any) => {
@@ -789,14 +792,19 @@ private async handlePatientEvent(type: 'updated' | 'created' | 'deleted', e: any
         const queueData = await this.storage.get(this.SPEECH_QUEUE_KEY);
         const queue = queueData ? JSON.parse(queueData) : [];
 
-        // Verificar duplicados
+        console.log("📋 Estado actual de la cola:", {
+          enCola: queue.length,
+          eventos: queue.map((q: any) => ({ id: q.id, message: q.message.substring(0, 50) + '...' }))
+        });
+
+        // Verificar duplicados - solo mismo mensaje E ID de waiting room
         const isDuplicate = queue.some((item: any) =>
           item.message === event.message &&
-          item.waitingRoomId === event.waitingRoomId &&
-          item.branchId === event.branchId
+          item.waitingRoomId === event.waitingRoomId
         );
 
         if (isDuplicate) {
+          console.log("🚫 Evento duplicado detectado, no se encola:", event.message);
           return false; // No encolar duplicados
         }
 
@@ -814,7 +822,12 @@ private async handlePatientEvent(type: 'updated' | 'created' | 'deleted', e: any
 
         await this.storage.set(this.SPEECH_QUEUE_KEY, JSON.stringify(queue));
 
-        console.log("✅ Evento encolado:", speechItem);
+        console.log("✅ Evento encolado exitosamente:", {
+          id: speechItem.id,
+          message: speechItem.message,
+          posicionEnCola: queue.length,
+          totalEnCola: queue.length
+        });
 
         return true;
 
@@ -842,12 +855,17 @@ private async handlePatientEvent(type: 'updated' | 'created' | 'deleted', e: any
     private queueProcessing = false;
 
     private async processQueue() {
-      if (this.queueProcessing) return; // ya corriendo
+      if (this.queueProcessing) {
+        console.log("⏸️ Cola ya en procesamiento, esperando...");
+        return;
+      }
 
       this.queueProcessing = true;
+      console.log("🎬 Iniciando procesamiento de cola");
 
       try {
         while (true) {
+          // Leer la cola actual
           await this.acquireLock();
           let queue: any[] = [];
 
@@ -858,15 +876,21 @@ private async handlePatientEvent(type: 'updated' | 'created' | 'deleted', e: any
             this.releaseLock();
           }
 
-          if (queue.length === 0) break;
+          if (queue.length === 0) {
+            console.log("✅ Cola vacía, finalizando procesamiento");
+            break;
+          }
 
           // Tomar el primer item sin quitarlo aún
           const item = queue[0];
+          console.log(`🎤 Procesando mensaje ${queue.indexOf(item) + 1}/${queue.length}:`, item.message);
 
           try {
+            // ESPERAR a que termine de reproducirse completamente
             await this.processSpeechEvent(item.message, item);
+            console.log("✅ Mensaje reproducido completamente");
           } catch (e) {
-            console.error("Error procesando item:", e);
+            console.error("❌ Error procesando mensaje:", e);
           }
 
           // Quitar el elemento procesado y guardar
@@ -874,19 +898,30 @@ private async handlePatientEvent(type: 'updated' | 'created' | 'deleted', e: any
           try {
             const raw = await this.storage.get(this.SPEECH_QUEUE_KEY);
             const q = raw ? JSON.parse(raw) : [];
-            q.shift(); // eliminar primero
-            await this.storage.set(this.SPEECH_QUEUE_KEY, JSON.stringify(q));
+
+            // Verificar que el item sigue siendo el primero (seguridad)
+            if (q.length > 0 && q[0].id === item.id) {
+              q.shift(); // eliminar primero
+              await this.storage.set(this.SPEECH_QUEUE_KEY, JSON.stringify(q));
+              console.log(`📤 Mensaje eliminado de la cola. Quedan ${q.length} mensajes`);
+            }
           } finally {
             this.releaseLock();
           }
+
+          // Pequeña pausa entre mensajes para evitar solapamiento
+          await new Promise(resolve => setTimeout(resolve, 500));
         }
 
       } finally {
         this.queueProcessing = false;
+        console.log("🏁 Procesamiento de cola finalizado");
       }
     }
 
     private async processSpeechEvent(message: string, event: any): Promise<void> {
+      console.log("🔊 Iniciando reproducción de mensaje:", message);
+
       try {
         const patientMatch = message.match(/paciente\s+número\s+(\d+)/i);
         const patientNumber = patientMatch ? Number(patientMatch[1]) : null;
@@ -901,29 +936,40 @@ private async handlePatientEvent(type: 'updated' | 'created' | 'deleted', e: any
           statusId = await this.getStatusIdByName(statusName);
         }
 
+        let shouldSpeak = false;
+
         if (patientNumber) {
           const index = this.patients.findIndex((p: any) => p.identifier === patientNumber);
 
           if (index > -1) {
             const resolvedStatusId = statusId ?? this.patients[index].status_Id;
-            if (this.shouldPatientBeVisible(resolvedStatusId)) {
-              await this.speak(message);
-            }
+            shouldSpeak = this.shouldPatientBeVisible(resolvedStatusId);
+            console.log(`📊 Paciente ${patientNumber} encontrado. Visible: ${shouldSpeak}`);
           } else {
-            if (statusId && this.shouldPatientBeVisible(statusId)) {
-              await this.speak(message);
-            } else {
-              console.log("Paciente no visible según configuración");
-            }
+            shouldSpeak = statusId ? this.shouldPatientBeVisible(statusId) : true;
+            console.log(`⚠️ Paciente ${patientNumber} no encontrado en lista. Se reproducirá: ${shouldSpeak}`);
           }
         } else {
-          console.log("Paciente no encontrado, reproduciendo por defecto");
+          shouldSpeak = true;
+          console.log("ℹ️ Mensaje sin número de paciente, se reproducirá por defecto");
+        }
+
+        if (shouldSpeak) {
+          console.log("🎤 Reproduciendo mensaje...");
           await this.speak(message);
+          console.log("✅ Mensaje reproducido completamente");
+        } else {
+          console.log("🔇 Mensaje omitido (paciente no visible según configuración)");
         }
 
       } catch (error) {
         console.error("❌ Error procesando speech:", error);
-        await this.speak(message); // fallback
+        // Fallback: reproducir el mensaje de todos modos
+        try {
+          await this.speak(message);
+        } catch (fallbackError) {
+          console.error("❌ Error en fallback de speech:", fallbackError);
+        }
       }
     }
 
@@ -1254,8 +1300,13 @@ private isPusherConnected(): boolean {
   }
 
 
+  getVisiblePatientsTotal(): any[] {
+   // return this.patients.filter(patient => this.shouldPatientBeVisible(patient.status_Id));
+    return this.listPatients;
+  }
+
   getVisiblePatients(): any[] {
-    return this.patients.filter(patient => this.shouldPatientBeVisible(patient.status_Id));
+   return this.patients.filter(patient => this.shouldPatientBeVisible(patient.status_Id));
   }
 
   async loadBranchStatuses(branchId: number): Promise<void> {
@@ -1264,7 +1315,7 @@ private isPusherConnected(): boolean {
         this.requestsService.getBranchStatuses(branchId).subscribe(
           (response: any) => {
             console.log(response);
-            
+
             if (response.length > 0) {
               // Asegurar que los datos sean un array válido
               if (Array.isArray(response)) {

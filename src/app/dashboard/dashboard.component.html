@@ -106,7 +106,8 @@
                   <div *ngFor="let patient of getPatientsGroup(room.name)">
                     <ion-row style="height: 22px;" [ngClass]="{'highlight-updated': isPatientUpdated(patient.id)}">
                       <!-- <ion-col size="1" class="textCardPatients" style="padding-right: 0px;" [ngClass]="{'canceled': patient.visit_canceled_at}"><strong>{{patient.age}}y</strong></ion-col> -->
-                      <ion-col size="3" class="textCardPatients text-ellipsis" style="margin-right: 11px;" [ngClass]="{ 'surgery': patient.status.type === 'surgery', 'holding': patient.status.type === 'holding', 'nextSurgery': patient.status.type === 'next_to_surgery', 'canceled': patient.visit_canceled_at}"><strong>{{patient.fullName}}<strong>  ({{patient.age}}y)</strong></strong></ion-col>
+                      <ion-col size="3" class="textCardPatients text-ellipsis" style="margin-right: 11px;" [ngClass]="{ 'surgery': patient.status.type === 'surgery', 'holding': patient.status.type === 'holding', 'nextSurgery': patient.status.type === 'next_to_surgery'}"><strong>{{patient.fullName}}<strong>  ({{patient.age}}y)</strong></strong></ion-col>
+                      <!-- <ion-col size="3" class="textCardPatients text-ellipsis" style="margin-right: 11px;" [ngClass]="{ 'surgery': patient.status.type === 'surgery', 'holding': patient.status.type === 'holding', 'nextSurgery': patient.status.type === 'next_to_surgery', 'canceled': patient.visit_canceled_at}"><strong>{{patient.fullName}}<strong>  ({{patient.age}}y)</strong></strong></ion-col> -->
                       <ion-col size="4" class="textCardPatients text-ellipsis" style="text-align: left !important;" [ngClass]="{'canceled': patient.visit_canceled_at}"><strong>{{patient.procedure_name}}</strong></ion-col>
                       <ion-col size="3" class="textCardPatients text-ellipsis" style="text-align: left !important;" [ngClass]="{'canceled': patient.visit_canceled_at}"><strong>{{patient.surgeon_name}}</strong></ion-col>
                       <ion-col size="1" class="textCardPatients text-ellipsis" style="text-align: center !important;" [ngClass]="{'canceled': patient.visit_canceled_at}">
@@ -191,7 +192,7 @@
             </div>
             <!-- Número de pacientes optimizado en la esquina superior derecha -->
             <div class="count-wrapper">
-              <div class="count" (click)="headerClicked()">{{ getVisiblePatients().length }}</div>
+              <div class="count" (click)="headerClicked()">{{ getVisiblePatientsTotal().length }}</div>
               <div class="count-label" (click)="headerClicked()">PATIENTS</div>
             </div>
           </div>
@@ -310,7 +311,8 @@
       <span *ngIf="this.config.aplication === '3'" class="textUnderLine">PAGE: {{ currentPagePatients + 1 }}/{{ totalPatientPages === 0 ? 1 : totalPatientPages }}</span>
     </ion-col>
 
-    <ion-col size="1" style="display: flex; align-items: center;" *ngIf="this.totalPagesWithPatients > 1 || totalPatientPages > 1">
+    <ion-col size="1" style="display: flex; align-items: center;" *ngIf="this.totalPagesWithPatients > 1">
+    <!-- <ion-col size="1" style="display: flex; align-items: center;" *ngIf="this.totalPagesWithPatients > 1 || totalPatientPages > 1"> -->
       <!-- <ion-col size="1" style="display: flex; align-items: center;"> -->
       <span class="textUnderLine">TIMER: {{this.countdown}}</span>
     </ion-col>
