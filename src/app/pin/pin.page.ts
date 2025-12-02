@@ -30,7 +30,7 @@ export class PinPage implements OnInit {
   branch_name = "";
   waitingRoom_name = "";
   configResponse:any
-  
+
 
   private isNavigating = false; // Indicador de estado de navegación
 
@@ -51,8 +51,8 @@ export class PinPage implements OnInit {
       this._ngZone.run(() => {
         this.networkStatus = status;
       });
-    });     
-    
+    });
+
   }
 
   async presentLoading() {
@@ -68,7 +68,7 @@ export class PinPage implements OnInit {
       });
     });
   }
- 
+
   async dismissLoading() {
     if (!this.loading) return;  // Solo intentar cerrar si está abierto
     this.loading = false;
@@ -114,40 +114,33 @@ export class PinPage implements OnInit {
     }
   }
 
-  async ngOnInit() {
-    
+   async ngOnInit() {
     this.appComponent.stopInactivityTracking();
     this.loading = true;
-    this.lastsync = this.requestsService.lastSync;    
-  
-      setTimeout(() => {
-        this.image_url = this.requestsService.config.branch.image_url ?? 'assets/logos/logotipo_placeholder.png';
-        this.branch_name = this.requestsService.config?.branch?.name ?? "";
-        this.waitingRoom_name = this.requestsService.config?.waitingRoom?.name ?? "";
-        this.loading = false;
-      }, 2500);
-    
+    this.lastsync = this.requestsService.lastSync;
+    setTimeout(() => {
+      this.image_url = this.requestsService.config?.branch?.image_url ?? 'assets/logos/logotipo_placeholder.png';
+      this.branch_name = this.requestsService.config?.branch?.name ?? "";
+      this.waitingRoom_name = this.requestsService.config?.waitingRoom?.name ?? "";
+      this.loading = false;
+    }, 2500);
 
-        const adminResponse = await Preferences.get({ key: 'admin' });      
-        this.configResponse = await Preferences.get({ key: 'config' });      
-        const branch = await Preferences.get({ key: 'branch' });
-        const waiting_rooms = await Preferences.get({ key: 'waiting_rooms' });
-
-        
-
-        if (!adminResponse.value || !this.configResponse.value || !branch.value || !waiting_rooms.value) {
-          console.log('5');          
-          this.router.navigate(['/login'], { replaceUrl: true });
-          this.loading = false;
-          return; 
-        }
-
-        this.configResponse = JSON.parse(this.configResponse.value)     
-
-        if(this.configResponse.aplication !== "1" && this.configResponse.token != ""){
-          this.configResponse.token = this.requestsService.getToken();       
-          this.router.navigate(['/dashboard'], { replaceUrl: true });
-        }      
+    // Obtener configuración local y redirigir según el modo
+    const config = await this.localdataService.getConfiguration();
+    if (!config) {
+      this.router.navigate(['/login'], { replaceUrl: true });
+      this.loading = false;
+      return;
+    }
+    this.configResponse = config;
+    // Redirección según el valor de aplication
+    if (String(this.configResponse.aplication) === "1") {
+      // Tablet: no redirige, espera PIN y luego va a /home
+      // No hacer nada aquí
+    } else if (String(this.configResponse.aplication) === "2" || String(this.configResponse.aplication) === "3") {
+      // Dashboard o modo especial: ir directo a dashboard
+      this.router.navigate(['/dashboard'], { replaceUrl: true });
+    }
   }
 
   async headerClicked() {
@@ -230,25 +223,25 @@ export class PinPage implements OnInit {
 
     async showResolutionAlert() {
       this.showResolution(); // Actualiza this.resolution
-      
+
       const resolutionAlert = await this.alertController.create({
           header: 'Device Resolution',
           message: this.resolution,
           buttons: ['OK']
         });
-        
+
         await resolutionAlert.present();
       }
 
   async login() {
     if (this.isNavigating) return;
-    this.isNavigating = true;  
+    this.isNavigating = true;
     try {
-      //await this.refreshAdminToken();      
+      //await this.refreshAdminToken();
         console.log('Token no obtenido, solicitando nuevo...');
         this.requestTokenBasedOnPin();
         this.appComponent.resetSession();
-        this.isNavigating = false;      
+        this.isNavigating = false;
     } catch (error) {
       console.error('Error durante el proceso de login:', error);
       this.requestTokenBasedOnPin();
@@ -270,9 +263,9 @@ export class PinPage implements OnInit {
           Preferences.set({
             key: 'user',
             value: JSON.stringify(user)
-          });         
-          this.loading = false; 
-          this.requestsService.logout$.next(false);    
+          });
+          this.loading = false;
+          this.requestsService.logout$.next(false);
           // await this.logger.setTokenPin(user.jwt.access_token);
           this.router.navigate(['/home'], { replaceUrl: true }).then(() => {
             console.log('Navegación a /home exitosa');
@@ -280,14 +273,14 @@ export class PinPage implements OnInit {
             this.loading = false;
             console.error('Error en la navegación:', error);
           });
-  
+
         } else if (response.status === 401) {
           this.loading = false;
           this.notificationService.showError('The PIN you entered is incorrect. Please sign in again.',6000);
-          this.loadingController.dismiss();          
+          this.loadingController.dismiss();
         }
       },error => {
-        console.log(error);        
+        console.log(error);
           this.loading = false;
           this.loadingController.dismiss();
           if(error.status == 401){
@@ -296,14 +289,14 @@ export class PinPage implements OnInit {
             this.notificationService.showError('Error interno.' + error,4000);
             Preferences.clear();
             this.router.navigate(['/login'], { replaceUrl: true });
-          }          
+          }
           this.handleInput("clear");
-      });     
-  
-      
+      });
+
+
     } catch (error: any) {
       this.handleInput("clear");
-  
+
       if (this.loading) {
         try {
           this.loading = false;
@@ -312,7 +305,7 @@ export class PinPage implements OnInit {
           console.error('Error al intentar cerrar el loading:', error);
         }
       }
-  
+
       if (error?.status === 401) {
          Toast.show({
           text: 'Pin Incorrecto o No Registrado',

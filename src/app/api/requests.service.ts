@@ -95,6 +95,7 @@ export class RequestsService {
 
     setAdminToken(token: string | null) {
         this.adminToken = token;
+        this.token = token;
     }
 
     setConfig(config: any) {
@@ -102,6 +103,9 @@ export class RequestsService {
     }
 
     async initDropdowns():Promise<boolean> {
+
+        await new Promise(resolve => setTimeout(resolve, 3000));
+
         return new Promise(async (resolve, reject) => {
             await this.getBranchComments().subscribe(async (response: any) => {
                 if (response.status === 200) {
@@ -223,7 +227,7 @@ export class RequestsService {
           } else if (response.status === 500 && response.data.error.detail === "Unauthenticated.") {
             const refreshResponse = await this.refreshToken(this.adminToken);
             if (refreshResponse && refreshResponse.status === 200) {
-              this.setAdminToken(refreshResponse.data.jwt.access_token);
+              this.setAdminToken(refreshResponse.data.access_token);
               await Preferences.set({
                 key: 'admin',
                 value: JSON.stringify(refreshResponse.data)
@@ -702,6 +706,10 @@ export class RequestsService {
 
     verifyTwoFactorCode(code: string): Observable<any> {
         return this.http.post(environment.url + environment.auth + environment.verifyCode, { code: code });
+    }
+
+    getList(): any {
+      return this.http.get(environment.url + environment.notifications);
     }
 
     statusesColor: any[] = [

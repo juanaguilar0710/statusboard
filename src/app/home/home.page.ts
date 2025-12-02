@@ -1,5 +1,5 @@
 import { Component, AfterViewInit, ViewChild, OnInit, NgZone, EventEmitter, OnDestroy } from '@angular/core';
-import { AlertController, IonModal, NavController } from '@ionic/angular';
+import { AlertController, IonModal, NavController, ModalController } from '@ionic/angular';
 import { RequestsService } from '../api/requests.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Preferences } from '@capacitor/preferences';
@@ -13,6 +13,8 @@ import { NetworkService } from '../api/network.service';
 import { RoomColors } from 'colors';
 import { AppComponent } from '../app.component';
 import { NotificationService } from '../api/notification.service';
+import { LoggerService } from '../api/logger.service';
+import { SmsChatModalComponent } from './sms-chat-modal.component';
 
 @Component({
   selector: 'app-home',
@@ -50,10 +52,14 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
 
   resolution: string = '';
 
+
   public timeRemaining: number = 0;
+
+
 
   constructor(
     private LocaldataService: LocaldataService,
+    private logger: LoggerService,
     public requestsService: RequestsService,
     private router: Router,
     public activatedRoute: ActivatedRoute,
@@ -62,7 +68,8 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
     private _ngZone: NgZone,
     private networkService: NetworkService,
     private notificationService: NotificationService,
-    private appComponent: AppComponent) {
+    private appComponent: AppComponent,
+    private modalController: ModalController) {
 
     //listen for the network status
     this.networkService.networkStatus$.subscribe((status: string) => {
@@ -85,45 +92,50 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
     return this.resolution;
   }
 
-  async ngOnInit() { 
-    this.LocaldataService.setPatients(this.patients);
-    
-    this.appComponent.timeRemaining$.subscribe(time => {
-      this.timeRemaining = time;
-    });   
-    this.user = await this.LocaldataService.getUser();      
-    this.username = JSON.parse(localStorage.getItem('user')!);    
-    this.configuration = await this.LocaldataService.getConfiguration();        
+  async ngOnInit() {
 
-    if(this.configuration.aplication == '2'){
-      this.router.navigate(['/dashboard'], { replaceUrl: true });
-    }
-    
-    this.getTodaysPatientsFromLocal().then(resp => {
-      this.storage.get('patient').then(response => {             
-        this.getOperatingRoomsFromStorageOrLoadFromServer();       
-        if (response) {
-          this._ngZone.run(() => {
-            this.requestsService.updatePatient(response).then(async (response: any) => {
-              this.storage.set('patient', null);
-              if (response.status === 200) {
-                this.getTodaysPatientsFromServer();
-                this.notificationService.showInfo(response.data.message, 5000);
-              }else{
-                this.notificationService.showError(response.data.error.detail, 5000);
-              }
-            }, error =>{
-              this.notificationService.showError('Error updating users.', 5000);
-            });
-          });
-        }
+
+
+    var token = await this.logger.getTokenAdmin();
+    this.requestsService.setAdminToken(token);
+
+      this.LocaldataService.setPatients(this.patients);
+
+      this.appComponent.timeRemaining$.subscribe(time => {
+        this.timeRemaining = time;
       });
-    });
-    this.letters = this.getFirstLetterFromNames();
-    
+      this.user = await this.LocaldataService.getUser();
+      this.username = JSON.parse(localStorage.getItem('user')!);
+      this.configuration = await this.LocaldataService.getConfiguration();
+
+      if(this.configuration.aplication == '2'){
+        this.router.navigate(['/dashboard'], { replaceUrl: true });
+      }
+
+      this.getTodaysPatientsFromLocal().then(resp => {
+        this.storage.get('patient').then(response => {
+          this.getOperatingRoomsFromStorageOrLoadFromServer();
+          if (response) {
+            this._ngZone.run(() => {
+              this.requestsService.updatePatient(response).then(async (response: any) => {
+                this.storage.set('patient', null);
+                if (response.status === 200) {
+                  this.getTodaysPatientsFromServer();
+                  this.notificationService.showInfo(response.data.message, 5000);
+                }else{
+                  this.notificationService.showError(response.data.error.detail, 5000);
+                }
+              }, error =>{
+                this.notificationService.showError('Error updating users.', 5000);
+              });
+            });
+          }
+        });
+      });
+      this.letters = this.getFirstLetterFromNames();
   }
 
-  private updatePatientList(eventType: string, patient: any) {      
+  private updatePatientList(eventType: string, patient: any) {
     const index = this.patients.findIndex((p: any) => p.id === patient.id);
     switch(eventType) {
       case 'created':
@@ -147,7 +159,7 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
     this.LocaldataService.setPatients(this.patients);
     this.requestsService.lastSync = new Date().toLocaleString();
   }
-  
+
   ngAfterViewInit(): void {
     if (this.laravelEcho) return;
 
@@ -161,52 +173,52 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
               cluster: environment.pusher.cluster,
               forceTLS: environment.pusher.forceTLS,
               disableStats: true,
-              
+
               authorizer: (channel: any, options: any) => {
                 return {
                   authorize: (socketId: any, callback: any) => {
                     localStorage.setItem('socketId', socketId);
-                    this.requestsService.authorizeBroadcasting(socketId, channel.name).subscribe( response => {                        
+                    this.requestsService.authorizeBroadcasting(socketId, channel.name).subscribe( response => {
                       callback(false, response);
                     }, error => {
                       callback(true, error);
-                    });          
+                    });
                   }
                 };
-              },      
+              },
             });
          }
-        
-  
+
+
         // const channel = `branch.${this.requestsService.config.branch.id}.room.${this.requestsService.config.waitingRoom.id}`;
-        const channel = `rooms.${this.requestsService.config.waitingRoom.id}`;  
+        const channel = `rooms.${this.requestsService.config.waitingRoom.id}`;
 
         console.log('this.laravelEcho', this.laravelEcho);
-        
+
         this.laravelEcho?.private(channel).listen('.patient.created',async (e: any) => {
-          console.log(e);          
-          if (this.networkStatus === "ONLINE" && !this.viewYesterdaysPatients) {             
+          console.log(e);
+          if (this.networkStatus === "ONLINE" && !this.viewYesterdaysPatients) {
             this.updatePatientList('created', e.patient);
-            await this.getOperatingRoomsFromStorageOrLoadFromServer(); 
+            await this.getOperatingRoomsFromStorageOrLoadFromServer();
           }
         });
-  
+
         this.laravelEcho?.private(channel).listen('.patient.updated', (e: any) => {
           console.log(e);
           if (this.networkStatus === "ONLINE" && !this.viewYesterdaysPatients) {
-            this.updatePatientList('updated', e.patient);  
-            this.getOperatingRoomsFromStorageOrLoadFromServer();          
+            this.updatePatientList('updated', e.patient);
+            this.getOperatingRoomsFromStorageOrLoadFromServer();
           }
         });
-  
+
         this.laravelEcho?.private(channel).listen('.patient.deleted', (e: any) => {
           console.log(e);
           if (this.networkStatus === "ONLINE" && !this.viewYesterdaysPatients) {
             this.updatePatientList('deleted', e.patient);
-            this.getOperatingRoomsFromStorageOrLoadFromServer(); 
+            this.getOperatingRoomsFromStorageOrLoadFromServer();
           }
-        });  
-              
+        });
+
       });
     });
   }
@@ -231,18 +243,18 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
   getOperatingRoomsFromStorageOrLoadFromServer() {
       if (this.loadingRooms) return;
       this.loadingRooms = true;
-      
-      this.LocaldataService.getOperatingRooms().then((response: any) => {      
-        this.operatingRooms = response;     
+
+      this.LocaldataService.getOperatingRooms().then((response: any) => {
+        this.operatingRooms = response;
         console.log('Operating Rooms from Local:', this.operatingRooms);
-              
+
         this.requestsService.getOperatingRooms().subscribe((response: any) => {
           this.loadingRooms = false;
           this.operatingRooms = response.data.data;
           console.log('Operating Rooms from Server:', this.operatingRooms);
           this.getRandomColor(this.operatingRooms);
           this.LocaldataService.setOperatingRooms(this.operatingRooms);
-        });     
+        });
       });
     }
 
@@ -258,7 +270,7 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
 
   async getTodaysPatientsFromLocal(event?: any) {
     this.updating = true;
-    this.LocaldataService.getPatients().then(response => {      
+    this.LocaldataService.getPatients().then(response => {
       if (response) {
         this.patients = response;
         this.patientsCopy = response;
@@ -379,4 +391,5 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
     this.modallogout?.dismiss(null, 'confirm');
     this.router.navigate(['/pin'], { replaceUrl: true });
   }
+
 }

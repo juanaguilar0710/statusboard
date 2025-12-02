@@ -92,8 +92,8 @@
                           <div class="elipsis">
                             <span class="label">Family Name: </span><span class="label-value">{{patient.companion_name}}</span>
                           </div>
-                          
-                          
+
+
                           <div style="display: flex; justify-content: space-between; align-items: center;">
                             <div>
                               <span class="label">Family Phone: </span>
@@ -110,6 +110,12 @@
                               <img src="assets/icon/Phone.png" style="width: 50%;">
                             </div>
 
+                            <!-- <button *ngIf="waiting_room && waiting_room.chat_enabled && patient.prefers_sms && patient.chat_has_message" mat-icon-button type="button" (click)="openSmsChatDialog(patient)"> -->
+                            <!-- <ion-button fill="clear" size="small">
+                              <ion-icon slot="icon-only" name="chatbubble-ellipses-outline"></ion-icon>
+                              <span *ngIf="patient.chat_unread_count > 0" class="notifiable">{{ patient.chat_unread_count }}</span>
+                            </ion-button> -->
+
                           </div>
 
 
@@ -120,46 +126,46 @@
                           </div>
                         </div>
                       </div>
-                    </ion-col>                  
+                    </ion-col>
                   </ion-row>
                 </ion-grid>
               </div>
-    
+
               <div class="d-inline-flex w-100 align-items-center justify-content-center" *ngIf="patient.visit_canceled_at"
               (click)="goToUpdatePatient(patient, i)">
               <h1 class="surgeryCancel">SURGERY CANCELLED</h1>
               </div>
-    
-              <div *ngIf="!patients || patients?.length === 0" style="text-align: center; margin-top: 100px;">
+
+              <div *ngIf="!patients || patients.length === 0" style="text-align: center; margin-top: 100px;">
                 <h1>No Patients Today</h1>
               </div>
-    
-            </ion-col>    
+
+            </ion-col>
           </ion-row>
         </div>
       </ion-col>
 
       <ion-col size="3">
         <button id="logout-modal" class="btn btn-danger rounded-3 buttons">0:{{timeRemaining}} Logout</button>
-        
+
         <button (click)="newPatient()" class="btn btn-primary rounded-3 buttons">+ New Patient</button>
-    
+
         <div class="controlRight">
           <div style="margin: 10px 10px 10px 10px; padding: 5px 5px; background-color: #e8e8e8; border-radius: 10px;" *ngIf="patients && patients.length > 0">
             <div class="text-center m-2">
               <h3>WORK TEAMS</h3>
             </div>
-            <div class="room-cards" (click)="editRoom(room, i)" *ngFor="let room of operatingRooms; let i = index" 
+            <div class="room-cards" (click)="editRoom(room, i)" *ngFor="let room of operatingRooms; let i = index"
               [ngStyle]="{'background-color': room.color}" [dynamicTextColor]="room.color">
-              
+
               <div class="room-edit-icon">
                 <ion-icon name="create-outline"></ion-icon>
               </div>
-              
+
               <div class="text-center room-name">
                 <h4>{{room.name}}</h4>
               </div>
-        
+
               <div class="room-card-details">
                 <div *ngFor="let role of room.roles">
                   <div>
@@ -169,14 +175,14 @@
                   </div>
                 </div>
               </div>
-              
+
             </div>
           </div>
         </div>
 
 
       </ion-col>
-    </ion-row>    
+    </ion-row>
   </ion-grid>
 
 

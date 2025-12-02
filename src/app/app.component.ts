@@ -11,13 +11,14 @@ import { BehaviorSubject } from 'rxjs';
 import { NotificationService } from './api/notification.service';
 import { Insomnia } from '@awesome-cordova-plugins/insomnia/ngx';
 import { Platform } from '@ionic/angular';
+import { LoggerService } from './api/logger.service';
 
 @Component({
   selector: 'app-root',
   templateUrl: 'app.component.html',
   styleUrls: ['app.component.scss'],
 })
-export class AppComponent implements OnInit{  
+export class AppComponent implements OnInit{
 
   timeoutHandle: any;
   enableScreensaver = true;
@@ -32,13 +33,14 @@ export class AppComponent implements OnInit{
   private maxInactivityTime: number = environment.maxInactivityTime;
   private timer: any;
   private events: string[] = ['mousemove', 'mousedown', 'keypress', 'touchmove', 'scroll', 'input'];
-  
+
   public timeRemaining$: BehaviorSubject<number> = new BehaviorSubject<number>(this.maxInactivityTime);
   private listenerRefs: { [key: string]: any } = {};
 
   constructor(
     private router: Router,
     private requestsService: RequestsService,
+    private logger: LoggerService,
     private storage: Storage,
     private localdataService: LocaldataService,
     private notificationService: NotificationService,
@@ -46,7 +48,7 @@ export class AppComponent implements OnInit{
   ) {
     this.init();
 
-    this.requestsService.startTimer$.subscribe(async (start: boolean) => {      
+    this.requestsService.startTimer$.subscribe(async (start: boolean) => {
       if (start) {
         await this.startListeners();
       } else {
@@ -54,7 +56,7 @@ export class AppComponent implements OnInit{
       }
     });
 
-    new NetworkService();  
+    new NetworkService();
   }
 
 
@@ -62,7 +64,7 @@ export class AppComponent implements OnInit{
 
     this.router.events.subscribe((event) => {
       if (event instanceof NavigationEnd) {
-        this.excludedUrls = ['/login', '/pin', '/configuration', '/dashboard'];    
+        this.excludedUrls = ['/login', '/pin', '/configuration', '/dashboard'];
         this.currentUrl = event.url || event.urlAfterRedirects;
         this.isExcluded = this.excludedUrls.some((url:any) => this.currentUrl.includes(url));
         this.checkRoute(this.currentUrl)
@@ -72,9 +74,9 @@ export class AppComponent implements OnInit{
           this.startInactivityTracking();
         }
       }
-    });    
-    
-    this.platform.ready().then(() => {     
+    });
+
+    this.platform.ready().then(() => {
       this.resetInactivityTimer();
     });
   }
@@ -99,7 +101,7 @@ export class AppComponent implements OnInit{
 
     showScreensaver() {
       document.getElementById('screensaver')?.classList.add('active');
-    }  
+    }
 
     hideScreensaver() {
       document.getElementById('screensaver')?.classList.remove('active');
@@ -126,13 +128,17 @@ export class AppComponent implements OnInit{
         this.hasNavigated = true;
         return;
       }
-      const adminResponse = await Preferences.get({ key: 'admin' });
-      if (!adminResponse.value) {        
+
+      var tokenAdmin = await this.logger.getTokenAdmin();
+      this.requestsService.setAdminToken(tokenAdmin);
+
+
+      if (!tokenAdmin) {
         this.router.navigate(['/login'], { replaceUrl: true });
         this.hasNavigated = true;
         return;
       } else {
-        const token = JSON.parse(adminResponse.value)?.jwt?.access_token;
+        const token = tokenAdmin;
         if (token && this.localdataService.isTokenExpired(token)) {
           const newToken = await this.requestsService.refreshToken(token);
           if (newToken?.status === 200) {
@@ -156,7 +162,7 @@ export class AppComponent implements OnInit{
       return true;
     } catch (error) {
       console.log(error);
-      throw error; 
+      throw error;
     }
   }
 
@@ -164,7 +170,7 @@ export class AppComponent implements OnInit{
     this.stopInactivityTracking();
   }
 
-  private startInactivityTracking(): void {    
+  private startInactivityTracking(): void {
     this.stopInactivityTracking();
     this.initListener();
     this.initInterval();
@@ -173,7 +179,7 @@ export class AppComponent implements OnInit{
   private initListener(): void {
     this.events.forEach(event => {
       const passiveEvents = ['scroll', 'wheel', 'touchstart', 'touchmove', 'touchend'];
-      const options = passiveEvents.includes(event) ? { passive: true } : undefined;  
+      const options = passiveEvents.includes(event) ? { passive: true } : undefined;
       this.listenerRefs[event] = this.resetTimer.bind(this);
       document.addEventListener(event, this.listenerRefs[event], options);
     });
@@ -201,7 +207,7 @@ export class AppComponent implements OnInit{
     this.events.forEach(event => {
       if (this.listenerRefs[event]) {
         document.removeEventListener(event, this.listenerRefs[event]);
-        delete this.listenerRefs[event]; 
+        delete this.listenerRefs[event];
       }
     });
   }
@@ -209,13 +215,13 @@ export class AppComponent implements OnInit{
   private initInterval(): void {
     this.timer = setInterval(() => {
       const excludedUrls = ['/login', '/pin', '/configuration', '/dashboard'];
-      const currentUrl = this.router.url;  
+      const currentUrl = this.router.url;
       if (excludedUrls.some(url => currentUrl.includes(url))) {
         this.stopInactivityTracking();
         return;
-      }  
+      }
       this.inactivityTime++;
-      this.timeRemaining$.next(this.maxInactivityTime - this.inactivityTime);  
+      this.timeRemaining$.next(this.maxInactivityTime - this.inactivityTime);
       if (this.inactivityTime >= this.maxInactivityTime) {
         this.handleLogout();
         this.stopInactivityTracking();

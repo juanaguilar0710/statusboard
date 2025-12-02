@@ -1,5 +1,5 @@
 export const environment = {
-  version: "2.0.0.15",
+  version: "2.0.0.18",
   production: false,
   resetPin: '1111',
   maxInactivityTime: 20,
@@ -260,5 +260,6 @@ export const environment = {
   operatingroomsschedules: '/operating-rooms-schedules',
   operatingroomusers: '/operating-room-users',
   patients: '/patients',
-  waiting_room_id: 'waiting_room_id'
+  waiting_room_id: 'waiting_room_id',
+  notifications: '/notifications'
 };

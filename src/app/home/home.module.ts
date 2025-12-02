@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { IonicModule } from '@ionic/angular';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { HomePage } from './home.page';
+import { SmsChatModalComponent } from './sms-chat-modal.component';
 
 import { HomePageRoutingModule } from './home-routing.module';
 import { ToggleComponent } from '../components/toggle/toggle.component';
@@ -18,6 +19,6 @@ import { DirectivesModule } from '../directives.module';
     ReactiveFormsModule,
     DirectivesModule
   ],
-  declarations: [HomePage, ToggleComponent]
+  declarations: [HomePage, ToggleComponent, SmsChatModalComponent]
 })
 export class HomePageModule {}
