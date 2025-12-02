@@ -249,6 +249,7 @@ export const environment = {
   public: '/public',
   branchesrooms: '/branches-rooms',
   visitor: '/visitor',
+  visitors: '/visitors',
   status: '/status',
   comments: '/comments',
   waitingRooms: '/waitingRooms',
@@ -256,10 +257,13 @@ export const environment = {
   operatingrooms: '/operating-rooms',
   procedures: '/procedures',
   branch: '/branch',
+  branches: '/branches',
   recoveryrooms: '/recovery-rooms',
   operatingroomsschedules: '/operating-rooms-schedules',
   operatingroomusers: '/operating-room-users',
   patients: '/patients',
   waiting_room_id: 'waiting_room_id',
-  notifications: '/notifications'
+  notifications: '/notifications',
+  stats: '/stats',
+  rooms: '/rooms'
 };

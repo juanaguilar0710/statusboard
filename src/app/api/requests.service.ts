@@ -712,6 +712,10 @@ export class RequestsService {
       return this.http.get(environment.url + environment.notifications);
     }
 
+    patientsStats(idBranch:any, idRoom:any): Observable<any> {
+        return this.http.get(environment.url + environment.branches +'/'+idBranch + environment.rooms +'/'+idRoom + environment.visitors + environment.stats);
+    }
+
     statusesColor: any[] = [
         {
             name: 'En Turno',
