@@ -14,7 +14,8 @@ import { RoomColors } from 'colors';
 import { AppComponent } from '../app.component';
 import { NotificationService } from '../api/notification.service';
 import { LoggerService } from '../api/logger.service';
-import { SmsChatModalComponent } from './sms-chat-modal.component';
+import { UpdatePatientPage } from '../update-patient/update-patient.page';
+import { NewPatientPage } from '../new-patient/new-patient.page';
 
 @Component({
   selector: 'app-home',
@@ -348,8 +349,13 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
     this.modallogout?.dismiss(null, 'cancel');
   }
 
-  newPatient() {
-    this.navController.navigateForward(['/new-patient'], { replaceUrl: true, animated: false });
+  async newPatient() {
+    const modal = await this.modalController.create({
+      component: NewPatientPage,
+      cssClass: 'full-modal'
+    });
+    await modal.present();
+    await modal.onDidDismiss();
   }
 
   toggleYesterday(event: any) {
@@ -357,11 +363,18 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
     this.getTodaysPatientsFromServer(null, event.target.checked);
   }
 
-  goToUpdatePatient(patient: any, index: number) {
+  async goToUpdatePatient(patient: any, index: number) {
     if (!this.loading) {
       this.storage.set('scrollY', index);
       this.loading = true;
-      this.navController.navigateForward(['/update-patient'], { state: { patient }, replaceUrl: true });
+        const modal = await this.modalController.create({
+          component: UpdatePatientPage,
+          componentProps: { patient },
+          cssClass: 'full-modal'
+        });
+        await modal.present();
+        await modal.onDidDismiss();
+        this.loading = false;
     }
   }
 

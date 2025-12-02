@@ -2,7 +2,7 @@ export const environment = {
   version: "2.0.0.18",
   production: false,
   resetPin: '1111',
-  maxInactivityTime: 20,
+  maxInactivityTime: 2000,
   timeSaveScreen: 3,
 
   currentPage: 0,

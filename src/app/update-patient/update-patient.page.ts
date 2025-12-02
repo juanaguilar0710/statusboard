@@ -7,6 +7,7 @@ import { Preferences } from '@capacitor/preferences';
 import { PopoverController, IonModal, ModalController } from '@ionic/angular';
 import { Storage } from '@ionic/storage-angular';
 import { SearchableComponentComponent } from '../searchable-component/searchable-component.component';
+import { NotificationService } from '../api/notification.service';
 
 @Component({
   selector: 'app-update-patient',
@@ -29,6 +30,7 @@ export class UpdatePatientPage implements OnInit, OnDestroy {
   recoveryRooms: any[] = [];
   modal: any;
   disabledToggle: boolean = true;
+  updating: boolean = false;
 
   timeList: any[] = environment.timeList;
 
@@ -61,13 +63,14 @@ export class UpdatePatientPage implements OnInit, OnDestroy {
     private router: Router,
     private _formbuilder: FormBuilder,
     public popoverController: PopoverController,
+    private notificationService: NotificationService,
     private storage: Storage,
     private modalController: ModalController) {
     const navParams = this.router.getCurrentNavigation()?.extras?.state;
     if (navParams) {
       this.patient = (navParams as any)?.patient;
       console.log('this.patient',this.patient);
-      
+
     }
 
     this.form.get('comment_custom')?.valueChanges.subscribe((value:any) => {
@@ -85,7 +88,7 @@ export class UpdatePatientPage implements OnInit, OnDestroy {
   async ngOnInit() {
     this.loading = true;
     this.storage.remove('patient');
-    this.comments = this.requestsService.comments?.sort((a: any, b: any) => { return a.short_description.localeCompare(b.short_description) });    
+    this.comments = this.requestsService.comments?.sort((a: any, b: any) => { return a.short_description.localeCompare(b.short_description) });
     await this.requestsService.getOperatingRooms().subscribe(resp => {
       if (resp.status === 500) {
         Preferences.remove({ key: 'user' });
@@ -94,36 +97,36 @@ export class UpdatePatientPage implements OnInit, OnDestroy {
       this.operatingRooms = resp.data.data?.sort((a: any, b: any) => { return a.name.localeCompare(b.name) });
     },error => {
       console.log('error getOperatingRooms: ', error);
-      
+
     });
     await this.requestsService.getBranchSurgeonsByWaitingRoom().then(resp => {
       if (resp.status === 500) {
         Preferences.remove({ key: 'user' });
         this.router.navigate(['/pin'], { replaceUrl: true });
       }
-      this.surgeons = resp.data?.sort((a: any, b: any) => { return a.name.localeCompare(b.name) });      
-    },error => {      
-      console.log('error getBranchSurgeonsByWaitingRoom: ', error);     
+      this.surgeons = resp.data?.sort((a: any, b: any) => { return a.name.localeCompare(b.name) });
+    },error => {
+      console.log('error getBranchSurgeonsByWaitingRoom: ', error);
     });
-    this.procedures = this.requestsService.procedures?.sort((a: any, b: any) => { return a.name.localeCompare(b.name) });   
+    this.procedures = this.requestsService.procedures?.sort((a: any, b: any) => { return a.name.localeCompare(b.name) });
     await this.requestsService.getRecoveryRooms().then(resp => {
       if (resp.status === 500) {
         Preferences.remove({ key: 'user' });
         this.router.navigate(['/pin'], { replaceUrl: true });
       }
-      this.recoveryRooms = resp.data.data      
+      this.recoveryRooms = resp.data.data
     },error => {
       console.log('error getRecoveryRooms: ', error);
-      
+
     });
     this.form.patchValue(this.patient);
     this.form.get('comment_id')?.setValue(this.patient?.comment_Id);
     this.form.get('recovery_room_id')?.setValue(this.patient?.recovery_room);
     this.form.get('time_id')?.setValue(this.patient?.procedure_time);
     this.form.get('next_to_surgery_id')?.setValue(this.patient?.operating_room_id);
-        
+
     setTimeout(async () => {
-      await this.getBranch();      
+      await this.getBranch();
     }, 250);
 
     if (!this.patient.surgeon_id) {
@@ -148,12 +151,12 @@ export class UpdatePatientPage implements OnInit, OnDestroy {
       this.disabledToggle = false;
     }else{
       this.disabledToggle = true;
-    }   
-    
+    }
+
   }
 
-  toggleSMSNotifications(tel: any) {    
-        if (tel.detail.value != "") {          
+  toggleSMSNotifications(tel: any) {
+        if (tel.detail.value != "") {
           this.patient.prefers_sms = true;
           this.disabledToggle = false;
         } else {
@@ -165,13 +168,13 @@ export class UpdatePatientPage implements OnInit, OnDestroy {
   getBranch() {
     Preferences.get({ key: 'branch' }).then(async (response: any) => {
       if (response.value) {
-        const branches = [JSON.parse(response.value)];            
-        this.requestsService.getBranchStatuses(branches[0].id).subscribe(resp => {          
-          this.statuses = resp           
+        const branches = [JSON.parse(response.value)];
+        this.requestsService.getBranchStatuses(branches[0].id).subscribe(resp => {
+          this.statuses = resp
           this.patientStatusUIUpdate();
         },error => {
           console.log('error getBranch: ', error);
-          
+
         });
       }
     });
@@ -269,7 +272,7 @@ export class UpdatePatientPage implements OnInit, OnDestroy {
       return this.recoveryRooms.find((room: any) => { return room == value });
     } else if (type == 'next_to_surgery') {
       return this.operatingRooms.find((room: any) => { return room.id == value });
-    } 
+    }
     else if (type == 'time') {
       return this.timeList.find((time: any) => { return time.value == value })?.value;
     } else {
@@ -286,9 +289,9 @@ export class UpdatePatientPage implements OnInit, OnDestroy {
     }, 150)
   }
 
-  updateStatus(status: any) {    
+  updateStatus(status: any) {
     // this.loading = true;
-    if (status.id != 0) {      
+    if (status.id != 0) {
       this.patient.status_Id = status.id;
       this.form.get('status_Id')?.setValue(status.id);
       this.patientStatusUIUpdate();
@@ -362,7 +365,7 @@ export class UpdatePatientPage implements OnInit, OnDestroy {
 
   onChangeSMSToggle(e: any) {
     console.log(e);
-    
+
     if (e.detail.checked == true) {
       this.patient.prefers_sms = true;
     } else {
@@ -371,6 +374,8 @@ export class UpdatePatientPage implements OnInit, OnDestroy {
   }
 
   async updatePatient() {
+    this.updating = true;
+    this.loading = true;
     this.patient.status = this.form.value.status_Id ? this.statuses.find((status: any) => { return status.id == this.form.value.status_Id }) : null;
     this.patient.status_name = this.form.value.status_Id ? this.statuses.find((status: any) => { return status.id == this.form.value.status_Id })?.name : null;
     this.patient.status_Id = this.form.value.status_Id;
@@ -382,7 +387,7 @@ export class UpdatePatientPage implements OnInit, OnDestroy {
     this.patient.surgeon_name = this.form.value.surgeon_id ? this.surgeons.find((surgeon: any) => { return surgeon.id == this.form.value.surgeon_id })?.full_name : this.form.get('surgeon_name')?.value ? this.form.get('surgeon_name')?.value : null;
     this.patient.surgeon = this.form.value.surgeon_id ? this.surgeons.find((surgeon: any) => { return surgeon.id == this.form.value.surgeon_id }) : null;
     this.patient.procedure_id = this.form.value.procedure_id;
-    this.patient.procedure_name = this.form.value.procedure_id ? this.procedures.find((procedure: any) => { return procedure.id == this.form.value.procedure_id })?.name : this.form.get('procedure_name')?.value ? this.form.get('procedure_name')?.value : null;   
+    this.patient.procedure_name = this.form.value.procedure_id ? this.procedures.find((procedure: any) => { return procedure.id == this.form.value.procedure_id })?.name : this.form.get('procedure_name')?.value ? this.form.get('procedure_name')?.value : null;
     this.patient.procedure_time = this.form.value.procedure_time?.split(':').slice(0, 2).join(':');;
     this.patient.recovery_room = this.form.value.recovery_room;
     this.patient.companion_name = this.form.value.companion_name;
@@ -391,8 +396,27 @@ export class UpdatePatientPage implements OnInit, OnDestroy {
     this.patient.has_note = this.form.value.note ? true : false;
     this.patient.fullName = this.form.value.fullName;
     this.storage.set('patient', this.patient).then(() => {
-      const navigationBehaviorOptions: NavigationBehaviorOptions = { state: { update: true, patient: this.patient }, replaceUrl: true };
-      this.router.navigate(['/home'], navigationBehaviorOptions);
+      // const navigationBehaviorOptions: NavigationBehaviorOptions = { state: { update: true, patient: this.patient }, replaceUrl: true };
+      // this.router.navigate(['/home'], navigationBehaviorOptions);
+      this.requestsService.updatePatient(this.patient).then(async (response: any) => {
+        this.storage.set('patient', null);
+        if (response.status === 200) {
+          this.updating = false;
+          this.loading = false;
+          this.notificationService.showInfo(response.data.message, 5000);
+          this.modalController.dismiss();
+        }else{
+          this.updating = false;
+          this.loading = false;
+          this.notificationService.showError(response.data.error.detail, 5000);
+          this.modalController.dismiss();
+        }
+      }, error =>{
+        this.updating = false;
+        this.loading = false;
+        this.notificationService.showError('Error updating users.', 5000);
+        this.modalController.dismiss();
+      });
     });
   }
 
@@ -415,6 +439,8 @@ export class UpdatePatientPage implements OnInit, OnDestroy {
   }
 
   yesCancel() {
+     this.updating = true;
+    this.loading = true;
     if (!this.patient.visit_canceled_at) {
       const date = new Date();
       var year = date.toLocaleString("default", { year: "numeric" });
@@ -427,12 +453,32 @@ export class UpdatePatientPage implements OnInit, OnDestroy {
     }
     this.modalCancelSurgery?.dismiss();
     this.storage.set('patient', this.patient);
-    const navigationBehaviorOptions: NavigationBehaviorOptions = { state: { update: true, patient: this.patient }, replaceUrl: true };
-    this.router.navigate(['/home'], navigationBehaviorOptions);
+    // const navigationBehaviorOptions: NavigationBehaviorOptions = { state: { update: true, patient: this.patient }, replaceUrl: true };
+    // this.router.navigate(['/home'], navigationBehaviorOptions);
+      this.requestsService.updatePatient(this.patient).then(async (response: any) => {
+        this.storage.set('patient', null);
+        if (response.status === 200) {
+          this.updating = false;
+          this.loading = false;
+          this.notificationService.showInfo(response.data.message, 5000);
+          this.modalController.dismiss();
+        }else{
+          this.updating = false;
+          this.loading = false;
+          this.notificationService.showError(response.data.error.detail, 5000);
+          this.modalController.dismiss();
+        }
+      }, error =>{
+        this.updating = false;
+        this.loading = false;
+        this.notificationService.showError('Error updating users.', 5000);
+        this.modalController.dismiss();
+      });
   }
 
   cancel() {
-    this.router.navigate(['/home'], { replaceUrl: true });
+    // this.router.navigate(['/home'], { replaceUrl: true });
+    this.modalController.dismiss();
   }
 
 }

@@ -16,7 +16,7 @@
     <ion-spinner class="dot" color="dark"></ion-spinner>
   </div> -->
   <form [formGroup]="form">
-    <div class="m-3">
+    <div>
       <div>
         <!-- <h4>Patient Status:</h4> -->
       </div>
@@ -50,12 +50,12 @@
             </ion-col>
           </ion-row>
         </div>
-        <ion-button id="add-request" style="font-size: 20px !important;" class="mt-2" fill="outline" expand="block" (click)="openSearchableComponentOnModal('comment')">          
+        <ion-button id="add-request" style="font-size: 20px !important;" class="mt-2" fill="outline" expand="block" (click)="openSearchableComponentOnModal('comment')">
           <ion-icon style="margin-left: -7px;" (click)="openSearchableComponentOnModal('comment')" name="search" slot="end"></ion-icon>
         </ion-button>
         <ion-button class="mt-2" style="font-size: 20px !important;" color="danger" fill="outline" expand="block" (click)="clearRequest()">Clear</ion-button>
       </div>
-      
+
       <div class="my-2">
         <ion-grid>
           <!-- Operating Room and Visitor Companion -->
@@ -73,7 +73,7 @@
               </div>
             </ion-col>
             <ion-col style="padding-left: 50px;">
-              
+
             </ion-col>
           </ion-row>
           <ion-row>
@@ -161,8 +161,8 @@
                     <ion-input
                       aria-label="Telephone"
                       (ionInput)="toggleSMSNotifications($event)"
-                      [maxlength]="13" 
-                      type="tel" 
+                      [maxlength]="13"
+                      type="tel"
                       formControlName="phone">
                     </ion-input>
                   </ion-item>
@@ -173,7 +173,7 @@
               <div class="d-flex justify-content-start align-items-center paddinglefttoggle">
                 <ion-item lines="none">
                   <ion-toggle
-                  color="primary" 
+                  color="primary"
                   aria-label="Send SMS Notification"
                   (ionChange)="onChangeSMSToggle($event)"
                   [disabled]="this.disabledToggle"
@@ -241,12 +241,12 @@
             </ion-col>
           </ion-row>
           <br />
-          
+
         </ion-grid>
       </div>
 
 
-     
+
 
 
 
@@ -255,7 +255,7 @@
     </div>
   </form>
 
-         
+
   <ion-row class="rowButton">
     <ion-col>
       <div>
@@ -304,9 +304,12 @@
 </ion-modal>
 
 
-<div class="overlay" style="margin-top: 10px;" *ngIf="this.loading">
-  <div class="loader">
-     <div class="spinner spinner-bubble spinner-bubble-primary me-3"></div>
+
+
+  <div class="loading-overlay" *ngIf="this.loading">
+    <div class="loading-content">
+      <div class="loading-spinner"></div>
+      <div class="loading-text">{{this.updating ? 'Updating patient...' : 'Loading patient...'}}</div>
+      <div class="loading-subtext">Please wait</div>
+    </div>
   </div>
-  <!-- <h6>{{this.image_url ? 'Verifying your credentials...' : 'Preparing your experience...'}}</h6> -->
-</div>
