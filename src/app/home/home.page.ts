@@ -16,6 +16,8 @@ import { NotificationService } from '../api/notification.service';
 import { LoggerService } from '../api/logger.service';
 import { UpdatePatientPage } from '../update-patient/update-patient.page';
 import { NewPatientPage } from '../new-patient/new-patient.page';
+import { PatientChatComponent } from '../patient-chat/patient-chat.component';
+import { AudioService } from '../services/audio.service';
 
 @Component({
   selector: 'app-home',
@@ -70,6 +72,7 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
     private networkService: NetworkService,
     private notificationService: NotificationService,
     private appComponent: AppComponent,
+    private audioService: AudioService,
     private modalController: ModalController) {
 
     //listen for the network status
@@ -193,8 +196,10 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
 
         // const channel = `branch.${this.requestsService.config.branch.id}.room.${this.requestsService.config.waitingRoom.id}`;
         const channel = `rooms.${this.requestsService.config.waitingRoom.id}`;
+        const channelForChat = `branch.${this.requestsService.config.branch.id}.room.${this.requestsService.config.waitingRoom.id}`;
 
         console.log('this.laravelEcho', this.laravelEcho);
+
 
         this.laravelEcho?.private(channel).listen('.patient.created',async (e: any) => {
           console.log(e);
@@ -220,9 +225,107 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
           }
         });
 
+
+        this.laravelEcho.channel(channelForChat).listen('.chat.message.created', (e: any) => {
+          console.log(e);
+          console.log('Received chat message event:', e);
+          console.log('mensaje recibido');
+          
+          if (this.networkStatus === "ONLINE" && !this.viewYesterdaysPatients) {
+              if (e.message.sender_type == "App\\Models\\Patients") {
+                
+                console.log(e);
+                
+              }           
+          }
+        });
+
       });
     });
   }
+
+  async playAudio(){
+    await this.audioService.playSound('notification', '');
+  }
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   ngOnDestroy() {
     if (this.laravelEcho) {
@@ -377,6 +480,27 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
         this.loading = false;
     }
   }
+
+    async goToPatientChat(patient: any) {
+      this.loading = true;
+      const modal = await this.modalController.create({
+        component: PatientChatComponent,
+        componentProps: { patient },
+        cssClass: 'chat-modal',
+      });
+
+      await modal.present();
+
+      const { data } = await modal.onDidDismiss();
+      this.loading = false;
+      // Si el chat devuelve un nuevo contador, actualizar el paciente
+      if (data && typeof data.chat_unread_count === 'number') {
+        const idx = this.patients.findIndex((p: any) => p.id === patient.id);
+        if (idx > -1) {
+          this.patients[idx].chat_unread_count = data.chat_unread_count;
+        }
+      }
+    }
 
   editRoom(room: any, index: number) {
     const assignedPatients = this.patients.filter(p => { return p.operating_room_id === room.id });

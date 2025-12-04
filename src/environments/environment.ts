@@ -265,5 +265,7 @@ export const environment = {
   waiting_room_id: 'waiting_room_id',
   notifications: '/notifications',
   stats: '/stats',
-  rooms: '/rooms'
+  rooms: '/rooms',
+  chatSms: '/chat-sms',
+  messages: '/messages'
 };

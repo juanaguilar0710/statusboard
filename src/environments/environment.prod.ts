@@ -17,13 +17,13 @@ export const environment = {
 
   broadcasting: {
     driver: 'pusher', // 'socket.io',
-    //host: 'https://api.dtouchmedia.cloud' //prod
-    host: 'https://api.dtouchmedia.com' //dev
+    host: 'https://api.dtouchmedia.cloud' //prod
+    //host: 'https://api.dtouchmedia.com' //dev
   },
 
   pusher: {
-   //key: 'e72d8c13b0aa1e06c27d',//prod
-   key: '2889bc5e0828ce2dabb2', //dev
+   key: 'e72d8c13b0aa1e06c27d',//prod
+   //key: '2889bc5e0828ce2dabb2', //dev
     cluster: 'us2',
     forceTLS: true
   },
@@ -225,16 +225,16 @@ export const environment = {
 
 
   // url: 'https://api.dtouchmedia.com',
-  //url: 'https://api.dtouchmedia.cloud', //prod
-  url: 'https://api.dtouchmedia.dev', //dev
+  url: 'https://api.dtouchmedia.cloud', //prod
+  //url: 'https://api.dtouchmedia.dev', //dev
   //url: 'https://api.dev.dtouchmedia.cloud',
   oauth: '/oauth',
   token: '/token',
     oauthObj:{
-    //clientId: 'a01efb9a-822e-410a-bb89-3e20f5f606aa', //prod
-    clientId: '9f49cec9-7d3b-4ae1-a211-c0b19225e42c',//dev
-    //clientSecret: 'RYGwzJo2Io4Q3nfbykeH9xEpCv8nV4qzcyXrDzMx', //prod
-    clientSecret: 'UGIJqcPJaXxCmY7tAmGKaBNsqeY0pxV9j008KGvd', //dev
+    clientId: 'a01efb9a-822e-410a-bb89-3e20f5f606aa', //prod
+    //clientId: '9f49cec9-7d3b-4ae1-a211-c0b19225e42c',//dev
+    clientSecret: 'RYGwzJo2Io4Q3nfbykeH9xEpCv8nV4qzcyXrDzMx', //prod
+    //clientSecret: 'UGIJqcPJaXxCmY7tAmGKaBNsqeY0pxV9j008KGvd', //dev
     grantType: 'password',
     grantTypeRefresh: 'refresh_token',
   },
@@ -265,5 +265,7 @@ export const environment = {
   waiting_room_id: 'waiting_room_id',
   notifications: '/notifications',
   stats: '/stats',
-  rooms: '/rooms'
+  rooms: '/rooms',
+  chatSms: '/chat-sms',
+  messages: '/messages'
 };

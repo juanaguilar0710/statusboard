@@ -1,0 +1,74 @@
+
+<div class="chat-container">
+  <div class="chat-header">
+    {{ patient?.fullName?.toUpperCase() || 'COMPANION' }}
+  </div>
+
+  <div #scrollMe class="chat-messages">
+    <div class="loading-overlay" *ngIf="loading">
+      <div class="loading-content">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Loading messages...</div>
+        <div class="loading-subtext">Please wait</div>
+      </div>
+    </div>
+
+    <ng-container *ngFor="let msg of messages">
+      <!-- Mensaje System -->
+      <div *ngIf="msg.sender_id === 0" class="message-row message-right">
+        <div class="avatar">
+          <img [src]="msg.sender_image_url" alt="System" />
+        </div>
+        <div class="bubble bubble-system">
+          <span class="sender">{{ msg.sender_name }}</span>
+          <span class="message-text">{{ msg.body }}</span>
+          <span class="message-time">{{ msg.created_at | date:'shortTime' }}</span>
+        </div>
+      </div>
+
+      <!-- Mensaje Paciente -->
+      <div *ngIf="msg.sender_type === 'App\\Models\\Patients' && patient.id === msg.sender_id" class="message-row message-left" (visibilityChange)="onVisibilityChange(msg)">
+        <div class="avatar">
+          <img [src]="msg.sender_image_url" alt="Paciente" />
+        </div>
+        <div class="bubble bubble-patient">
+          <span class="sender">{{ msg.sender_name }}</span>
+          <span class="message-text">{{ msg.body }}</span>
+          <span class="message-time-patient">{{ msg.created_at | date:'shortTime' }}</span>
+        </div>
+      </div>
+
+      <!-- Mensaje Yo -->
+      <div *ngIf="msg.sender_type === 'App\\Models\\User' && msg.sender_id === authUser.user.id" class="message-row message-right">
+        <div class="avatar">
+          <img [src]="msg.sender_image_url" alt="You" />
+        </div>
+        <div class="bubble bubble-me">
+          <span class="sender">You</span>
+          <span class="message-text">{{ msg.body }}</span>
+          <span class="message-time">{{ msg.created_at | date:'shortTime' }}</span>
+        </div>
+      </div>
+
+      <!-- Mensaje Compañero -->
+      <div *ngIf="msg.sender_type === 'App\\Models\\User' && msg.sender_id !== authUser.user.id" class="message-row message-right">
+        <div class="avatar">
+          <img [src]="msg.sender_image_url" alt="Companion" />
+        </div>
+        <div class="bubble bubble-me">
+          <span class="sender">{{ msg.sender_name }}</span>
+          <span class="message-text">{{ msg.body }}</span>
+          <span class="message-time">{{ msg.created_at | date:'shortTime' }}</span>
+        </div>
+      </div>
+    </ng-container>
+  </div>
+  <div class="chat-input">
+    <input [(ngModel)]="newMessage" maxlength="120" placeholder="Type a message..." (keyup.enter)="sendMessage()" />
+    <button (click)="sendMessage()">Send</button>
+    <button class="close" (click)="onNoClick()">Close</button>
+  </div>
+  <div class="characters-left">
+    Characters left: {{ 120 - (newMessage.length || 0) }}
+  </div>
+</div>

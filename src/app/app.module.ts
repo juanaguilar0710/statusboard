@@ -7,7 +7,8 @@ import { AppComponent } from './app.component';
 import { AppRoutingModule } from './app-routing.module';
 import { NextToSurgeryComponent } from './next-to-surgery/next-to-surgery.component';
 import { IonicStorageModule } from '@ionic/storage-angular';
-import { ReactiveFormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { PatientChatModule } from './patient-chat/patient-chat.module';
 import { NgxMaskDirective, NgxMaskPipe, provideNgxMask } from 'ngx-mask';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { IonicGestureConfig } from './ionicGestureConfig';
@@ -36,7 +37,9 @@ import { LoggingInterceptor } from './interceptor/logging.interceptor';
     }),
     AppRoutingModule,
     HammerModule,
+    FormsModule,
     ReactiveFormsModule,
+    PatientChatModule,
     NgxMaskDirective,
     NgxMaskPipe,
     BrowserAnimationsModule,
