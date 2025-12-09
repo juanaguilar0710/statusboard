@@ -20,23 +20,24 @@
       <div>
         <!-- <h4>Patient Status:</h4> -->
       </div>
-      <div *ngIf="!loading">
+      <app-status-buttons #appStatusButtons *ngIf="patient.id && !loading" [statusList]="statuses" [patient]="patient" (selectedStatus)="updateStatus($event)"></app-status-buttons>
+      <!-- <div *ngIf="!loading" class="margintarjeta">
         <div class="d-flex overflow-auto">
           <div *ngFor="let status of statuses"
             class="cards-container text-center d-flex justify-content-center align-items-center"
             [style]="{'background-color': status.colorHex, 'color': status.textColor}" [ngClass]="{'disabled' : status.disabled}"role="button" [id]="'status'+status.id"
             (click)="updateStatus(status)">{{status.name}}</div>
         </div>
-      </div>
+      </div> -->
       <div class="d-flex align-items-end my-3">
         <div class="w-100">
           <ion-row>
             <ion-col>
               <div class="d-flex">
                 <div>
-                  <h4>Request:</h4>
+                  <h4>Make a Request:</h4>
                 </div>
-                <ion-item class="w-100" style="margin-top: -10px;">
+                <ion-item style="margin-top: -10px; width: 85%;">
                   <ion-input
                     [id]="'searchCommentsInput'"
                     maxlength="70"
@@ -92,7 +93,7 @@
             </ion-col>
             <ion-col style="padding-left: 50px;">
               <div>
-                <h4 class="visitor">Visitor Companion</h4>
+                <h4 class="visitor">Family Information</h4>
               </div>
             </ion-col>
           </ion-row>

@@ -1,0 +1,28 @@
+<div *ngIf="statusList.length > 0" class="row justify-content-center now" style="margin-top: 5px;">
+ 
+  <div class="col-md-2">
+    <button mat-raised-button *ngIf="valid(selectedIndex - 2)" (click)="handle(selectedIndex - 2)" type="button" [ngClass]="getButtonClass(selectedIndex - 2)" class="btn btn-lg btn-block">
+      <span [innerHTML]="getHtmlName(statusList[selectedIndex - 2].name)"></span>
+    </button>
+  </div>
+  <div class="col-md-2">
+    <button mat-raised-button *ngIf="valid(selectedIndex - 1)" (click)="handle(selectedIndex - 1)" type="button" [ngClass]="getButtonClass(selectedIndex - 1)" class="btn btn-lg btn-block">
+      <span [innerHTML]="getHtmlName(statusList[selectedIndex - 1].name)"></span>
+    </button>
+  </div>
+  <div class="col-md-2">
+    <button mat-raised-button *ngIf="valid(selectedIndex)" type="button" class="btn btn-current btn-lg btn-block">
+      <span [innerHTML]="getHtmlName(statusList[selectedIndex].name)"></span>
+    </button>
+  </div>
+  <div class="col-md-2">
+    <button mat-raised-button *ngIf="valid(selectedIndex + 1)" (click)="handle(selectedIndex + 1)" type="button" [ngClass]="getButtonClass(selectedIndex + 1)" class="btn btn-lg btn-block">
+      <span [innerHTML]="getHtmlName(statusList[selectedIndex + 1].name)"></span>
+    </button>
+  </div>
+  <div class="col-md-2">
+    <button mat-raised-button *ngIf="valid(selectedIndex + 2)" (click)="handle(selectedIndex + 2)" type="button" [ngClass]="getButtonClass(selectedIndex + 2)" class="btn btn-lg btn-block">
+      <span [innerHTML]="getHtmlName(statusList[selectedIndex + 2].name)"></span>
+    </button>
+  </div>
+</div>

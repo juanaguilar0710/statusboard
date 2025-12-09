@@ -104,17 +104,26 @@
                 <ion-card-content>
                   <!-- Llama a la función en el archivo TS para filtrar los pacientes -->
                   <div *ngFor="let patient of getPatientsGroup(room.name)">
-                    <ion-row style="height: 22px;" [ngClass]="{'highlight-updated': isPatientUpdated(patient.id)}">
+                    <ion-row style="height: 22px;" class="ion-no-wrap" [ngClass]="{'highlight-updated': isPatientUpdated(patient.id)}">
+                      <ion-col size="1.5" class="textCardPatients text-ellipsis" style="text-align: left !important;"><strong>{{patient.recovery_room}}</strong></ion-col>
                       <!-- <ion-col size="1" class="textCardPatients" style="padding-right: 0px;" [ngClass]="{'canceled': patient.visit_canceled_at}"><strong>{{patient.age}}y</strong></ion-col> -->
-                      <ion-col size="3" class="textCardPatients text-ellipsis" style="margin-right: 11px;" [ngClass]="{ 'surgery': patient.status.type === 'surgery', 'holding': patient.status.type === 'holding', 'nextSurgery': patient.status.type === 'next_to_surgery'}"><strong>({{patient.age}}y) {{patient.fullName}}</strong></ion-col>
+                      <ion-col size="3" class="textCardPatients text-ellipsis" style="margin-right: 0px;" [ngClass]="{ 'surgery': patient.status.type === 'surgery', 'holding': patient.status.type === 'holding', 'nextSurgery': patient.status.type === 'next_to_surgery'}"><strong>({{patient.age}}y) {{patient.fullName}}</strong></ion-col>
                  <!-- <ion-col size="3" class="textCardPatients text-ellipsis" style="margin-right: 11px;" [ngClass]="{ 'surgery': patient.status.type === 'surgery', 'holding': patient.status.type === 'holding', 'nextSurgery': patient.status.type === 'next_to_surgery', 'canceled': patient.visit_canceled_at}"><strong>{{patient.fullName}}<strong>  ({{patient.age}}y)</strong></strong></ion-col> -->
-                      <ion-col size="4" class="textCardPatients text-ellipsis" style="text-align: left !important;" [ngClass]="{'canceled': patient.visit_canceled_at}"><strong>{{patient.procedure_name}}</strong></ion-col>
-                      <ion-col size="3" class="textCardPatients text-ellipsis" style="text-align: left !important;" [ngClass]="{'canceled': patient.visit_canceled_at}"><strong>{{patient.surgeon_name}}</strong></ion-col>
-                      <ion-col size="1" class="textCardPatients text-ellipsis" style="text-align: center !important;" [ngClass]="{'canceled': patient.visit_canceled_at}">
-
-                        <div class="icon-container" style="margin-top: -3px;" *ngIf="!patient.phone_national_format">
+                      <ion-col size="3.7" class="textCardPatients text-ellipsis" style="text-align: left !important;" [ngClass]="{'canceled': patient.visit_canceled_at, 'maxwidth': patient.phone_national_format}"><strong>{{patient.procedure_name}}</strong></ion-col>
+                      <ion-col size="auto" class="textCardPatients text-ellipsis" style="text-align: left !important;" [ngClass]="{'canceled': patient.visit_canceled_at}"><strong>{{patient.surgeon_name}}</strong><img *ngIf="!patient.phone_national_format" src="assets/icon/Phone.png" style="margin-left: 10px; width: 15px; margin-top: -10px;"></ion-col>
+                      <!-- <ion-col size="auto" *ngIf="!patient.phone_national_format" class="textCardPatients text-ellipsis" style="text-align: center !important;" [ngClass]="{'canceled': patient.visit_canceled_at}">
+                        <div class="icon-container" style="margin-top: -3px;">
                           <img src="assets/icon/Phone.png" style="width: 30%;">
                         </div>
+                      </ion-col> -->
+                      <ion-col *ngIf="patient.phone_national_format && patient.phone_error" size="auto" class="textCardPatients text-ellipsis" style="text-align: center !important;">
+                        <!-- <ion-icon name="phone-portrait-outline" aria-label="icon"></ion-icon> -->
+                         <img src="assets/icon/smartphone.png" style="margin-left: 10px; width: 15px; margin-top: -10px;">
+                      </ion-col>
+                      <ion-col size="auto" *ngIf="patient.has_note" class="textCardPatients text-ellipsis" style="text-align: center !important;" [ngClass]="{'canceled': patient.visit_canceled_at}">
+                        <!-- <ion-icon style="margin-left: -6.7px;width: 19px;height: 32px;margin-top: -10px;" name="chatbox-ellipses-outline" aria-label="icon"></ion-icon> -->
+                        <img src="assets/icon/notepad.png" style="width: 15px; margin-top: -10px;">
+                          <!-- *ngIf="patient.has_note" -->
                       </ion-col>
                     </ion-row>
                   </div>
@@ -318,8 +327,14 @@
     <!-- <ion-col size="1" style="display: flex; align-items: center;" *ngIf="this.totalPagesWithPatients > 1 || totalPatientPages > 1"> -->
       <!-- <ion-col size="1" style="display: flex; align-items: center;"> -->
       <span class="textUnderLine">TIMER: {{this.countdown}}</span>
-    </ion-col>
+    </ion-col> 
 
   </ion-row>
+
+    <div style="position: absolute; bottom: 5px; right: 15px; display: flex; align-items: center;">
+      <h6 class="info" style="font-size: 15px !important; color: #0d6efd;">Version: {{version}}</h6>
+    </div>
+
+
 </ion-content>
 

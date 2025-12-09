@@ -57,6 +57,8 @@ export class NewPatientPage implements AfterViewInit {
 
     this.requestsService.createPatient(this.form.value).subscribe(
       (response: any) => {
+        console.log(response);
+        
         this.loading = false;
         if (response.status === 200) {
           this.form.reset();
@@ -64,7 +66,7 @@ export class NewPatientPage implements AfterViewInit {
           this.creating = false;
           this.notificationService.showSuccess('Patient create succefull.',5000);
           // this.navController.navigateForward(['/home'], { replaceUrl: true, animated: false });
-          this.modalController.dismiss();
+          this.modalController.dismiss({ response: response.data } );
         }
 
         if (response.status === 500) {

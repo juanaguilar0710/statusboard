@@ -10,7 +10,7 @@ import { LocaldataService } from './api/localdata.service';
 import { BehaviorSubject } from 'rxjs';
 import { NotificationService } from './api/notification.service';
 import { Insomnia } from '@awesome-cordova-plugins/insomnia/ngx';
-import { Platform } from '@ionic/angular';
+import { ModalController, Platform } from '@ionic/angular';
 import { LoggerService } from './api/logger.service';
 
 @Component({
@@ -44,6 +44,7 @@ export class AppComponent implements OnInit{
     private storage: Storage,
     private localdataService: LocaldataService,
     private notificationService: NotificationService,
+    private modalController: ModalController,
     private platform: Platform
   ) {
     this.init();
@@ -223,6 +224,7 @@ export class AppComponent implements OnInit{
       this.inactivityTime++;
       this.timeRemaining$.next(this.maxInactivityTime - this.inactivityTime);
       if (this.inactivityTime >= this.maxInactivityTime) {
+        this.modalController.dismiss(null).then(() => true).catch(() => false);
         this.handleLogout();
         this.stopInactivityTracking();
       }

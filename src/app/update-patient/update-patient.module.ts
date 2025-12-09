@@ -7,6 +7,7 @@ import { IonicModule } from '@ionic/angular';
 import { UpdatePatientPageRoutingModule } from './update-patient-routing.module';
 
 import { UpdatePatientPage } from './update-patient.page';
+import { StatusButtonsComponent } from '../status-buttons/status-buttons.component';
 
 @NgModule({
   imports: [
@@ -14,7 +15,8 @@ import { UpdatePatientPage } from './update-patient.page';
     FormsModule,
     IonicModule,
     UpdatePatientPageRoutingModule,
-    ReactiveFormsModule
+    ReactiveFormsModule,
+    StatusButtonsComponent
   ],
   declarations: [UpdatePatientPage]
 })

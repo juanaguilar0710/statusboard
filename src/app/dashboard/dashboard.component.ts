@@ -58,6 +58,7 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
   totalGroups = 0;
   roomsWithPatients:any[] = []
   clicks = 0;
+  version: string = environment.version;
 
   // 🎤 Propiedades para manejo de voces
   availableVoices: any[] = [];
@@ -474,6 +475,15 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
             this.roomsWithPatients = this.roomsWithPatients.filter(room => room.name !== 'TO FOLLOW');
         }
         this.roomsWithPatients = this.roomsWithPatients.filter(room => room.patients && room.patients.length > 0);
+         // Ordenar las salas alfabéticamente por nombre
+        this.roomsWithPatients.sort((a, b) => {
+          // Si el id es string (ej: 'unassigned-room'), lo ponemos al final
+          if (typeof a.id === 'string' && typeof b.id === 'number') return 1;
+          if (typeof a.id === 'number' && typeof b.id === 'string') return -1;
+          if (typeof a.id === 'string' && typeof b.id === 'string') return a.id.localeCompare(b.id);
+          // Ambos son números
+          return a.id - b.id;
+        });
         return this.roomsWithPatients;
   }
   startCountdown() {
@@ -769,7 +779,7 @@ private async handlePatientEvent(type: 'updated' | 'created' | 'deleted', e: any
     this.laravelEcho?.leave(channel);
     const channelListeners = this.laravelEcho?.private(channel);
     channelListeners.listen('.patient.created', (e: any) => {console.log('entro evento'), this.handlePatientEvent('created', e), this.listPatients.push(e.patient);});
-    channelListeners.listen('.patient.deleted', (e: any) => {console.log('entro evento'), this.handlePatientEvent('deleted', e), this.listPatients = this.listPatients.filter((patient: any) => patient.id !== e.patient.id);});
+    channelListeners.listen('.patient.deleted', (e: any) => {console.log('entro evento'), this.listPatients = this.listPatients.filter((patient: any) => patient.id !== e.patient.id); this.handlePatientEvent('deleted', e)});
     channelListeners.listen('.patient.updated', (e: any) => {
       console.log('entro evento');
       const existingPatientIndex = this.listPatients.findIndex(p => p.id === e.patient.id);

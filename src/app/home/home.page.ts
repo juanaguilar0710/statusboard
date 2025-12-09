@@ -17,6 +17,7 @@ import { LoggerService } from '../api/logger.service';
 import { UpdatePatientPage } from '../update-patient/update-patient.page';
 import { NewPatientPage } from '../new-patient/new-patient.page';
 import { PatientChatComponent } from '../patient-chat/patient-chat.component';
+import { EditRoomComponent } from '../edit-room/edit-room.component';
 import { AudioService } from '../services/audio.service';
 
 @Component({
@@ -36,6 +37,7 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
   configuration: any = null;
   patients: any[] = [];
   patientsCopy: any[] = [];
+  allPatients: any[] = []; // Fuente de verdad
   filtering = false;
   filteredLetter: string | null = null;
   letters = this.getFirstLetterFromNames();
@@ -97,25 +99,18 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
   }
 
   async ngOnInit() {
-
-
-
     var token = await this.logger.getTokenAdmin();
     this.requestsService.setAdminToken(token);
-
       this.LocaldataService.setPatients(this.patients);
-
       this.appComponent.timeRemaining$.subscribe(time => {
         this.timeRemaining = time;
       });
       this.user = await this.LocaldataService.getUser();
       this.username = JSON.parse(localStorage.getItem('user')!);
       this.configuration = await this.LocaldataService.getConfiguration();
-
       if(this.configuration.aplication == '2'){
         this.router.navigate(['/dashboard'], { replaceUrl: true });
       }
-
       this.getTodaysPatientsFromLocal().then(resp => {
         this.storage.get('patient').then(response => {
           this.getOperatingRoomsFromStorageOrLoadFromServer();
@@ -140,27 +135,38 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
   }
 
   private updatePatientList(eventType: string, patient: any) {
-    const index = this.patients.findIndex((p: any) => p.id === patient.id);
+    // Actualiza la fuente de verdad
+    const index = this.allPatients.findIndex((p: any) => p.id === patient.id);
     switch(eventType) {
       case 'created':
         if (index === -1) {
-          this.patients.push(patient);
+          this.allPatients.push(patient);
         }
         break;
       case 'updated':
         if (index > -1) {
-          this.patients[index] = patient;
+          this.allPatients[index] = patient;
         }
         break;
       case 'deleted':
         if (index > -1) {
-          this.patients.splice(index, 1);
+          this.allPatients.splice(index, 1);
         }
         break;
     }
-    this.patientsCopy = this.patients;
+    this.patientsCopy = [...this.allPatients];
+    if (this.filtering && this.filteredLetter) {
+      this.patients = this.patientsCopy.filter(p => p.fullName.split(' ')[0].charAt(0).toUpperCase() === this.filteredLetter);
+    } else {
+      this.patients = [...this.patientsCopy];
+    }
+    this.patients = this.patients.sort((a, b) => {
+      if (!a.fullName) return 1;
+      if (!b.fullName) return -1;
+      return a.fullName.localeCompare(b.fullName);
+    });
     this.letters = this.getFirstLetterFromNames();
-    this.LocaldataService.setPatients(this.patients);
+    this.LocaldataService.setPatients(this.allPatients);
     this.requestsService.lastSync = new Date().toLocaleString();
   }
 
@@ -233,8 +239,15 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
           
           if (this.networkStatus === "ONLINE" && !this.viewYesterdaysPatients) {
               if (e.message.sender_type == "App\\Models\\Patients") {
-                
+
+                //buscar el paciente y aumentar el contador
                 console.log(e);
+                const patientIndex = this.patients.findIndex(p => p.id === e.message.sender_id);
+                console.log(patientIndex);
+                
+                this.patients[patientIndex].chat_has_message = true;
+                this.patients[patientIndex].chat_unread_count = this.patients[patientIndex].chat_unread_count + 1;
+                
                 
               }           
           }
@@ -248,85 +261,6 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
     await this.audioService.playSound('notification', '');
   }
 
-
-  
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   ngOnDestroy() {
     if (this.laravelEcho) {
       this.laravelEcho.disconnect();
@@ -336,10 +270,8 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
 
   getUserNames(role: any): string {
     if (role.persons.length > 0) {
-      // Retornar los nombres de los usuarios asignados separados por coma
       return role.persons.map((person:any) => person.full_name).join(', ');
     }
-    // Si no hay usuarios asignados
     return 'No asignado';
   }
 
@@ -376,8 +308,9 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
     this.updating = true;
     this.LocaldataService.getPatients().then(response => {
       if (response) {
-        this.patients = response;
-        this.patientsCopy = response;
+        this.allPatients = response;
+        this.patientsCopy = [...this.allPatients];
+        this.patients = [...this.patientsCopy];
         this.updating = false;
         this.letters = this.getFirstLetterFromNames();
         this.getTodaysPatientsFromServer(event);
@@ -396,20 +329,22 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
       }
       if (response.status === 200) {
         this.lastsync = new Date().toLocaleString();
-        this.patients = response.data;
-        this.patientsCopy = response.data;
+        this.allPatients = response.data;
+        this.patientsCopy = [...this.allPatients];
+        this.patients = [...this.patientsCopy];
         this.letters = this.getFirstLetterFromNames();
         this.LocaldataService.setPatients(response.data);
         this.viewYesterdaysPatients = yesterday;
       } else {
         this.notificationService.showInfo(response.data.message, 5000);
         if (response.status === 401) {
+          this.modalController.dismiss();
           Preferences.remove({ key: 'user' });
           this.router.navigate(['/pin'], { replaceUrl: true });
         }
       }
       this.updating = false;
-    }),(error:any) => {
+    },(error:any) => {
       if (event) {
         event.target.complete();
       }
@@ -420,26 +355,21 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
         });
         this.router.navigate([error.redirectUrl], { replaceUrl: true });
       }
-    };
+    });
   }
 
   filterPatients(letter: string) {
     if (this.filteredLetter === letter) {
       if (this.filtering) {
         this.filtering = false;
-        this.patients = this.patientsCopy;
+        this.patients = [...this.patientsCopy];
       } else {
         this.filtering = true;
-        this.patients = this.patients.filter(p => p.fullName.split(' ')[0].charAt(0).toUpperCase() === letter);
+        this.patients = this.patientsCopy.filter(p => p.fullName.split(' ')[0].charAt(0).toUpperCase() === letter);
       }
     } else {
-      if (this.filtering) {
-        this.patients = this.patientsCopy;
-        this.patients = this.patients.filter(p => p.fullName.split(' ')[0].charAt(0).toUpperCase() === letter);
-      } else {
-        this.filtering = true;
-        this.patients = this.patients.filter(p => p.fullName.split(' ')[0].charAt(0).toUpperCase() === letter);
-      }
+      this.filtering = true;
+      this.patients = this.patientsCopy.filter(p => p.fullName.split(' ')[0].charAt(0).toUpperCase() === letter);
     }
     this.filteredLetter = letter;
   }
@@ -457,8 +387,12 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
       component: NewPatientPage,
       cssClass: 'full-modal'
     });
+
     await modal.present();
-    await modal.onDidDismiss();
+    const { data } = await modal.onDidDismiss();
+
+    this.letters = this.patientsCopy?.map(p => p.fullName.split(' ')[0].charAt(0).toUpperCase()).filter((v, i, a) => a.indexOf(v) === i).sort();
+
   }
 
   toggleYesterday(event: any) {
@@ -475,8 +409,19 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
           componentProps: { patient },
           cssClass: 'full-modal'
         });
+
+        console.log(this.patients);
+        console.log(this.patientsCopy);
+        
         await modal.present();
         await modal.onDidDismiss();
+
+        console.log(this.patients);
+        console.log(this.patientsCopy);
+
+        this.letters = this.patientsCopy?.map(p => p.fullName.split(' ')[0].charAt(0).toUpperCase()).filter((v, i, a) => a.indexOf(v) === i).sort();
+        //this.filterPatients(this.filteredLetter!);
+        
         this.loading = false;
     }
   }
@@ -486,7 +431,7 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
       const modal = await this.modalController.create({
         component: PatientChatComponent,
         componentProps: { patient },
-        cssClass: 'chat-modal',
+        cssClass: 'full-modal',
       });
 
       await modal.present();
@@ -499,13 +444,13 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
         if (idx > -1) {
           this.patients[idx].chat_unread_count = data.chat_unread_count;
         }
-      }
+      }      
     }
 
-  editRoom(room: any, index: number) {
-    const assignedPatients = this.patients.filter(p => { return p.operating_room_id === room.id });
-    const availablePatients = this.patients.filter(p => { return p.operating_room_id === null });
-    this.navController.navigateForward(['/edit-room'], { state: { room, assignedPatients, availablePatients }, replaceUrl: false });
+  async editRoom(room: any, index: number) {
+    const assignedPatients = this.patients.filter(p => p.operating_room_id === room.id);
+    const availablePatients = this.patients.filter(p => p.operating_room_id === null);
+    this.navController.navigateForward(['/edit-room'], { state: { room, assignedPatients, availablePatients }, replaceUrl: true });
   }
 
   formatTime(time: string) {

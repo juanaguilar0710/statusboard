@@ -62,75 +62,7 @@ ion-col {
 
 
 
-/* loading */
-.loader {
-  position: relative;
-  width: 164px;
-  height: 164px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column; /* Para que los elementos hijos se alineen verticalmente */
-}
 
-.loader::before , .loader::after {
-  content: '';
-  position: absolute;
-  width: 40px;
-  height: 40px;
-  background-color: #fff;
-  left: 50%;
-  top: 50%;
-  animation: rotate 1s ease-in infinite;
-  transform: translate(-50%, -50%);
-}
-
-.loader::after {
-  width: 20px;
-  height: 20px;
-  background-color: #0093ff;
-  animation: rotate 1s ease-in infinite, moveY 1s ease-in infinite;
-}
-
-h6 {
-  color: white; /* Asegura que el texto sea visible */
-  margin-top: 20px; /* Ajusta el margen superior para dar espacio entre el spinner y el texto */
-  text-align: center;
-  font-size: 25px;
-}
-
-/* Keyframes para las animaciones */
-@keyframes moveY {
-  0%, 100% { top: 10%; }
-  45%, 55% { top: 59%; }
-  60% { top: 40%; }
-}
-
-@keyframes rotate {
-  0% { transform: translate(-50%, -100%) rotate(0deg) scale(1, 1); }
-  25% { transform: translate(-50%, 0%) rotate(180deg) scale(1, 1); }
-  45%, 55% { transform: translate(-50%, 100%) rotate(180deg) scale(3, 0.5); }
-  60% { transform: translate(-50%, 100%) rotate(180deg) scale(1, 1); }
-  75% { transform: translate(-50%, 0%) rotate(270deg) scale(1, 1); }
-  100% { transform: translate(-50%, -100%) rotate(360deg) scale(1, 1); }
-}
-
-/* Overlay */
-.overlay {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.76);
-  z-index: 9999;
-  flex-direction: column; /* Asegura que el contenido esté alineado en columna */
-}
-
-/* fin loading */
 
 .whitNumbers{
   min-width: 350px; 
@@ -151,3 +83,60 @@ h6 {
     }
 
 }
+
+
+
+
+
+
+
+/* loading */
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(240, 240, 240, 0.95);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  backdrop-filter: blur(2px);
+
+  .loading-content {
+    text-align: center;
+
+    .loading-spinner {
+      width: 60px;
+      height: 60px;
+      border: 4px solid #e3f2fd;
+      border-top: 4px solid #007bff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 20px;
+      margin-left: 30%;
+    }
+
+    .loading-text {
+      font-size: 1.2rem;
+      font-weight: 500;
+      color: #007bff;
+      margin-bottom: 8px;
+    }
+
+    .loading-subtext {
+      font-size: 0.9rem;
+      color: #666;
+      opacity: 0.8;
+    }
+  }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* fin loading */

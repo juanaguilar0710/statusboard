@@ -151,7 +151,7 @@ export class UpdatePatientPage implements OnInit, OnDestroy {
       this.disabledToggle = false;
     }else{
       this.disabledToggle = true;
-    }
+    }   
 
   }
 
@@ -392,6 +392,9 @@ export class UpdatePatientPage implements OnInit, OnDestroy {
     this.patient.recovery_room = this.form.value.recovery_room;
     this.patient.companion_name = this.form.value.companion_name;
     this.patient.phone = this.form.value.phone;
+    this.patient.phone_formatted = null
+    this.patient.phone_national_format = null
+
     this.patient.note = this.form.value.note;
     this.patient.has_note = this.form.value.note ? true : false;
     this.patient.fullName = this.form.value.fullName;
@@ -404,18 +407,18 @@ export class UpdatePatientPage implements OnInit, OnDestroy {
           this.updating = false;
           this.loading = false;
           this.notificationService.showInfo(response.data.message, 5000);
-          this.modalController.dismiss();
+          this.modalController.dismiss({ patient: this.patient });
         }else{
           this.updating = false;
           this.loading = false;
           this.notificationService.showError(response.data.error.detail, 5000);
-          this.modalController.dismiss();
+          this.modalController.dismiss({ patient: this.patient });
         }
       }, error =>{
         this.updating = false;
         this.loading = false;
         this.notificationService.showError('Error updating users.', 5000);
-        this.modalController.dismiss();
+        this.modalController.dismiss({ patient: this.patient });
       });
     });
   }
@@ -461,24 +464,24 @@ export class UpdatePatientPage implements OnInit, OnDestroy {
           this.updating = false;
           this.loading = false;
           this.notificationService.showInfo(response.data.message, 5000);
-          this.modalController.dismiss();
+          this.modalController.dismiss({ patient: this.patient });
         }else{
           this.updating = false;
           this.loading = false;
           this.notificationService.showError(response.data.error.detail, 5000);
-          this.modalController.dismiss();
+          this.modalController.dismiss({ patient: this.patient });
         }
       }, error =>{
         this.updating = false;
         this.loading = false;
         this.notificationService.showError('Error updating users.', 5000);
-        this.modalController.dismiss();
+        this.modalController.dismiss({ patient: this.patient });
       });
   }
 
   cancel() {
     // this.router.navigate(['/home'], { replaceUrl: true });
-    this.modalController.dismiss();
+    this.modalController.dismiss({ patient: this.patient });
   }
 
 }

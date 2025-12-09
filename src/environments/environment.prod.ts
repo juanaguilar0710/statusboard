@@ -1,8 +1,8 @@
 export const environment = {
-  version: "2.0.0.18",
+  version: "2.0.0.23",
   production: false,
   resetPin: '1111',
-  maxInactivityTime: 20,
+  maxInactivityTime: 60,
   timeSaveScreen: 3,
 
   currentPage: 0,
@@ -224,10 +224,8 @@ export const environment = {
   ],
 
 
-  // url: 'https://api.dtouchmedia.com',
   url: 'https://api.dtouchmedia.cloud', //prod
   //url: 'https://api.dtouchmedia.dev', //dev
-  //url: 'https://api.dev.dtouchmedia.cloud',
   oauth: '/oauth',
   token: '/token',
     oauthObj:{

@@ -152,6 +152,12 @@ ion-content {
       color: #737373;
     }
 
+    .maxwidth{
+      max-width: 160px !important;
+      width: 160px !important;
+      flex: 160px !important;
+    }
+
     .onlineTittle{
       font-weight: bold;
       font-size: 25px;

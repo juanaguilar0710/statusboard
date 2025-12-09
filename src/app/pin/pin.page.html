@@ -97,11 +97,12 @@
   </div>
 
 
-  <div class="overlay" style="margin-top: 10px;" *ngIf="this.loading">
-    <div class="loader">
-       <div class="spinner spinner-bubble spinner-bubble-primary me-3"></div>
+  <div class="loading-overlay" *ngIf="this.loading">
+    <div class="loading-content">
+      <div class="loading-spinner"></div>
+      <div class="loading-text">{{this.image_url ? 'Verifying your credentials...' : 'Preparing your experience...'}}</div>
+      <div class="loading-subtext">Please wait</div>
     </div>
-    <h6>{{this.image_url ? 'Verifying your credentials...' : 'Preparing your experience...'}}</h6>
   </div>
 
 
