@@ -151,7 +151,7 @@ export class UpdatePatientPage implements OnInit, OnDestroy {
       this.disabledToggle = false;
     }else{
       this.disabledToggle = true;
-    }   
+    }
 
   }
 
@@ -374,6 +374,8 @@ export class UpdatePatientPage implements OnInit, OnDestroy {
   }
 
   async updatePatient() {
+    console.log(this.form.value);
+
     this.updating = true;
     this.loading = true;
     this.patient.status = this.form.value.status_Id ? this.statuses.find((status: any) => { return status.id == this.form.value.status_Id }) : null;
@@ -381,7 +383,7 @@ export class UpdatePatientPage implements OnInit, OnDestroy {
     this.patient.status_Id = this.form.value.status_Id;
     this.patient.comment_Id = this.form.value.comment_id;
     this.patient.comment_custom = this.form.value.comment_id ? this.comments.find((comment: any) => { return comment.id == this.form.value.comment_id })?.full_description : this.form.get('comment_custom')?.value ? this.form.get('comment_custom')?.value : null;
-    this.patient.operating_room_id = this.form.value.operating_room_id;
+    this.patient.operating_room_id = this.form.value.operating_room_id ? this.form.value.operating_room_id : null;
     this.patient.operating_room_name = this.form.value.operating_room_id ? this.operatingRooms.find((room: any) => { return room.id == this.form.value.operating_room_id })?.name : this.form.get('operating_room_name')?.value ? this.form.get('operating_room_name')?.value : null;
     this.patient.surgeon_id = this.form.value.surgeon_id;
     this.patient.surgeon_name = this.form.value.surgeon_id ? this.surgeons.find((surgeon: any) => { return surgeon.id == this.form.value.surgeon_id })?.full_name : this.form.get('surgeon_name')?.value ? this.form.get('surgeon_name')?.value : null;

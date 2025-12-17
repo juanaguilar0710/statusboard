@@ -43,7 +43,7 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
   deviceWasOffline: boolean = false;
   updating: boolean = true;
   patientsCopy: any[] = [];
-  lastsync: string = new Date().toLocaleString();
+  lastsync = new Date();
   viewYesterdaysPatients: boolean = false;
   currentDate: Date = new Date();
   currentTime: string = '';
@@ -77,6 +77,7 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
   logDetails: string = '';
   isRefreshing = false;
   isLoading = true; // Variable para controlar el estado de loading
+  totales:any;
   private dataLoaded = false; // Flag para controlar si los datos fueron cargados
   private viewChecked = false; // Flag para evitar bucles infinitos en ngAfterViewChecked
   private readonly TOKEN_EXPIRATION_KEY_Admin = 'auth_token_expiration_admin';
@@ -195,6 +196,12 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
       });
      await this.updateTime();
      await this.startlists();
+
+     this.requestsService.patientsStats(this.requestsService.config.branch.id, this.requestsService.config.waitingRoom.id).subscribe(resp => {
+      console.log('respuesta stats', resp);
+      this.totales = resp;
+
+     })
   }
 
   ngAfterViewChecked() {
@@ -381,7 +388,7 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
               updatedPatients.push(newPatient);
             }
           });
-          this.lastsync = new Date().toLocaleString();
+          this.lastsync = new Date();
           this.patients = [...filteredPatients];
           this.listPatients = response.data;
           this.patientsCopy = [...filteredPatients];
@@ -1097,7 +1104,7 @@ private isPusherConnected(): boolean {
           const updatedPatient: any = patient;
           this.patients.push(updatedPatient);
           this.patientsCopy = [...this.patients];
-          this.lastsync = new Date().toLocaleString();
+          this.lastsync = new Date();
           this.LocaldataService.setPatients(this.patients);
           this.addUpdatedPatient(updatedPatient);
         }
@@ -1129,14 +1136,14 @@ private isPusherConnected(): boolean {
           }
 
           this.patientsCopy = [...this.patients];
-          this.lastsync = new Date().toLocaleString();
+          this.lastsync = new Date();
           this.LocaldataService.setPatients(this.patients);
         } else if (shouldBeVisible) {
           // Paciente no existe en la lista pero debería estar visible - agregarlo
           console.log('Agregando paciente al listado - nuevo estado válido:', patient.status_Id);
           this.patients.push(patient);
           this.patientsCopy = [...this.patients];
-          this.lastsync = new Date().toLocaleString();
+          this.lastsync = new Date();
           this.LocaldataService.setPatients(this.patients);
           this.addUpdatedPatient(patient);
         }
@@ -1151,7 +1158,7 @@ private isPusherConnected(): boolean {
     this.patientsCopy = [...this.patients];
     this.LocaldataService.setPatients(this.patients);
     this.requestsService.lastSync = new Date().toLocaleString();
-    this.lastsync = new Date().toLocaleString();
+    this.lastsync = new Date();
   }
   ngOnDestroy() {
     this.stopCarousel();  // Detener el carousel cuando el componente se destruya

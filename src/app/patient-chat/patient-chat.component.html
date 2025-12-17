@@ -51,7 +51,7 @@
       </div>
 
       <!-- Mensaje Compañero -->
-      <div *ngIf="msg.sender_type === 'App\\Models\\User' && msg.sender_id !== authUser.user.id" class="message-row message-right">
+      <div *ngIf="msg.sender_type === 'App\\Models\\User' && msg.sender_id !== authUser.user.id && msg.sender_id !== 0" class="message-row message-right">
         <div class="avatar">
           <img [src]="msg.sender_image_url" alt="Companion" />
         </div>

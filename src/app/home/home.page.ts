@@ -200,7 +200,6 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
          }
 
 
-        // const channel = `branch.${this.requestsService.config.branch.id}.room.${this.requestsService.config.waitingRoom.id}`;
         const channel = `rooms.${this.requestsService.config.waitingRoom.id}`;
         const channelForChat = `branch.${this.requestsService.config.branch.id}.room.${this.requestsService.config.waitingRoom.id}`;
 
@@ -234,22 +233,12 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
 
         this.laravelEcho.channel(channelForChat).listen('.chat.message.created', (e: any) => {
           console.log(e);
-          console.log('Received chat message event:', e);
-          console.log('mensaje recibido');
-          
           if (this.networkStatus === "ONLINE" && !this.viewYesterdaysPatients) {
               if (e.message.sender_type == "App\\Models\\Patients") {
-
-                //buscar el paciente y aumentar el contador
-                console.log(e);
                 const patientIndex = this.patients.findIndex(p => p.id === e.message.sender_id);
-                console.log(patientIndex);
-                
                 this.patients[patientIndex].chat_has_message = true;
                 this.patients[patientIndex].chat_unread_count = this.patients[patientIndex].chat_unread_count + 1;
-                
-                
-              }           
+              }
           }
         });
 
@@ -282,12 +271,9 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
 
       this.LocaldataService.getOperatingRooms().then((response: any) => {
         this.operatingRooms = response;
-        console.log('Operating Rooms from Local:', this.operatingRooms);
-
         this.requestsService.getOperatingRooms().subscribe((response: any) => {
           this.loadingRooms = false;
           this.operatingRooms = response.data.data;
-          console.log('Operating Rooms from Server:', this.operatingRooms);
           this.getRandomColor(this.operatingRooms);
           this.LocaldataService.setOperatingRooms(this.operatingRooms);
         });
@@ -409,19 +395,9 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
           componentProps: { patient },
           cssClass: 'full-modal'
         });
-
-        console.log(this.patients);
-        console.log(this.patientsCopy);
-        
         await modal.present();
         await modal.onDidDismiss();
-
-        console.log(this.patients);
-        console.log(this.patientsCopy);
-
         this.letters = this.patientsCopy?.map(p => p.fullName.split(' ')[0].charAt(0).toUpperCase()).filter((v, i, a) => a.indexOf(v) === i).sort();
-        //this.filterPatients(this.filteredLetter!);
-        
         this.loading = false;
     }
   }
@@ -444,7 +420,7 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
         if (idx > -1) {
           this.patients[idx].chat_unread_count = data.chat_unread_count;
         }
-      }      
+      }
     }
 
   async editRoom(room: any, index: number) {

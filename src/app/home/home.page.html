@@ -63,7 +63,7 @@
 
             <ion-col size="9" class="visitCancel">
               <div class="w-100 pt-1" *ngIf="!patient.visit_canceled_at" style="min-width: 0;">
-                <h1 class="operating_room_name" style="color: #0d6efd;">{{patient.operating_room_name === 'None' ? '' : patient.operating_room_name}}</h1>
+                <h1 class="operating_room_name" style="color: #0d6efd;">{{patient.operating_room_name === 'None' ? 'TO FOLLOW' : patient.operating_room_name}}</h1>
                 <ion-grid>
                   <ion-row>
                     <ion-col class="elipsis">
@@ -108,10 +108,10 @@
 
                             <ion-button *ngIf="patient.phone_national_format && patient.phone_error" style="min-height: 10px;" fill="clear" size="small">
                               <img src="assets/icon/smartphone.png" style="width: 35px; height: 35px;">
-                            </ion-button>                       
+                            </ion-button>
 
                             <ion-button *ngIf="this.username.user.waiting_room && this.username.user.waiting_room.chat_enabled && patient.prefers_sms && patient.chat_has_message" style="min-height: 10px;" fill="clear" size="small" (click)="goToPatientChat(patient)">
-                              <ion-icon style="width: 35px; height: 35px;" slot="icon-only" name="chatbubble-ellipses-outline"></ion-icon>                            
+                              <ion-icon style="width: 35px; height: 35px;" slot="icon-only" name="chatbubble-ellipses-outline"></ion-icon>
                               <span *ngIf="patient.chat_unread_count > 0" class="notifiable">{{ patient.chat_unread_count }}</span>
                             </ion-button>
 
@@ -120,12 +120,12 @@
                             </ion-button>
 
                             </div>
-                      
 
-                          
 
-                   
-                       
+
+
+
+
 
                           </div>
 

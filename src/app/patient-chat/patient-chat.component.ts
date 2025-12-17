@@ -33,9 +33,9 @@ export class PatientChatComponent implements OnInit{
   ) {}
 
   async ngOnInit() {
-    this.authUser = await JSON.parse(localStorage.getItem('user')!);    
+    this.messages = [];
+    this.authUser = await JSON.parse(localStorage.getItem('user')!);
     this.fetchChatSms();
-    // Aquí podrías cargar los mensajes previos del paciente si es necesario
   }
 
    fetchChatSms() {
@@ -79,11 +79,11 @@ export class PatientChatComponent implements OnInit{
 
     this.laravelEcho.channel(channelForChat).listen('.chat.message.created', (e: any) => {
       console.log(e);
-      console.log('Received chat message event:', e);     
+      console.log('Received chat message event:', e);
       if (e.message.sender_type == "App\\Models\\Patients") {
-        console.log(e); 
-        this.messages.push(e.message); 
-        this.playAudio();                  
+        console.log(e);
+        this.messages.push(e.message);
+        this.playAudio();
       }
     });
   }
@@ -97,7 +97,6 @@ export class PatientChatComponent implements OnInit{
     this.chatservice.getMessages(this.chatRoom, params).subscribe((response:any) => {
       this.loading = false
       for (var i = 0; i < response.data.length; i++) {
-        // this.messages.push(response.data[i]);
         this.addMessage(response.data[i]);
       }
       setTimeout(() => {
@@ -115,7 +114,6 @@ export class PatientChatComponent implements OnInit{
   }
 
   onNoClick(): void {
-    // Al cerrar el modal, enviar el contador actualizado
     this.modalController.dismiss({ chat_unread_count: this.patient?.chat_unread_count ?? 0 });
   }
 
@@ -127,7 +125,6 @@ export class PatientChatComponent implements OnInit{
     if (_.isEmpty(message.read_at)) {
       this.chatservice.markAsRead(message).subscribe((response: any) => {
         message.read_at = response.read_at;
-        // Actualizar el contador local
         if (this.patient && typeof this.patient.chat_unread_count === 'number') {
           this.patient.chat_unread_count = Math.max(0, this.patient.chat_unread_count - 1);
         }
@@ -140,14 +137,14 @@ export class PatientChatComponent implements OnInit{
   sendMessage() {
     if (!_.isEmpty(this.newMessage)) {
       this.newMessage = this.capitalizeFirstLetter(this.newMessage);
-      this.chatservice.addMessage(this.chatRoom, this.newMessage).subscribe((response: any) => {       
+      this.chatservice.addMessage(this.chatRoom, this.newMessage).subscribe((response: any) => {
         this.addMessage(response);
         this.newMessage = '';
       }, (error:any) => {
         this.newMessage = 'Error sending message';
       });
     }
-  
+
   }
   capitalizeFirstLetter(string: string) {
     return string.charAt(0).toUpperCase() + string.slice(1);
