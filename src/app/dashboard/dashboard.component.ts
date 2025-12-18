@@ -790,14 +790,22 @@ private async handlePatientEvent(type: 'updated' | 'created' | 'deleted', e: any
     channelListeners.listen('.patient.updated', (e: any) => {
       console.log('entro evento');
       const existingPatientIndex = this.listPatients.findIndex(p => p.id === e.patient.id);
+
+      this.handlePatientEvent('updated', e);
+      if(e.patient.status.id !== this.listPatients[existingPatientIndex].status.id){
+        this.notificationService.showSuccessEvent('<strong>Patient Updated: </strong><br>&ensp;&ensp;'+e.patient.fullName+'<br>&ensp;&ensp;'+e.patient.status_name,10000)
+      }
+
       if (existingPatientIndex !== -1) {
         this.listPatients[existingPatientIndex] = {
           ...this.listPatients[existingPatientIndex],
           ...e.patient
         };
       }
-      this.handlePatientEvent('updated', e);
-      this.notificationService.showSuccessEvent('<strong>Patient Updated: </strong><br>&ensp;&ensp;'+e.patient.fullName+'<br>&ensp;&ensp;'+e.patient.status_name,10000)
+
+
+
+
     });
     channelListeners.listen('.play.speech', async (e: any) => {
       console.log("🎤 Evento recibido:", e);
