@@ -8,7 +8,7 @@
         <ion-icon name="color-palette"></ion-icon>
       </div>
       <div>{{room.name}}</div>
-      
+
       <!-- <div>{{room.surg? room.surg : this.surgeon.full_name}}</div> -->
     </div>
   </div>
@@ -33,7 +33,7 @@
     <!-- Operating Room and Visitor Companion -->
     <ion-row>
 
-      
+
       <ion-col class="columnAvailable">
         <div class="container-scroll objColumn">
           <div *ngFor="let patient of assignedPatients; let i = index" class="d-flex justify-content-between align-items-center w-100">
@@ -48,7 +48,7 @@
           </div>
         </div>
       </ion-col>
-      
+
       <ion-col class="columnAvailable">
         <div class="container-scroll objColumn">
           <div *ngFor="let patient of availablePatients; let i = index" class="d-flex justify-content-between align-items-center w-100 font-size-l">
@@ -64,35 +64,35 @@
         </div>
       </ion-col>
 
-          
+
 
       <ion-col style="display: flex; flex-direction: column; min-width: 20%;">
-     
+
         <div class="container">
           <ion-grid>
-            <form [formGroup]="roleForm">
+            <form [formGroup]="roleForm" *ngIf="this.allUsers">
               <ion-row formArrayName="roles">
                 <ng-container *ngFor="let role of roles.controls; let i = index">
                   <ion-row [formGroupName]="i" class="room-card-row prueba fs-22" style="align-items: center; margin-bottom: 0px;">
-                    
+
                     <!-- Selector de rol con ancho fijo -->
                     <ion-col size="2">
-                      <select formControlName="roleType" (change)="onRoleChange(i)" placeholder="Select Role" style="width: 100%; min-width: 100px;">
+                      <select formControlName="roleType" class="heightFild" (change)="onRoleChange(i)" placeholder="Select Role" style="width: 100%; min-width: 100px;">
                         <option *ngFor="let user of allUsers" [value]="user.code">{{ user.code }}</option>
                       </select>
                     </ion-col>
-                    
+
                     <!-- Selector de usuario filtrado con ancho fijo -->
                     <ion-col size="8" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-left: 8%;">
-                      <select formControlName="selectedUser" placeholder="Select User" class="selectedUserDropdown">
+                      <select formControlName="selectedUser" placeholder="Select User" class="selectedUserDropdown heightFild">
                         <option *ngFor="let person of filteredUsers[i]" [value]="person.id">{{ person.full_name }}</option>
                       </select>
                     </ion-col>
-                    
+
                     <!-- Ícono para eliminar con tamaño fijo -->
                     <ion-col size="1" class="ion-text-center">
                       <ion-icon (click)="removeRole(i)" name="trash" style="color: red; cursor: pointer; font-size: 1.5em;"></ion-icon>
-                    </ion-col>        
+                    </ion-col>
                   </ion-row>
                 </ng-container>
               </ion-row>
@@ -117,7 +117,7 @@
         </div>
       </ion-col>
     </ion-row>
-  </ion-grid> 
+  </ion-grid>
 
   <div class="overlay" style="margin-top: 10px;" *ngIf="this.loading">
     <div class="loader">

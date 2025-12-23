@@ -29,7 +29,7 @@ export class EditRoomComponent implements OnInit {
   allUsers:any;
   selectedRoles: any[] = [];
   filteredUsers: any[] = [];
-  
+
   constructor(private router: Router,
     private navController: NavController,
     private LocaldataService: LocaldataService,
@@ -45,14 +45,16 @@ export class EditRoomComponent implements OnInit {
     }
 
   }
-  ngOnInit(): void { 
-    this.getAllUsersSelectsRolRoom();
-    this.roleForm = this.fb.group({
-      roles: this.fb.array([])  // Array dinámico de roles
-    });
+    ngOnInit(): void {
+    setTimeout(() => {
+      this.getAllUsersSelectsRolRoom();
+      this.roleForm = this.fb.group({
+        roles: this.fb.array([])  // Array dinámico de roles
+      });
 
-    this.originalRoom = JSON.parse(JSON.stringify(this.room));
-    this.originalAssignedPatients = JSON.parse(JSON.stringify(this.assignedPatients));
+      this.originalRoom = JSON.parse(JSON.stringify(this.room));
+      this.originalAssignedPatients = JSON.parse(JSON.stringify(this.assignedPatients));
+    }, 300);
   }
 
 
@@ -120,7 +122,7 @@ getUpdatedPatients(original: any[], current: any[]) {
           })
         );
         this.filteredUsers.push([]);  // Inicializar el array para los usuarios filtrados vacío
-        
+
         // Llamar a onRoleChange para cada fila recién creada
         this.onRoleChange(index);
       });
@@ -133,7 +135,7 @@ getUpdatedPatients(original: any[], current: any[]) {
     this.loading = true;
     this.requestsService.getOperatingRoomWithUsers(this.room.id).subscribe(resp => {
       this.allUsers = resp.data.data;
-      this.getUsersAsociatedAtRolSelect();  
+      this.getUsersAsociatedAtRolSelect();
       this.loading = false;
     }, error => {
       console.log(error);
@@ -163,7 +165,7 @@ getUpdatedPatients(original: any[], current: any[]) {
               roleType: [role.code, Validators.required],  // Preseleccionar el rol
               selectedUser: ['', Validators.required]  // Sin usuario seleccionado
             })
-          );  
+          );
           this.filteredUsers.push(availableUsers);
         }
       });
@@ -298,6 +300,6 @@ async update() {
       operating_room_name: null
     });
     this.availablePatients.push(patient);
-  } 
+  }
 
 }

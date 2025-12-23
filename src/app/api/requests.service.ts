@@ -593,7 +593,7 @@ export class RequestsService {
 
     getOperatingRoomWithUsers(idRoom:any):Observable<any>{
         const options = {
-            url: environment.url + environment.operatingroomusers + '?'+ environment.waiting_room_id +'='+this.config.waitingRoom.id,
+            url: environment.url + environment.operatingroomusers + '/by-room?'+ environment.waiting_room_id +'='+this.config.waitingRoom.id,
             headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer ' + this.token },
         };
 
