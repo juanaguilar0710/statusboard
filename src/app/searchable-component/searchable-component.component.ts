@@ -1,6 +1,7 @@
 import { AfterViewInit, ChangeDetectorRef, Component, OnInit, ViewChild } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup } from '@angular/forms';
 import { ModalController, NavParams } from '@ionic/angular';
+import { TranslateService } from '../services/translate.service';
 
 @Component({
   selector: 'app-searchable-component',
@@ -24,7 +25,8 @@ export class SearchableComponentComponent implements AfterViewInit, OnInit {
     private modalCtrl: ModalController,
     private navParams: NavParams,
     private _formbuilder: FormBuilder,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    public translate: TranslateService
   ) {
     this.form = this._formbuilder.group({
       value: new FormControl('')
@@ -33,7 +35,7 @@ export class SearchableComponentComponent implements AfterViewInit, OnInit {
   ngOnInit(): void {
     this.data = this.navParams.get('data');
     this.type = this.navParams.get('type');
-    
+
     if (this.navParams.get('selectedValue')) {
       const value = this.navParams.get('selectedValue');
       this.form.get('value')?.setValue(value);
@@ -48,8 +50,8 @@ export class SearchableComponentComponent implements AfterViewInit, OnInit {
   }
 
   ngAfterViewInit(): void {
-    
-  
+
+
       // if (this.navParams.get('customValue') && this.searchInput?.nativeElement) {
       //   this.searchInput.nativeElement.value = this.navParams.get('customValue');
       //   this.getUserInput = true;
@@ -58,7 +60,7 @@ export class SearchableComponentComponent implements AfterViewInit, OnInit {
       // }
   }
 
-  onInputChange() { 
+  onInputChange() {
     this.getUserInput = true;
 
   const filterFunction = (item: any, property: string) =>

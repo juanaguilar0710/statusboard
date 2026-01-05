@@ -8,6 +8,7 @@ import { PopoverController, IonModal, ModalController } from '@ionic/angular';
 import { Storage } from '@ionic/storage-angular';
 import { SearchableComponentComponent } from '../searchable-component/searchable-component.component';
 import { NotificationService } from '../api/notification.service';
+import { TranslateService } from '../services/translate.service';
 
 @Component({
   selector: 'app-update-patient',
@@ -65,7 +66,8 @@ export class UpdatePatientPage implements OnInit, OnDestroy {
     public popoverController: PopoverController,
     private notificationService: NotificationService,
     private storage: Storage,
-    private modalController: ModalController) {
+    private modalController: ModalController,
+    public translate: TranslateService) {
     const navParams = this.router.getCurrentNavigation()?.extras?.state;
     if (navParams) {
       this.patient = (navParams as any)?.patient;
@@ -419,7 +421,7 @@ export class UpdatePatientPage implements OnInit, OnDestroy {
       }, error =>{
         this.updating = false;
         this.loading = false;
-        this.notificationService.showError('Error updating users.', 5000);
+        this.notificationService.showError(this.translate.instant('updatePatient.errorUpdating'), 5000);
         this.modalController.dismiss({ patient: this.patient });
       });
     });
@@ -476,7 +478,7 @@ export class UpdatePatientPage implements OnInit, OnDestroy {
       }, error =>{
         this.updating = false;
         this.loading = false;
-        this.notificationService.showError('Error updating users.', 5000);
+        this.notificationService.showError(this.translate.instant('updatePatient.errorUpdating'), 5000);
         this.modalController.dismiss({ patient: this.patient });
       });
   }

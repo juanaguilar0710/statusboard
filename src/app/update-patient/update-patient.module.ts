@@ -8,6 +8,7 @@ import { UpdatePatientPageRoutingModule } from './update-patient-routing.module'
 
 import { UpdatePatientPage } from './update-patient.page';
 import { StatusButtonsComponent } from '../status-buttons/status-buttons.component';
+import { SharedModule } from '../shared/shared.module';
 
 @NgModule({
   imports: [
@@ -16,7 +17,8 @@ import { StatusButtonsComponent } from '../status-buttons/status-buttons.compone
     IonicModule,
     UpdatePatientPageRoutingModule,
     ReactiveFormsModule,
-    StatusButtonsComponent
+    StatusButtonsComponent,
+    SharedModule
   ],
   declarations: [UpdatePatientPage]
 })

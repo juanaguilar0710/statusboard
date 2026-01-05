@@ -1,12 +1,12 @@
 <ion-content [fullscreen]="true" slot="fixed" id="update-container">
   <div style="height: 45px; font-size: 34px;" class="text-center w-100">
-    Patient Info
+    {{ 'updatePatient.patientInfo' | translate }}
   </div>
   <div class="banner-header">
     <div class="d-flex justify-content-between w-100">
       <div class="w-25">&nbsp;</div>
       <div class="patient-name">{{patient.fullName}}</div>
-      <div class="age w-25">{{patient.age}} years</div>
+      <div class="age w-25">{{patient.age}} {{ 'updatePatient.years' | translate }}</div>
     </div>
   </div>
   <!-- <div *ngIf="loading" class="text-center w-100 d-flex justify-content-center align-items-center flex-column"
@@ -35,7 +35,7 @@
             <ion-col>
               <div class="d-flex">
                 <div>
-                  <h4>Make a Request:</h4>
+                  <h4>{{ 'updatePatient.makeRequest' | translate }}</h4>
                 </div>
                 <ion-item style="margin-top: -10px; width: 85%;">
                   <ion-input
@@ -54,7 +54,7 @@
         <ion-button id="add-request" style="font-size: 20px !important;" class="mt-2" fill="outline" expand="block" (click)="openSearchableComponentOnModal('comment')">
           <ion-icon style="margin-left: -7px;" (click)="openSearchableComponentOnModal('comment')" name="search" slot="end"></ion-icon>
         </ion-button>
-        <ion-button class="mt-2" style="font-size: 20px !important;" color="danger" fill="outline" expand="block" (click)="clearRequest()">Clear</ion-button>
+        <ion-button class="mt-2" style="font-size: 20px !important;" color="danger" fill="outline" expand="block" (click)="clearRequest()">{{ 'updatePatient.clear' | translate }}</ion-button>
       </div>
 
       <div class="my-2">
@@ -64,7 +64,7 @@
             <ion-col>
               <div class="d-flex">
                 <div class="text-nowrap d-flex justify-content-start align-items-end">
-                  <h4>Full Name:</h4>
+                  <h4>{{ 'updatePatient.fullName' | translate }}</h4>
                 </div>
                 <div class="w-100 justify-content-end">
                   <ion-item>
@@ -81,7 +81,7 @@
             <ion-col>
               <div class="d-flex">
                 <div class="text-nowrap d-flex justify-content-start align-items-end">
-                  <h4>Operating Room:</h4>
+                  <h4>{{ 'updatePatient.operatingRoom' | translate }}</h4>
                 </div>
                 <div class="w-100 justify-content-end">
                   <ion-item>
@@ -93,7 +93,7 @@
             </ion-col>
             <ion-col style="padding-left: 50px;">
               <div>
-                <h4 class="visitor">Family Information</h4>
+                <h4 class="visitor">{{ 'updatePatient.familyInfo' | translate }}</h4>
               </div>
             </ion-col>
           </ion-row>
@@ -102,7 +102,7 @@
             <ion-col>
               <div class="d-flex">
                 <div class="text-nowrap d-flex justify-content-start align-items-end">
-                  <h4>Surgeon:</h4>
+                  <h4>{{ 'updatePatient.surgeon' | translate }}</h4>
                 </div>
                 <div class="w-100 justify-content-end">
                   <ion-item>
@@ -115,7 +115,7 @@
             <ion-col style="padding-left: 50px;">
               <div class="d-flex">
                 <div class="text-nowrap d-flex justify-content-start align-items-end">
-                  <h4>Name:</h4>
+                  <h4>{{ 'updatePatient.name' | translate }}</h4>
                 </div>
                 <div class="w-100 justify-content-end">
                   <ion-item>
@@ -142,7 +142,7 @@
             <ion-col>
               <div class="d-flex">
                 <div class="text-nowrap d-flex justify-content-start align-items-end">
-                  <h4>Procedure:</h4>
+                  <h4>{{ 'updatePatient.procedure' | translate }}</h4>
                 </div>
                 <div class="w-100 justify-content-end">
                   <ion-item class="widthProcedure">
@@ -155,7 +155,7 @@
             <ion-col class="paddingProcedure">
               <div class="d-flex">
                 <div class="text-nowrap d-flex justify-content-start align-items-end">
-                  <h4>Phone:</h4>
+                  <h4>{{ 'updatePatient.phone' | translate }}</h4>
                 </div>
                 <div class="w-100 justify-content-end">
                   <ion-item>
@@ -179,7 +179,7 @@
                   (ionChange)="onChangeSMSToggle($event)"
                   [disabled]="this.disabledToggle"
                   [checked]="this.patient.prefers_sms"></ion-toggle>
-                  <label class="pl-2" style="margin-left: 10px;">SMS</label>
+                  <label class="pl-2" style="margin-left: 10px;">{{ 'updatePatient.sms' | translate }}</label>
                 </ion-item>
               </div>
             </ion-col>
@@ -198,7 +198,7 @@
             <ion-col>
               <div class="d-flex">
                 <div class="text-nowrap d-flex justify-content-start align-items-end">
-                  <h4>Procedure Time:</h4>
+                  <h4>{{ 'updatePatient.procedureTime' | translate }}</h4>
                 </div>
                 <div class="w-100 justify-content-end">
                   <ion-item>
@@ -211,11 +211,11 @@
             <ion-col style="padding-left: 50px;">
               <div class="d-flex">
                 <div class="text-nowrap d-flex justify-content-start align-items-end">
-                  <h4>Private Note:</h4>
+                  <h4>{{ 'updatePatient.privateNote' | translate }}</h4>
                 </div>
                 <div class="w-100 justify-content-end">
                   <ion-item>
-                    <ion-input aria-label="Note" placeholder="For internal use only" [maxlength]="150" formControlName="note"></ion-input>
+                    <ion-input aria-label="Note" [placeholder]="'updatePatient.forInternalUse' | translate" [maxlength]="150" formControlName="note"></ion-input>
                   </ion-item>
                 </div>
               </div>
@@ -228,7 +228,7 @@
             <ion-col>
               <div class="d-flex">
                 <div class="text-nowrap d-flex justify-content-start align-items-end">
-                  <h4>Recovery Room:</h4>
+                  <h4>{{ 'updatePatient.recoveryRoom' | translate }}</h4>
                 </div>
                 <div class="w-100 justify-content-end">
                   <ion-item>
@@ -261,8 +261,8 @@
     <ion-col>
       <div>
         <ion-button color="danger" class="w-100 mx-4 classButton" size="large" id="cancel-surgery-modal">
-          <span *ngIf="!patient.visit_canceled_at">Surgery Canceled</span>
-          <span *ngIf="patient.visit_canceled_at">Enable Surgery</span>
+          <span *ngIf="!patient.visit_canceled_at">{{ 'updatePatient.surgeryCanceled' | translate }}</span>
+          <span *ngIf="patient.visit_canceled_at">{{ 'updatePatient.enableSurgery' | translate }}</span>
         </ion-button>
         <!-- <ion-button color="primary" class="w-100 mx-4 classButton" size="large" (click)="openSearchableComponentOnModal('next_to_surgery')">
           Next To Surgery
@@ -272,10 +272,10 @@
     <ion-col>
       <div class="d-flex justify-content-center">
         <ion-button color="danger" class="w-100 mx-4 classButton" size="large" (click)="cancel()">
-          <span>Cancel</span>
+          <span>{{ 'updatePatient.cancel' | translate }}</span>
         </ion-button>
         <ion-button color="success" class="w-100 mx-4 classButton" size="large" (click)="updatePatient()">
-          <span style="color: white;">Update</span>
+          <span style="color: white;">{{ 'updatePatient.update' | translate }}</span>
         </ion-button>
       </div>
     </ion-col>
@@ -289,15 +289,15 @@
   <ng-template>
     <ion-content class="ion-padding">
       <div class="text-center">
-        <h1>{{patient.visit_canceled_at ? 'Do you want to enable this surgery?' : 'Are you sure you want to cancel this surgery?'}}</h1>
+        <h1>{{patient.visit_canceled_at ? ('updatePatient.confirmEnable' | translate) : ('updatePatient.confirmCancel' | translate)}}</h1>
       </div>
       <br />
       <div class="d-flex justify-content-center align-items-center">
         <div class="flex-fill text-center" style="padding: 0 10px;">
-          <ion-button class="w-100 classButton" color="danger" style="width: 90% !important; font-size: 1.25rem;" (click)="noCancel()">No</ion-button>
+          <ion-button class="w-100 classButton" color="danger" style="width: 90% !important; font-size: 1.25rem;" (click)="noCancel()">{{ 'updatePatient.no' | translate }}</ion-button>
         </div>
         <div class="flex-fill text-center" style="padding: 0 10px;">
-          <ion-button class="w-100 classButton" color="primary" style="width: 90% !important; font-size: 1.25rem" (click)="yesCancel()">Yes</ion-button>
+          <ion-button class="w-100 classButton" color="primary" style="width: 90% !important; font-size: 1.25rem" (click)="yesCancel()">{{ 'updatePatient.yes' | translate }}</ion-button>
         </div>
       </div>
     </ion-content>
@@ -310,7 +310,7 @@
   <div class="loading-overlay" *ngIf="this.loading">
     <div class="loading-content">
       <div class="loading-spinner"></div>
-      <div class="loading-text">{{this.updating ? 'Updating patient...' : 'Loading patient...'}}</div>
-      <div class="loading-subtext">Please wait</div>
+      <div class="loading-text">{{this.updating ? ('updatePatient.updatingPatient' | translate) : ('updatePatient.loadingPatient' | translate)}}</div>
+      <div class="loading-subtext">{{ 'updatePatient.pleaseWait' | translate }}</div>
     </div>
   </div>

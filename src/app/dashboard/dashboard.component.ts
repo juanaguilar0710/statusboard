@@ -23,6 +23,7 @@ import Swal from 'sweetalert2'
 
 
 import { TextToSpeech } from '@capacitor-community/text-to-speech';
+import { TranslateService } from '../services/translate.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -94,7 +95,8 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
               private storage: Storage,
               private logger: LoggerService,
               private cdr: ChangeDetectorRef,
-              private audioService: AudioService
+              private audioService: AudioService,
+              public translate: TranslateService
   ) {
 
 

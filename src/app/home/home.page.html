@@ -31,11 +31,11 @@
           <h6 class="text-uppercase">{{configuration?.waitingRoom?.name}}</h6>
           <div class="my-3">
             <span [ngClass]="{'online' : networkStatus === 'ONLINE', 'offline' : networkStatus === 'OFFLINE'}">
-              <b>{{networkStatus}}</b>
+              <b>{{networkStatus === 'ONLINE' ? ('home.online' | translate) : ('home.offline' | translate)}}</b>
             </span>
             <br/>
             <!-- <span class="mx-1"> - </span> -->
-            <b>Last Update: </b><span>{{lastsync}}</span>
+            <b>{{ 'home.lastUpdate' | translate }} </b><span>{{lastsync}}</span>
           </div>
         </div>
       </ion-col>
@@ -63,7 +63,7 @@
 
             <ion-col size="9" class="visitCancel">
               <div class="w-100 pt-1" *ngIf="!patient.visit_canceled_at" style="min-width: 0;">
-                <h1 class="operating_room_name" style="color: #0d6efd;">{{patient.operating_room_name === 'None' ? 'TO FOLLOW' : patient.operating_room_name}}</h1>
+                <h1 class="operating_room_name" style="color: #0d6efd;">{{patient.operating_room_name === 'None' ? ('home.toFollow' | translate) : patient.operating_room_name}}</h1>
                 <ion-grid>
                   <ion-row>
                     <ion-col class="elipsis">
@@ -71,15 +71,15 @@
                         <h1>{{patient.status_name}}</h1>
                         <div style="padding-top: 10px;">
                           <div class="elipsis">
-                            <span class="label">Surgeon: </span>
+                            <span class="label">{{ 'home.surgeon' | translate }} </span>
                             <span class="label-value">{{patient.surgeon?.name ?? patient.surgeon_name}}</span>
                           </div>
                           <div class="elipsis">
-                            <span class="label">Procedure: </span>
+                            <span class="label">{{ 'home.procedure' | translate }} </span>
                             <span class="label-value">{{patient.procedure_name}}</span>
                           </div>
                           <div class="elipsis">
-                            <span class="label">Procedure Time: </span>
+                            <span class="label">{{ 'home.procedureTime' | translate }} </span>
                             <span class="label-value">{{formatTime(patient.procedure_time)}}</span>
                           </div>
                         </div>
@@ -90,13 +90,13 @@
                         <div style="padding-top: 10px;">
                           <h1>&nbsp;</h1>
                           <div class="elipsis">
-                            <span class="label">Family Name: </span><span class="label-value">{{patient.companion_name}}</span>
+                            <span class="label">{{ 'home.familyName' | translate }} </span><span class="label-value">{{patient.companion_name}}</span>
                           </div>
 
 
                           <div style="display: flex; justify-content: space-between; align-items: center;">
                             <div>
-                              <span class="label">Family Phone: </span>
+                              <span class="label">{{ 'home.familyPhone' | translate }} </span>
                               <span class="label-value">{{patient.phone !== null? patient.phone_national_format : patient.phone}}</span>
                             </div>
 
@@ -132,7 +132,7 @@
 
 
                           <div class="elipsis">
-                            <span class="label">Request: </span>
+                            <span class="label">{{ 'home.request' | translate }} </span>
                             <span class="label-value request">{{patient.comment_custom}}</span>
                           </div>
                         </div>
@@ -144,11 +144,11 @@
 
               <div class="d-inline-flex w-100 align-items-center justify-content-center" *ngIf="patient.visit_canceled_at"
               (click)="goToUpdatePatient(patient, i)">
-              <h1 class="surgeryCancel">SURGERY CANCELLED</h1>
+              <h1 class="surgeryCancel">{{ 'home.surgeryCancelled' | translate }}</h1>
               </div>
 
               <div *ngIf="!patients || patients.length === 0" style="text-align: center; margin-top: 100px;">
-                <h1>No Patients Today</h1>
+                <h1>{{ 'home.noPatientsToday' | translate }}</h1>
               </div>
 
             </ion-col>
@@ -157,14 +157,14 @@
       </ion-col>
 
       <ion-col size="3">
-        <button id="logout-modal" class="btn btn-danger rounded-3 buttons">0:{{timeRemaining}} Logout</button>
+        <button id="logout-modal" class="btn btn-danger rounded-3 buttons">0:{{timeRemaining}} {{ 'home.logout' | translate }}</button>
 
-        <button (click)="newPatient()" class="btn btn-primary rounded-3 buttons">+ New Patient</button>
+        <button (click)="newPatient()" class="btn btn-primary rounded-3 buttons">{{ 'home.newPatient' | translate }}</button>
 
         <div class="controlRight">
           <div style="margin: 10px 10px 10px 10px; padding: 5px 5px; background-color: #e8e8e8; border-radius: 10px;" *ngIf="patients && patients.length > 0">
             <div class="text-center m-2">
-              <h3>WORK TEAMS</h3>
+              <h3>{{ 'home.workTeams' | translate }}</h3>
             </div>
             <div class="room-cards" (click)="editRoom(room, i)" *ngFor="let room of operatingRooms; let i = index"
               [ngStyle]="{'background-color': room.color}" [dynamicTextColor]="room.color">
@@ -201,16 +201,16 @@
     <ng-template class="jean">
       <ion-content class="ion-padding pepe">
         <div class="text-center">
-          <h1>Are you sure you want to logout?</h1>
+          <h1>{{ 'home.logoutConfirm' | translate }}</h1>
         </div>
         <br />
         <div class="d-flex">
           <div class="flex-fill" style="padding: 0 10px;">
-            <button class="btn btn-danger rounded-3" style="width: -webkit-fill-available; height: 70px;margin-top: 10px; font-size: 20px;"(click)="cancel()">Cancel</button>
+            <button class="btn btn-danger rounded-3" style="width: -webkit-fill-available; height: 70px;margin-top: 10px; font-size: 20px;"(click)="cancel()">{{ 'home.cancel' | translate }}</button>
           </div>
 
           <div class="flex-fill" style="padding: 0 10px;">
-            <button class="btn btn-primary rounded-3" style="width: -webkit-fill-available; height: 70px;margin-top: 10px; font-size: 20px;" (click)="logout()">Logout</button>
+            <button class="btn btn-primary rounded-3" style="width: -webkit-fill-available; height: 70px;margin-top: 10px; font-size: 20px;" (click)="logout()">{{ 'home.logout' | translate }}</button>
 
           </div>
         </div>

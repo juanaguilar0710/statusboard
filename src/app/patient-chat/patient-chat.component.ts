@@ -8,6 +8,7 @@ import { ModalController } from '@ionic/angular';
 import * as _ from "lodash";
 import { AudioService } from '../services/audio.service';
 import * as moment from "moment";
+import { TranslateService } from '../services/translate.service';
 
 @Component({
   selector: 'app-patient-chat',
@@ -29,7 +30,8 @@ export class PatientChatComponent implements OnInit{
   constructor(private chatservice: ChatService,
            private modalController: ModalController,
            public requestsService: RequestsService,
-           private audioService: AudioService
+           private audioService: AudioService,
+           public translate: TranslateService
   ) {}
 
   async ngOnInit() {
@@ -141,7 +143,7 @@ export class PatientChatComponent implements OnInit{
         this.addMessage(response);
         this.newMessage = '';
       }, (error:any) => {
-        this.newMessage = 'Error sending message';
+        this.newMessage = this.translate.instant('patientChat.errorSending');
       });
     }
 

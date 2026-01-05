@@ -7,6 +7,7 @@ import { IonicModule } from '@ionic/angular';
 import { ConfigurationPageRoutingModule } from './configuration-routing.module';
 
 import { ConfigurationPage } from './configuration.page';
+import { SharedModule } from '../shared/shared.module';
 
 @NgModule({
   imports: [
@@ -14,7 +15,8 @@ import { ConfigurationPage } from './configuration.page';
     FormsModule,
     IonicModule,
     ConfigurationPageRoutingModule,
-    ReactiveFormsModule
+    ReactiveFormsModule,
+    SharedModule
   ],
   declarations: [ConfigurationPage]
 })

@@ -3,8 +3,8 @@
   <div class="loading-overlay" *ngIf="isLoading">
     <div class="loading-content">
       <div class="loading-spinner"></div>
-      <div class="loading-text">Loading patients...</div>
-      <div class="loading-subtext">Please wait</div>
+      <div class="loading-text">{{ 'dashboard.loading' | translate }}</div>
+      <div class="loading-subtext">{{ 'dashboard.pleaseWait' | translate }}</div>
     </div>
   </div>
 
@@ -25,15 +25,15 @@
                 <table style="width: 100%; border-collapse: collapse; text-align: left; table-layout: fixed;">
                   <thead>
                     <tr style="background-color: #b5d7f0;">
-                      <th style="padding: 8px; width: 5%;">ID</th>
-                      <th style="padding: 8px; width: 18%;">Patient</th>
-                      <th style="padding: 8px; width: 5%;">Age</th>
-                      <th style="padding: 8px; width: 8%;">O.Room</th>
-                      <th style="padding: 8px; width: 15%;">Surgeon</th>
-                      <th style="padding: 8px; width: 17%;">Procedure</th>
-                      <th style="padding: 8px; width: 7%;">Time</th>
-                      <th style="padding: 8px; width: 13%;">Status</th>
-                      <th style="padding: 8px; width: 7%;">Room</th>
+                      <th style="padding: 8px; width: 5%;">{{ 'dashboard.id' | translate }}</th>
+                      <th style="padding: 8px; width: 18%;">{{ 'dashboard.patient' | translate }}</th>
+                      <th style="padding: 8px; width: 5%;">{{ 'dashboard.age' | translate }}</th>
+                      <th style="padding: 8px; width: 8%;">{{ 'dashboard.oRoom' | translate }}</th>
+                      <th style="padding: 8px; width: 15%;">{{ 'dashboard.surgeon' | translate }}</th>
+                      <th style="padding: 8px; width: 17%;">{{ 'dashboard.procedure' | translate }}</th>
+                      <th style="padding: 8px; width: 7%;">{{ 'dashboard.time' | translate }}</th>
+                      <th style="padding: 8px; width: 13%;">{{ 'dashboard.status' | translate }}</th>
+                      <th style="padding: 8px; width: 7%;">{{ 'dashboard.room' | translate }}</th>
                       <th style="padding: 20px;"></th>
                     </tr>
                   </thead>
@@ -42,7 +42,7 @@
                       <tr  [ngClass]="{'highlight-updated': isPatientUpdated(patient.id)}" style="border-bottom: 1px solid #f0f0f0;">
                         <td class="textCardPatients text-ellipsis" style="padding: 8px; width: 5%;">{{patient.identifier}}</td>
                         <td class="textCardPatients text-ellipsis" style="padding: 8px; width: 20%;"><strong>{{patient.fullName | uppercase}}</strong></td>
-                        <td class="textCardPatients text-ellipsis" style="padding: 8px; width: 10%;">{{patient.age}}y</td>
+                        <td class="textCardPatients text-ellipsis" style="padding: 8px; width: 10%;">{{patient.age}}{{ translate.getCurrentLanguage() === 'en' ? 'y' : 'a' }}</td>
                         <td class="textCardPatients text-ellipsis" style="padding: 8px; width: 10%;">{{patient.operating_room_name}}</td>
                         <td class="textCardPatients text-ellipsis" style="padding: 8px; width: 20%;">
                           <span class="badge" *ngIf="patient.surgeon" [ngStyle]="{'background-color': patient.surgeon.color}">{{patient.surgeon_name}}</span>
@@ -92,7 +92,7 @@
                   <ion-card-title>
                     <ion-row>
                       <ion-col size="4" size-md="4" size-lg="4" class="tittleCardText">{{room.name}}</ion-col>
-                      <ion-col *ngIf="this.totalGroups > 1" size="3" size-md="3" size-lg="3" class="tittleCardTextPages"><span *ngIf="this.roomsWithPatients[i].totalpage > 1">Page: {{this.roomsWithPatients[i].actualPage}}/{{this.roomsWithPatients[i].totalpage}}</span></ion-col>
+                      <ion-col *ngIf="this.totalGroups > 1" size="3" size-md="3" size-lg="3" class="tittleCardTextPages"><span *ngIf="this.roomsWithPatients[i].totalpage > 1">{{ 'dashboard.pageLabel' | translate }}: {{this.roomsWithPatients[i].actualPage}}/{{this.roomsWithPatients[i].totalpage}}</span></ion-col>
                       <ion-col *ngIf="this.totalGroups < 1" size="3" size-md="3" size-lg="3" class="tittleCardTextPages"></ion-col>
                       <!-- <ion-col size="5" size-md="5" size-lg="5" class="tittleCardTextNumber" style="text-align: end !important;">
                         {{room.name === "TO FOLLOW"? "": "Completed:"+ getCompletedRoomPatientsCount(room.name) +"/"+ getTotalPatientsInRoom(room.name)}}
@@ -131,7 +131,7 @@
                     </ion-row>
                   </div>
                   <div *ngIf="getPatientsGroup(room.name).length === 0">
-                    <p style="text-align: center;">No patients</p>
+                    <p style="text-align: center;">{{ 'dashboard.noPatients' | translate }}</p>
                   </div>
                 </ion-card-content>
               </ion-card>
@@ -154,13 +154,13 @@
           <!-- Panel de Voces -->
           <div class="voice-panel" *ngIf="showVoicePanel">
             <div class="voice-header">
-              <h3>🎤 Voces Disponibles</h3>
+              <h3>{{ 'dashboard.availableVoices' | translate }}</h3>
               <button class="close-btn" (click)="toggleVoicePanel()">×</button>
             </div>
 
             <div class="voice-content">
               <div *ngIf="availableVoices.length === 0" class="loading-voices">
-                Cargando voces del sistema...
+                {{ 'dashboard.loadingVoices' | translate }}
               </div>
 
               <div *ngIf="availableVoices.length > 0">
@@ -175,10 +175,10 @@
 
                   <div class="voice-actions">
                     <button class="test-btn" (click)="testSpecificVoice(voice.lang, voice.name); $event.stopPropagation()">
-                      ▶️ Probar
+                      {{ 'dashboard.testVoice' | translate }}
                     </button>
                     <button class="select-btn" (click)="setPreferredVoice(voice.lang); $event.stopPropagation()">
-                      ✅ Usar
+                      {{ 'dashboard.useVoice' | translate }}
                     </button>
                   </div>
                 </div>
@@ -200,11 +200,11 @@
             <div class="row">
               <div class="col-6">
                 <div class="count" (click)="headerClicked()">{{ getVisiblePatientsTotal().length }}</div>
-                <div class="count-label" (click)="headerClicked()">TODAY</div>
+                <div class="count-label" (click)="headerClicked()">{{ 'dashboard.today' | translate }}</div>
               </div>
               <div class="col-6">
                 <div class="count" (click)="headerClicked()">{{ totales?.calendar.total }}</div>
-                <div class="count-label" (click)="headerClicked()">TOMORROW</div>
+                <div class="count-label" (click)="headerClicked()">{{ 'dashboard.tomorrow' | translate }}</div>
               </div>
             </div>
 
@@ -228,13 +228,13 @@
             <ion-row>
               <ion-col size="6" class="status-box">
                 <div class="holding-box">
-                  <p id="holding">HOLDING</p>
+                  <p id="holding">{{ 'dashboard.holding' | translate }}</p>
                   <h2>{{ this.getHoldingPatientsCount() }}</h2>
                 </div>
               </ion-col>
               <ion-col size="6" class="status-box">
                 <div class="surgery-box">
-                  <p id="surgery">SURGERY</p>
+                  <p id="surgery">{{ 'dashboard.surgery' | translate }}</p>
                   <h2>{{ this.getSurgeryPatientsCount() }}</h2>
                 </div>
               </ion-col>
@@ -243,13 +243,13 @@
             <ion-row>
               <ion-col size="6" class="status-box">
                 <div class="recovery-box">
-                  <p id="recovery">RECOVERY</p>
+                  <p id="recovery">{{ 'dashboard.recovery' | translate }}</p>
                   <h2>{{ this.getRecoveryPatientsCount() }}</h2>
                 </div>
               </ion-col>
               <ion-col size="6" class="status-box">
                 <div class="completed-box">
-                  <p id="completed-box">COMPLETED</p>
+                  <p id="completed-box">{{ 'dashboard.completed' | translate }}</p>
                   <h2>{{ this.getCompletedPatientsCount() }}</h2>
                 </div>
               </ion-col>
@@ -287,8 +287,8 @@
     <!-- Online text with date -->
     <ion-col size="3" style="text-align: left;">
       <!-- <span class="onlineTittle">LAST UPDATE:</span> -->
-      <span (click)="this.showLogsAlert();" class="onlineTittle" *ngIf="!deviceWasOffline">LAST SYNC:</span>
-      <span (click)="this.showLogsAlert();" class="onlineTittle" style="color: #eb4343;" *ngIf="deviceWasOffline">OFFLINE</span>
+      <span (click)="this.showLogsAlert();" class="onlineTittle" *ngIf="!deviceWasOffline">{{ 'dashboard.lastSync' | translate }}</span>
+      <span (click)="this.showLogsAlert();" class="onlineTittle" style="color: #eb4343;" *ngIf="deviceWasOffline">{{ 'dashboard.offline' | translate }}</span>
       <span (click)="this.showLogsAlert();" class="textUnderLine" style="padding-left: 5px; font-size: 25px;">{{ this.lastsync | date:'shortTime' }}</span>
     </ion-col>
 
@@ -300,37 +300,37 @@
     <!-- In Holding -->
     <ion-col size="2" style="display: flex; align-items: center;">
       <ion-icon name="ellipse" style="color: #48a347;" class="underline"></ion-icon>
-      <span class="textUnderLine">IN HOLDING</span>
+      <span class="textUnderLine">{{ 'dashboard.inHolding' | translate }}</span>
     </ion-col>
 
     <!-- In Surgery -->
     <ion-col size="2" style="display: flex; align-items: center;">
       <ion-icon name="ellipse" style="color: #eb4343;" class="underline"></ion-icon>
-      <span class="textUnderLine">IN SURGERY</span>
+      <span class="textUnderLine">{{ 'dashboard.inSurgery' | translate }}</span>
     </ion-col>
 
     <!-- Next to Surgery -->
     <ion-col size="2" style="display: flex; align-items: center;">
       <ion-icon name="ellipse" style="color: #3e3dcc;" class="underline"></ion-icon>
-      <span class="textUnderLine">NEXT TO SURGERY</span>
+      <span class="textUnderLine">{{ 'dashboard.nextToSurgery' | translate }}</span>
     </ion-col>
 
     <ion-col size="1" style="display: flex; align-items: center;" *ngIf="this.config">
-      <span *ngIf="this.config.aplication === '2' && this.totalPatientPages > 1" class="textUnderLine">PAGE: {{this.currentPageWithPatients}}/{{this.totalPagesWithPatients}}</span>
-      <span *ngIf="this.config.aplication === '3' && this.totalPatientPages > 1" class="textUnderLine">PAGE: {{ currentPagePatients + 1 }}/{{ totalPatientPages === 0 ? 1 : totalPatientPages }}</span>
+      <span *ngIf="this.config.aplication === '2' && this.totalPatientPages > 1" class="textUnderLine">{{ 'dashboard.page' | translate }}: {{this.currentPageWithPatients}}/{{this.totalPagesWithPatients}}</span>
+      <span *ngIf="this.config.aplication === '3' && this.totalPatientPages > 1" class="textUnderLine">{{ 'dashboard.page' | translate }}: {{ currentPagePatients + 1 }}/{{ totalPatientPages === 0 ? 1 : totalPatientPages }}</span>
     </ion-col>
 
 
     <ion-col size="1" style="display: flex; align-items: center;" *ngIf="this.totalPatientPages > 1">
     <!-- <ion-col size="1" style="display: flex; align-items: center;" *ngIf="this.totalPagesWithPatients > 1 || totalPatientPages > 1"> -->
       <!-- <ion-col size="1" style="display: flex; align-items: center;"> -->
-      <span class="textUnderLine">TIMER: {{this.countdown}}</span>
+      <span class="textUnderLine">{{ 'dashboard.timer' | translate }}: {{this.countdown}}</span>
     </ion-col>
 
   </ion-row>
 
     <div style="position: absolute; bottom: 5px; right: 15px; display: flex; align-items: center;">
-      <h6 class="info" style="font-size: 15px !important; color: #0d6efd;">Version: {{version}}</h6>
+      <h6 class="info" style="font-size: 15px !important; color: #0d6efd;">{{ 'dashboard.version' | translate }}: {{version}}</h6>
     </div>
 
 

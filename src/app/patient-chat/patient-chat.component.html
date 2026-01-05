@@ -1,15 +1,15 @@
 
 <div class="chat-container">
   <div class="chat-header">
-    {{ patient?.fullName?.toUpperCase() || 'COMPANION' }}
+    {{ patient?.fullName?.toUpperCase() || ('patientChat.companion' | translate) }}
   </div>
 
   <div #scrollMe class="chat-messages">
     <div class="loading-overlay" *ngIf="loading">
       <div class="loading-content">
         <div class="loading-spinner"></div>
-        <div class="loading-text">Loading messages...</div>
-        <div class="loading-subtext">Please wait</div>
+        <div class="loading-text">{{ 'patientChat.loadingMessages' | translate }}</div>
+        <div class="loading-subtext">{{ 'patientChat.pleaseWait' | translate }}</div>
       </div>
     </div>
 
@@ -44,7 +44,7 @@
           <img [src]="msg.sender_image_url" alt="You" />
         </div>
         <div class="bubble bubble-me">
-          <span class="sender">You</span>
+          <span class="sender">{{ 'patientChat.you' | translate }}</span>
           <span class="message-text">{{ msg.body }}</span>
           <span class="message-time">{{ msg.created_at | date:'shortTime' }}</span>
         </div>
@@ -64,11 +64,11 @@
     </ng-container>
   </div>
   <div class="chat-input">
-    <input [(ngModel)]="newMessage" maxlength="120" placeholder="Type a message..." (keyup.enter)="sendMessage()" />
-    <button (click)="sendMessage()">Send</button>
-    <button class="close" (click)="onNoClick()">Close</button>
+    <input [(ngModel)]="newMessage" maxlength="120" [placeholder]="'patientChat.typeMessage' | translate" (keyup.enter)="sendMessage()" />
+    <button (click)="sendMessage()">{{ 'patientChat.send' | translate }}</button>
+    <button class="close" (click)="onNoClick()">{{ 'patientChat.close' | translate }}</button>
   </div>
   <div class="characters-left">
-    Characters left: {{ 120 - (newMessage.length || 0) }}
+    {{ 'patientChat.charactersLeft' | translate }} {{ 120 - (newMessage.length || 0) }}
   </div>
 </div>

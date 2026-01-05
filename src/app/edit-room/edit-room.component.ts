@@ -6,6 +6,7 @@ import { RequestsService } from '../api/requests.service';
 import { Toast } from '@capacitor/toast';
 import { Storage } from '@ionic/storage-angular';
 import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { TranslateService } from '../services/translate.service';
 
 
 @Component({
@@ -35,7 +36,8 @@ export class EditRoomComponent implements OnInit {
     private LocaldataService: LocaldataService,
     private storage: Storage,
     private fb: FormBuilder,
-    public requestsService: RequestsService
+    public requestsService: RequestsService,
+    public translate: TranslateService
   ) {
     const navParams = this.router.getCurrentNavigation()?.extras?.state;
     if (navParams) {
@@ -217,7 +219,7 @@ async update() {
 
   // Si no hay cambios, salir rápido
   if (!roomChanged && patientDiff.added.length === 0 && patientDiff.removed.length === 0 && updatedPatients.length === 0) {
-    this.showToast('No changes to save');
+    this.showToast(this.translate.instant('editRoom.noChanges'));
     this.loading = false;
     return;
   }
@@ -227,7 +229,7 @@ async update() {
     this.room.roles = rolesToUpdate;
     const response = await this.requestsService.updateWaitingRoom(this.room);
     if (response.status !== 200) {
-      this.showToast('Failed to update room');
+      this.showToast(this.translate.instant('editRoom.updateRoomFailed'));
       this.loading = false;
       return;
     }
@@ -264,13 +266,13 @@ async update() {
       // Actualizar copia original de pacientes
       this.originalAssignedPatients = JSON.parse(JSON.stringify(this.assignedPatients));
     } else {
-      this.showToast('Failed to update patients');
+      this.showToast(this.translate.instant('editRoom.updatePatientsFailed'));
       this.loading = false;
       return;
     }
   }
 
-  this.showToast('Changes saved successfully');
+  this.showToast(this.translate.instant('editRoom.changesSaved'));
   this.navController.navigateForward(['/home'], { replaceUrl: true });
   this.loading = false;
 }

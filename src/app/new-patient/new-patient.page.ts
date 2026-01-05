@@ -5,6 +5,7 @@ import { PatientModel } from '../models/patient.model';
 import { ModalController, NavController } from '@ionic/angular';
 import { Preferences } from '@capacitor/preferences';
 import { NotificationService } from '../api/notification.service';
+import { TranslateService } from '../services/translate.service';
 
 @Component({
   selector: 'app-new-patient',
@@ -21,7 +22,8 @@ export class NewPatientPage implements AfterViewInit {
     private navController: NavController,
     private notificationService: NotificationService,
     private modalController: ModalController,
-    private requestsService: RequestsService) {
+    private requestsService: RequestsService,
+    public translate: TranslateService) {
       Preferences.get({ key: 'config' }).then((config: any) => {
         const waitingroom = JSON.parse(config.value).waitingRoom;
         this.form.get('waiting_area_Id')?.setValue(waitingroom.id);
@@ -58,13 +60,13 @@ export class NewPatientPage implements AfterViewInit {
     this.requestsService.createPatient(this.form.value).subscribe(
       (response: any) => {
         console.log(response);
-        
+
         this.loading = false;
         if (response.status === 200) {
           this.form.reset();
           this.loading = false;
           this.creating = false;
-          this.notificationService.showSuccess('Patient create succefull.',5000);
+          this.notificationService.showSuccess(this.translate.instant('newPatient.createSuccess'), 5000);
           // this.navController.navigateForward(['/home'], { replaceUrl: true, animated: false });
           this.modalController.dismiss({ response: response.data } );
         }
@@ -81,7 +83,7 @@ export class NewPatientPage implements AfterViewInit {
         this.creating = false;
         console.log('Error al crear paciente:', error);
         // alert(JSON.parse(error));
-        this.notificationService.showError('Error creating patient. ' + JSON.parse(error),5000);
+        this.notificationService.showError(this.translate.instant('newPatient.createError') + ' ' + JSON.parse(error), 5000);
         this.modalController.dismiss();
       }
     );

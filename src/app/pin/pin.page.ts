@@ -11,6 +11,7 @@ import { NotificationService } from '../api/notification.service';
 import { AppComponent } from '../app.component';
 import { App } from '@capacitor/app';
 import { LoggerService } from '../api/logger.service';
+import { TranslateService } from '../services/translate.service';
 
 @Component({
   selector: 'app-pin',
@@ -44,7 +45,8 @@ export class PinPage implements OnInit {
     public loadingController: LoadingController,
     private appComponent: AppComponent,
     private logger: LoggerService,
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
+    public translate: TranslateService
   ) {
     // Escuchar el estado de la red
     this.networkService.networkStatus$.subscribe((status: string) => {
@@ -58,7 +60,7 @@ export class PinPage implements OnInit {
   async presentLoading() {
     this.loading = true;
     return await this.loadingController.create({
-      message: 'Logging you in... please wait',
+      message: this.translate.instant('pin.loggingIn'),
       spinner: 'crescent',
     }).then(a => {
       a.present().then(() => {
@@ -85,8 +87,8 @@ export class PinPage implements OnInit {
 
   async noInternet() {
     const alert = await this.alertController.create({
-      header: 'No Internet Connection',
-      message: 'Please connect to the internet to proceed',
+      header: this.translate.instant('pin.noInternet'),
+      message: this.translate.instant('pin.noInternetMessage'),
       buttons: ['OK']
     });
     await alert.present();
@@ -147,13 +149,13 @@ export class PinPage implements OnInit {
     this.clicks++;
     if (this.clicks === 3) {
       const alert = await this.alertController.create({
-        header: 'Enter Admin Password',
-        message: 'Fail to enter correct password 3 times will alert the Administrator.',
-        buttons: ["Cancel", "Ok"],
+        header: this.translate.instant('pin.enterAdminPassword'),
+        message: this.translate.instant('pin.adminPasswordWarning'),
+        buttons: [this.translate.instant('common.cancel'), this.translate.instant('common.ok')],
         inputs: [{
           name: 'pin',
           type: 'password',
-          placeholder: 'Enter Password'
+          placeholder: this.translate.instant('pin.enterPassword')
         }]
       });
       await alert.present();
@@ -164,7 +166,7 @@ export class PinPage implements OnInit {
             this.presentAlert();
           } else {
             Toast.show({
-              text: 'Incorrect Password Entered',
+              text: this.translate.instant('pin.incorrectPassword'),
               duration: 'long'
             });
           }
@@ -183,18 +185,18 @@ export class PinPage implements OnInit {
   async presentAlert() {
     // Presentar alerta con opciones para ir a login o configuración
     const alert = await this.alertController.create({
-      header: 'Admin Options',
-      message: 'Select an option to proceed',
+      header: this.translate.instant('pin.adminOptions'),
+      message: this.translate.instant('pin.selectOption'),
       buttons: [
         {
-          text: 'Login',
+          text: this.translate.instant('pin.login'),
           handler: () => {
             Preferences.clear();
             this.router.navigate(['/login'], { replaceUrl: true });
           }
         },
         {
-          text: 'Configuration',
+          text: this.translate.instant('pin.configuration'),
           handler: () => {
             // const options: RemoveOptions = { key: 'config' };
             // Preferences.remove(options);
@@ -202,14 +204,14 @@ export class PinPage implements OnInit {
           }
         },
         {
-        text: 'Show Resolution',
+        text: this.translate.instant('pin.showResolution'),
         handler: () => {
           this.showResolutionAlert(); // Mostrará la resolución en una nueva alerta
           return false; // Evita que la alerta se cierre al tocar este botón
         }
         },
         {
-          text: 'Close App',
+          text: this.translate.instant('pin.closeApp'),
           handler: () => {
             Preferences.clear();
             this.router.navigate(['/login'], { replaceUrl: true });
@@ -225,7 +227,7 @@ export class PinPage implements OnInit {
       this.showResolution(); // Actualiza this.resolution
 
       const resolutionAlert = await this.alertController.create({
-          header: 'Device Resolution',
+          header: this.translate.instant('pin.deviceResolution'),
           message: this.resolution,
           buttons: ['OK']
         });
@@ -276,7 +278,7 @@ export class PinPage implements OnInit {
 
         } else if (response.status === 401) {
           this.loading = false;
-          this.notificationService.showError('The PIN you entered is incorrect. Please sign in again.',6000);
+          this.notificationService.showError(this.translate.instant('pin.incorrectPin'), 6000);
           this.loadingController.dismiss();
         }
       },error => {
@@ -284,9 +286,9 @@ export class PinPage implements OnInit {
           this.loading = false;
           this.loadingController.dismiss();
           if(error.status == 401){
-            this.notificationService.showError('The PIN you entered is incorrect. Please sign in again.',6000);
+            this.notificationService.showError(this.translate.instant('pin.incorrectPin'), 6000);
           }else{
-            this.notificationService.showError('Error interno.' + error,4000);
+            this.notificationService.showError(this.translate.instant('pin.internalError') + ' ' + error, 4000);
             Preferences.clear();
             this.router.navigate(['/login'], { replaceUrl: true });
           }

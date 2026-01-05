@@ -7,6 +7,7 @@ import { HomePage } from './home.page';
 import { HomePageRoutingModule } from './home-routing.module';
 import { ToggleComponent } from '../components/toggle/toggle.component';
 import { DirectivesModule } from '../directives.module';
+import { SharedModule } from '../shared/shared.module';
 
 
 @NgModule({
@@ -16,7 +17,8 @@ import { DirectivesModule } from '../directives.module';
     IonicModule,
     HomePageRoutingModule,
     ReactiveFormsModule,
-    DirectivesModule
+    DirectivesModule,
+    SharedModule
   ],
   declarations: [HomePage, ToggleComponent]
 })

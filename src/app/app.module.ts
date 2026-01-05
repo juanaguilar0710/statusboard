@@ -20,6 +20,7 @@ import { HttpClientModule } from '@angular/common/http';
 import { Drivers } from '@ionic/storage';
 import { HTTP_INTERCEPTORS } from '@angular/common/http';
 import { LoggingInterceptor } from './interceptor/logging.interceptor';
+import { TranslatePipe } from './pipes/translate.pipe';
 
 
 @NgModule({

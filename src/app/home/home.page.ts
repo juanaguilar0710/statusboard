@@ -19,6 +19,7 @@ import { NewPatientPage } from '../new-patient/new-patient.page';
 import { PatientChatComponent } from '../patient-chat/patient-chat.component';
 import { EditRoomComponent } from '../edit-room/edit-room.component';
 import { AudioService } from '../services/audio.service';
+import { TranslateService } from '../services/translate.service';
 
 @Component({
   selector: 'app-home',
@@ -75,7 +76,8 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
     private notificationService: NotificationService,
     private appComponent: AppComponent,
     private audioService: AudioService,
-    private modalController: ModalController) {
+    private modalController: ModalController,
+    public translate: TranslateService) {
 
     //listen for the network status
     this.networkService.networkStatus$.subscribe((status: string) => {
@@ -125,7 +127,7 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
                   this.notificationService.showError(response.data.error.detail, 5000);
                 }
               }, error =>{
-                this.notificationService.showError('Error updating users.', 5000);
+                this.notificationService.showError(this.translate.instant('home.errorUpdatingUser'), 5000);
               });
             });
           }
@@ -261,7 +263,7 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
     if (role.persons.length > 0) {
       return role.persons.map((person:any) => person.full_name).join(', ');
     }
-    return 'No asignado';
+    return this.translate.instant('home.noAssigned');
   }
 
   loadingRooms: boolean = false;
@@ -443,7 +445,7 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
   }
 
   async logout() {
-    this.notificationService.showInfo('You have successfully logged out.', 5000);
+    this.notificationService.showInfo(this.translate.instant('home.logoutSuccess'), 5000);
     this.requestsService.startTimer$.next(false);
     Preferences.remove({ key: 'user' });
     this.modallogout?.dismiss(null, 'confirm');

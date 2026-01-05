@@ -2,7 +2,7 @@
   <div *ngIf="!this.loading" class="d-flex align-items-center flex-column justify-content-between" style="height: 100%;">
     <div>
       <img class="logo" src="assets/logos/StatusBoard_Black.png" alt="logo" (click)="headerClicked()" style="margin-top: 15px;" />
-      <div style="position: absolute; top: 15px; left: 15px; text-align: center;">       
+      <div style="position: absolute; top: 15px; left: 15px; text-align: center;">
         <img *ngIf="this.image_url !== '' " [src]="this.image_url" width="200px" />
         <h5 *ngIf="this.branch_name !== '' " class="info">{{this.branch_name}}</h5>
         <h5 *ngIf="this.waitingRoom_name !== '' " class="info">{{this.waitingRoom_name}}</h5>
@@ -10,18 +10,18 @@
       <div style="position: absolute; top: 15px; right: 15px; text-align: center;">
         <div class="my-3">
           <span [ngClass]="{'online' : networkStatus === 'ONLINE', 'offline' : networkStatus === 'OFFLINE'}">
-            <b>{{networkStatus}}</b>
+            <b>{{networkStatus === 'ONLINE' ? ('pin.online' | translate) : ('pin.offline' | translate)}}</b>
           </span>
           <br/>
-          <b>Last Update: </b><br><span>{{lastsync}}</span>
+          <b>{{ 'pin.lastUpdate' | translate }} </b><br><span>{{lastsync}}</span>
         </div>
       </div>
     </div>
     <div class="whitNumbers">
 
       <div class="text-center">
-        <h1><b>{{loading ? 'Loading...' : 'Welcome'}}</b></h1>
-        <h5>{{loading ? 'Trying to log you in...' : 'Please enter your Access Code'}}</h5>
+        <h1><b>{{loading ? ('pin.loading' | translate) : ('pin.welcome' | translate)}}</b></h1>
+        <h5>{{loading ? ('pin.tryingLogin' | translate) : ('pin.enterAccessCode' | translate)}}</h5>
       </div>
 
       <ion-grid>
@@ -92,7 +92,7 @@
       <!-- <img class="logo" src="assets/logos/DTouchmedia_Black.png" alt="logo" /> -->
     </div>
     <div style="position: absolute; bottom: 5px; right: 15px;">
-      <h6 class="info" style="font-size: 15px !important;">Version: {{version}}</h6>
+      <h6 class="info" style="font-size: 15px !important;">{{ 'pin.version' | translate }} {{version}}</h6>
     </div>
   </div>
 
@@ -100,8 +100,8 @@
   <div class="loading-overlay" *ngIf="this.loading">
     <div class="loading-content">
       <div class="loading-spinner"></div>
-      <div class="loading-text">{{this.image_url ? 'Verifying your credentials...' : 'Preparing your experience...'}}</div>
-      <div class="loading-subtext">Please wait</div>
+      <div class="loading-text">{{this.image_url ? ('pin.verifyingCredentials' | translate) : ('pin.preparingExperience' | translate)}}</div>
+      <div class="loading-subtext">{{ 'pin.pleaseWait' | translate }}</div>
     </div>
   </div>
 

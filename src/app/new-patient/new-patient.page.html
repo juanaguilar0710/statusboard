@@ -1,36 +1,36 @@
 <ion-content [fullscreen]="true" style="background-color: white;">
   <div class="text-center banner-header">
-    <ion-icon name="add-outline" style="font-size: 32px;"></ion-icon> NEW PATIENT
+    <ion-icon name="add-outline" style="font-size: 32px;"></ion-icon> {{ 'newPatient.title' | translate }}
   </div>
   <form [formGroup]="form" class="my-5">
-      <ion-input #fullName [disabled]="loading" tabindex="1" label="Patient Full Name" formControlName="fullName" label-placement="floating"
-        fill="outline" errorText="Full Name required" [maxlength]="50"></ion-input>
+      <ion-input #fullName [disabled]="loading" tabindex="1" [label]="'newPatient.fullName' | translate" formControlName="fullName" label-placement="floating"
+        fill="outline" [errorText]="'newPatient.fullNameRequired' | translate" [maxlength]="50"></ion-input>
       <div class="d-flex">
         <div class="flex-fill" style="margin-right: 20px; max-width: 50%;">
-          <ion-input [disabled]="loading" tabindex="2" [min]="1" [max]="120" [maxlength]="120" label="Age" formControlName="age" label-placement="floating" fill="outline"
-            errorText="Age required" type="number"></ion-input>
+          <ion-input [disabled]="loading" tabindex="2" [min]="1" [max]="120" [maxlength]="120" [label]="'newPatient.age' | translate" formControlName="age" label-placement="floating" fill="outline"
+            [errorText]="'newPatient.ageRequired' | translate" type="number"></ion-input>
         </div>
         <div class="flex-fill radio-buttons">
           <ion-radio-group formControlName="gender" tabindex="3" [disabled]="loading">
-            <ion-radio class="m-1" label-placement="fixed" [value]="'feminine'" aria-label="Feminine">Feminine</ion-radio>&nbsp;&nbsp;
-            <ion-radio class="m-1" label-placement="fixed" [value]="'masculine'" aria-label="Masculine">Masculine</ion-radio>
+            <ion-radio class="m-1" label-placement="fixed" [value]="'feminine'" aria-label="Gender">{{ 'newPatient.feminine' | translate }}</ion-radio>&nbsp;&nbsp;
+            <ion-radio class="m-1" label-placement="fixed" [value]="'masculine'" aria-label="Gender">{{ 'newPatient.masculine' | translate }}</ion-radio>
           </ion-radio-group>
         </div>
       </div>
 
       <div class="d-flex">
         <div class="flex-fill" style="padding-right: 10px;">
-          <ion-input tabindex="4" [disabled]="loading" label="Family Full Name" formControlName="companion_name" label-placement="floating" fill="outline" errorText="Family Full Name required" [maxlength]="50"></ion-input>
+          <ion-input tabindex="4" [disabled]="loading" [label]="'newPatient.familyFullName' | translate" formControlName="companion_name" label-placement="floating" fill="outline" [errorText]="'newPatient.familyFullNameRequired' | translate" [maxlength]="50"></ion-input>
         </div>
         <div class="flex-fill">
-          <ion-input tabindex="5" [disabled]="loading" label="Family Phone Number" type="tel" formControlName="phone" label-placement="floating" fill="outline" errorText="Family Phone Number required" [maxlength]="13"></ion-input>
+          <ion-input tabindex="5" [disabled]="loading" [label]="'newPatient.familyPhone' | translate" type="tel" formControlName="phone" label-placement="floating" fill="outline" [errorText]="'newPatient.familyPhoneRequired' | translate" [maxlength]="13"></ion-input>
         </div>
       </div>
 
 
       <div class="d-flex">
         <div class="flex-fill" style="padding-right: 30px;">
-          <ion-button [disabled]="loading" class="w-100 classButton" color="danger" (click)="cancel()">Cancel</ion-button>
+          <ion-button [disabled]="loading" class="w-100 classButton" color="danger" (click)="cancel()">{{ 'newPatient.cancel' | translate }}</ion-button>
         </div>
 
         <div class="flex-fill">
@@ -38,7 +38,7 @@
             [disabled]="form.invalid" style="color: white !important;">Create</ion-button> -->
 
             <ion-button [disabled]="loading" color="success" class="w-100 classButton" (click)="createPatient()">
-              <span style="color: white;">Create</span>
+              <span style="color: white;">{{ 'newPatient.create' | translate }}</span>
             </ion-button>
 
         </div>
@@ -49,8 +49,8 @@
   <div class="loading-overlay" *ngIf="this.loading">
     <div class="loading-content">
       <div class="loading-spinner"></div>
-      <div class="loading-text">{{this.creating ? 'Creating patient...' : 'Loading patient...'}}</div>
-      <div class="loading-subtext">Please wait</div>
+      <div class="loading-text">{{this.creating ? ('newPatient.creatingPatient' | translate) : ('newPatient.loadingPatient' | translate)}}</div>
+      <div class="loading-subtext">{{ 'newPatient.pleaseWait' | translate }}</div>
     </div>
   </div>
 

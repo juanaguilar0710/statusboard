@@ -4,6 +4,7 @@ import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { IonicModule } from "@ionic/angular";
 import { SearchableComponentComponent } from "./searchable-component.component";
 import { SearchableComponentRoutingModule } from "./searchable-component-routing.module";
+import { SharedModule } from "../shared/shared.module";
 
 //generate module searchable-component
 @NgModule({
@@ -12,7 +13,8 @@ import { SearchableComponentRoutingModule } from "./searchable-component-routing
       FormsModule,
       IonicModule,
       SearchableComponentRoutingModule,
-      ReactiveFormsModule
+      ReactiveFormsModule,
+      SharedModule
     ],
     declarations: [SearchableComponentComponent]
   })

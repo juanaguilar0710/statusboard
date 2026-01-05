@@ -24,7 +24,7 @@
           <form [formGroup]="form">
             <ion-radio-group formControlName="value" (ngModelChange)="dataSelected()">
               <ion-item [ngClass]="{'selected-item': form.controls['value'].value === null}">
-                <ion-radio [value]="" label-placement="start">{{type === 'surgeon' ? 'CLEAR' : 'TO FOLLOW'}}</ion-radio>
+                <ion-radio [value]="" label-placement="start">{{type === 'surgeon' ? ('searchable.clear' | translate) : ('searchable.toFollow' | translate)}}</ion-radio>
               </ion-item>
               <ion-item *ngFor="let item of data;" [ngClass]="{'selected-item': form.controls['value'].value === item}">
                 <ion-radio [value]="item" label-placement="start">
@@ -69,15 +69,15 @@
           <div  class="w-100 mx-4 classButton" size="large"></div>
 
           <ion-button color="danger" class="w-100 mx-4 classButton" size="large" (click)="closeModal()">
-            <span style="color: #fff;">Cancel</span>
+            <span style="color: #fff;">{{ 'searchable.cancel' | translate }}</span>
           </ion-button>
 
           <ion-button color="success" class="w-100 mx-4 classButton" size="large" (click)="update()">
-            <span style="color: #fff;">Confirm</span>
+            <span style="color: #fff;">{{ 'searchable.confirm' | translate }}</span>
           </ion-button>
 
           <div class="w-100 mx-4 classButton" size="large"></div>
-          
+
         </div>
       </ion-col>
     </ion-row>

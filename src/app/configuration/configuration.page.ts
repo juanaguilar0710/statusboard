@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { Preferences } from '@capacitor/preferences';
 import { AlertController } from '@ionic/angular';
 import { LoggerService } from '../api/logger.service';
+import { TranslateService } from '../services/translate.service';
 
 @Component({
   selector: 'app-configuration',
@@ -27,6 +28,8 @@ export class ConfigurationPage implements OnInit {
 
   selectedApplication: string = '';
   selectedStatus: any;
+  selectedLanguage: string = 'es';
+  translations: any = {};
 
   turnOnTime: string = '';
   turnOffTime: string = '';
@@ -49,12 +52,12 @@ export class ConfigurationPage implements OnInit {
   statusRequiredValidator(control: AbstractControl): ValidationErrors | null {
     const aplication = control.get('aplication')?.value;
     const statuses = control.get('statuses')?.value;
-    
+
     // Si la aplicación no es "1" (Tablet) y no hay estados seleccionados
     if (aplication !== '1' && aplication !== null && (!statuses || statuses.length === 0)) {
       return { statusRequired: true };
     }
-    
+
     return null;
   }
 
@@ -63,11 +66,22 @@ export class ConfigurationPage implements OnInit {
     private requestsService: RequestsService,
     private cdr: ChangeDetectorRef,
     private logger: LoggerService,
-    private router: Router) {
+    private router: Router,
+    public translate: TranslateService) {
     // Ya no necesitamos listener del branch - se lee de la autenticación
   }
 
   async ngOnInit() {
+    // Cargar idioma guardado
+    await this.translate.loadLanguage();
+    this.selectedLanguage = this.translate.getCurrentLanguage();
+
+    // Suscribirse a cambios de idioma
+    this.translate.onLangChange().subscribe(lang => {
+      this.selectedLanguage = lang;
+      this.cdr.detectChanges();
+    });
+
     const configResponse = await Preferences.get({ key: 'config' });
     if (configResponse.value) {
       const objResponse = JSON.parse(configResponse.value);
@@ -94,11 +108,11 @@ export class ConfigurationPage implements OnInit {
           waitingRoom: this.waiting_rooms[0]
         });
       }
-    }    
+    }
 
     const tempConfigString = localStorage.getItem('tempConfig');
     console.log(tempConfigString);
-    
+
     if (tempConfigString) {
       const tempConfig = JSON.parse(tempConfigString);
       this.requestsService.setToken(tempConfig.token);
@@ -121,35 +135,35 @@ export class ConfigurationPage implements OnInit {
 
     }else{
       console.log('entro sin temp config');
-      
+
       await this.getBranch();
     }
   }
 
-  async getBranch() {    
+  async getBranch() {
     Preferences.get({ key: 'branch' }).then(async (response: any) => {
-        if (response.value) {          
+        if (response.value) {
           this.branches = [JSON.parse(response.value)];
-          this.selectedBranchName = this.branches[0].name;        
+          this.selectedBranchName = this.branches[0].name;
         }
-        
-      const authToken = this.requestsService.getToken();        
+
+      const authToken = this.requestsService.getToken();
       if(authToken == null){
          await this.logger.getTokenAdmin().then(token => {
             this.requestsService.setToken(token);
           });
-        }  
-    
-        this.requestsService.getBranchStatuses(this.branches[0].id).subscribe(resp => {          
+        }
+
+        this.requestsService.getBranchStatuses(this.branches[0].id).subscribe(resp => {
           if(resp.status != 500){
-            this.statuses = resp           
+            this.statuses = resp
           }else{
             console.log(resp);
           }
       },error => {
         console.log(error);
       });
-    });   
+    });
   }
 
   async save() {
@@ -237,6 +251,12 @@ export class ConfigurationPage implements OnInit {
     this.selectedStatus = event.detail.value;
     // Actualizar validación del formulario cuando cambian los estados
     this.form.updateValueAndValidity();
+  }
+
+  async onLanguageChange(event: any) {
+    const lang = event.detail.value;
+    await this.translate.setLanguage(lang);
+    this.selectedLanguage = lang;
   }
 
 }

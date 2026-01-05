@@ -8,6 +8,7 @@ import { EditRoomComponent } from './edit-room.component';
 import { EditRoomPageRoutingModule } from './edit-room-routing.module';
 import { NgxColorsModule } from 'ngx-colors';
 import { DirectivesModule } from '../directives.module';
+import { SharedModule } from '../shared/shared.module';
 
 @NgModule({
   imports: [
@@ -17,7 +18,8 @@ import { DirectivesModule } from '../directives.module';
     ReactiveFormsModule,
     EditRoomPageRoutingModule,
     NgxColorsModule,
-    DirectivesModule
+    DirectivesModule,
+    SharedModule
   ],
   declarations: [EditRoomComponent]
   // providers: [PanelFactoryService] // Descomenta si el servicio existe

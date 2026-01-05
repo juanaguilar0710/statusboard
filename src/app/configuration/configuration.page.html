@@ -6,49 +6,55 @@
     <div style="min-width: 300px; max-width: 400px;">
       <form [formGroup]="form">
         <div class="text-center">
-          <h1><b>Configuration Mode</b></h1>
-          <!-- <span *ngIf="waiting_rooms.length > 1">Please select Waiting Room:</span> -->
-          <span *ngIf="waiting_rooms.length <= 1">Configuration for: {{ selectedBranchName }}</span>
+          <h1><b>{{ translate.instant('configuration.title') }}</b></h1>
+          <!-- <span *ngIf="waiting_rooms.length > 1">{{ translate.instant('configuration.selectWaitingRoom') }}</span> -->
+          <span *ngIf="waiting_rooms.length <= 1">{{ translate.instant('configuration.configurationFor') }} {{ selectedBranchName }}</span>
         </div>
         <br />
         <br />
+            <!-- Selector de Idioma -->
+            <ion-select fill="outline" aria-label="Language" [(ngModel)]="selectedLanguage" [ngModelOptions]="{standalone: true}" interface="popover" [placeholder]="translate.instant('configuration.language')" (ionChange)="onLanguageChange($event)">
+              <ion-select-option value="es">{{ translate.instant('configuration.spanish') }}</ion-select-option>
+              <ion-select-option value="en">{{ translate.instant('configuration.english') }}</ion-select-option>
+            </ion-select>
+        <br/>
             <!-- Mostrar selector solo si hay más de un waiting room -->
-            <ion-select *ngIf="waiting_rooms.length > 1" fill="outline" aria-label="Waiting Rooms" formControlName="waitingRoom" interface="popover" placeholder="Select Waiting Room">
+            <ion-select *ngIf="waiting_rooms.length > 1" fill="outline" aria-label="Waiting Rooms" formControlName="waitingRoom" interface="popover" [placeholder]="translate.instant('configuration.waitingRoom')">
               <ion-select-option [value]="room" *ngFor="let room of waiting_rooms">{{room.name}}</ion-select-option>
             </ion-select>
-            
+
             <!-- Mostrar info del waiting room seleccionado automáticamente -->
             <div *ngIf="waiting_rooms.length <= 1 && selectedWaitingRoomName" class="selected-room-info">
               <ion-item lines="none">
                 <ion-icon name="checkmark-circle" color="success" slot="start"></ion-icon>
                 <ion-label>
-                  <h3>Waiting Room: {{ selectedWaitingRoomName }}</h3>
-                  <p>Automatically selected</p>
+                  <h3>{{ translate.instant('configuration.waitingRoom') }}: {{ selectedWaitingRoomName }}</h3>
+                  <p>{{ translate.instant('configuration.automaticallySelected') }}</p>
                 </ion-label>
               </ion-item>
             </div>
           <br/>
-            <ion-input fill="outline" label="Station Location" formControlName="stationName" label-placement="floating"
-              errorText="Station Location is Required"></ion-input>
+            <ion-input fill="outline" [label]="translate.instant('configuration.stationLocation')" formControlName="stationName" label-placement="floating"
+              [errorText]="translate.instant('configuration.stationLocationRequired')"></ion-input>
           <br />
-            <ion-select fill="outline" aria-label="Application" formControlName="aplication" interface="popover" placeholder="Application" (ionChange)="onApplicationChange($event)">
-              <ion-select-option value="1">Tablet</ion-select-option>
-              <ion-select-option value="2">Dashboard Card View</ion-select-option>        
-              <ion-select-option value="3">Dashboard List View</ion-select-option>        
+            <ion-select fill="outline" aria-label="Application" formControlName="aplication" interface="popover" [placeholder]="translate.instant('configuration.application')" (ionChange)="onApplicationChange($event)">
+              <ion-select-option value="1">{{ translate.instant('configuration.tablet') }}</ion-select-option>
+              <ion-select-option value="2">{{ translate.instant('configuration.dashboardCard') }}</ion-select-option>
+              <ion-select-option value="3">{{ translate.instant('configuration.dashboardList') }}</ion-select-option>
             </ion-select>
           <br *ngIf="selectedApplication !== '1'"/>
-          <ion-select *ngIf="selectedApplication !== '1'"  multiple="true" formControlName="statuses" fill="outline" aria-label="Status to Show" interface="popover" placeholder="Status to Show" (ionChange)="onStatusChange($event)">
-            <ion-select-option [value]="status.id" *ngFor="let status of statuses">{{status.name}}</ion-select-option>              
+          <ion-select *ngIf="selectedApplication !== '1'"  multiple="true" formControlName="statuses" fill="outline" aria-label="Status to Show" interface="popover" [placeholder]="translate.instant('configuration.statusToShow')" (ionChange)="onStatusChange($event)">
+            <ion-select-option [value]="status.id" *ngFor="let status of statuses">{{status.name}}</ion-select-option>
           </ion-select>
           <div *ngIf="selectedApplication !== '1' && form.hasError('statusRequired') && (form.get('statuses')?.touched || form.touched)" class="error-message">
-            <small style="color: var(--ion-color-danger);">Please select at least one status</small>
+            <small style="color: var(--ion-color-danger);">{{ translate.instant('configuration.selectAtLeastOneStatus') }}</small>
           </div>
           <br *ngIf="selectedApplication !== '1'"/>
             <!-- <ion-input *ngIf="this.selectedApplication !== '1'" fill="outline" [value]="formattedTime" placeholder="HH:MM - HH:MM" (ionFocus)="openTimeRangePicker()"></ion-input> -->
-          
+
         <br />
         <ion-button class="w-100" color="primary" size="large" [disabled]="form.invalid"
-          (click)="save()">SAVE</ion-button>
+          (click)="save()">{{ translate.instant('configuration.saveButton') }}</ion-button>
       </form>
     </div>
     <div>

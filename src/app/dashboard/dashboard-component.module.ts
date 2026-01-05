@@ -4,6 +4,7 @@ import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { IonicModule } from "@ionic/angular";
 import { DashboardComponent } from "./dashboard.component";
 import { DashboardComponentRoutingModule } from "./dashboard-routing.module";
+import { SharedModule } from "../shared/shared.module";
 
 //generate module searchable-component
 @NgModule({
@@ -11,8 +12,9 @@ import { DashboardComponentRoutingModule } from "./dashboard-routing.module";
       CommonModule,
       FormsModule,
       IonicModule,
-      DashboardComponentRoutingModule,      
-      ReactiveFormsModule
+      DashboardComponentRoutingModule,
+      ReactiveFormsModule,
+      SharedModule
     ],
     declarations: [DashboardComponent]
   })
