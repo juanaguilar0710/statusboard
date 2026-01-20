@@ -249,7 +249,7 @@ ion-input {
   .margintarjeta{
     margin-top: 5px;
   }
-  
+
   .widthProcedure{
     width: 260% !important;
   }
@@ -260,6 +260,14 @@ ion-input {
 
   .rowButton{
     margin-top: 125px !important;
+  }
+
+}
+
+@media only screen and (min-width: 1720px) and (max-height: 810px) {
+
+  .paddingProcedure{
+    padding-left: 375px !important;
   }
 
 }

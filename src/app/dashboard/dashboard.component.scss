@@ -94,9 +94,10 @@ ion-content {
   }
 
   .holding-box p, .surgery-box p, .recovery-box p, .completed-box p {
-    font-size: 16px;
+    font-size: 14px;
     margin: 0;
     font-weight: bold;
+    margin-top: 3px;
   }
 
   .room-card {
@@ -401,9 +402,10 @@ ion-content {
       }
 
       .holding-box p, .surgery-box p, .recovery-box p, .completed-box p {
-        font-size: 10px;
+        font-size: 8px;
         margin: 0;
         font-weight: bold;
+        margin-top: 3px;
       }
 
       .onlineTittle{

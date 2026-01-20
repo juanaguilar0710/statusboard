@@ -179,6 +179,7 @@
     "patientAvailable": "Patient Available:",
     "teamWork": "Team Work:",
     "addButton": "+ Add",
+    "addMemberButton": "Add Member",
     "selectRole": "Select Role",
     "selectUser": "Select User",
     "years": "years",
@@ -189,6 +190,23 @@
     "updateRoomFailed": "Failed to update room",
     "updatePatientsFailed": "Failed to update patients",
     "changesSaved": "Changes saved successfully"
+  },
+  "addMember": {
+    "title": "Add Team Member",
+    "firstName": "First Name",
+    "firstNamePlaceholder": "Enter first name",
+    "lastName": "Last Name",
+    "lastNamePlaceholder": "Enter last name",
+    "role": "Role",
+    "rolePlaceholder": "Select a role",
+    "color": "Color",
+    "required": "Required field",
+    "cancel": "Cancel",
+    "save": "Save Member",
+    "saving": "Saving...",
+    "successMessage": "Member added successfully",
+    "errorMessage": "Error adding member",
+    "completeFields": "Please complete all fields"
   },
   "home": {
     "filter": "Filter:",

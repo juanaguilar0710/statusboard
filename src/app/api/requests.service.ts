@@ -662,6 +662,22 @@ export class RequestsService {
         });
     }
 
+    // Create a new operating room user
+    createOperatingRoomUser = async (userData: any): Promise<any> => {
+        return new Promise(async (resolve, reject) => {
+            const options = {
+                url: environment.url + environment.operatingroomusers,
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer ' + this.token },
+                data: userData
+            };
+            try {
+                resolve(await CapacitorHttp.post(options));
+            } catch (error) {
+                reject(error);
+            }
+        });
+    }
+
     authorizeBroadcasting(socketId: string, channelName: string): Observable<any> {
         const headers = new HttpHeaders({
             Authorization: `Bearer ${this.token}`,

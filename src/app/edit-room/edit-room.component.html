@@ -23,7 +23,7 @@
       </ion-col>
       <ion-col class="font-size ion-text-right" style="display: flex; justify-content: space-between; align-items: center;">
         {{ 'editRoom.teamWork' | translate }}
-        <button ion-button (click)="addRole()" style="margin-left: auto;">{{ 'editRoom.addButton' | translate }}</button>
+        <button ion-button (click)="openAssignMemberModal()" style="margin-left: auto;">{{ 'editRoom.addMemberButton' | translate }}</button>
       </ion-col>
     </ion-row>
   </ion-grid>
@@ -102,11 +102,10 @@
           </ion-grid>
         </div>
 
-
-
-
-
-
+        <!-- Botón para agregar más roles debajo del listado -->
+        <div class="d-flex justify-content-center" style="margin: 10px 0;">
+          <button ion-button (click)="addRole()" style="background-color: #007AFF; color: white; border-radius: 50%; width: 50px; height: 50px; font-size: 30px; display: flex; align-items: center; justify-content: center; border: none; cursor: pointer;">+</button>
+        </div>
 
         <!-- Botones alineados en la parte inferior -->
         <div class="d-flex justify-content-center" style="margin-top: auto;">

@@ -259,11 +259,22 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
     }
   }
 
-  getUserNames(role: any): string {
+  getUserNames(role: any): string[] {
+    const displayCode = role.code?.trim().toUpperCase() === 'MD' ? 'SURG' : role.code;
     if (role.persons.length > 0) {
-      return role.persons.map((person:any) => person.full_name).join(', ');
+      return role.persons.map((person: any) => `<strong>${displayCode}:</strong> ${person.full_name}`);
     }
-    return this.translate.instant('home.noAssigned');
+    return [`<strong>${displayCode}:</strong> ${this.translate.instant('home.noAssigned')}`];
+  }
+
+  shouldShowRoom(room: any): boolean {
+    // Verificar si hay al menos un paciente asignado a esta sala
+    const hasPatientsAssigned = this.patients.some(p => p.operating_room_id === room.id);
+
+    // Verificar si hay al menos un rol con miembros
+    const hasRoleWithMembers = room.roles && room.roles.some((role: any) => role.persons && role.persons.length > 0);
+
+    return hasPatientsAssigned || hasRoleWithMembers;
   }
 
   loadingRooms: boolean = false;

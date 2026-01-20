@@ -1,0 +1,76 @@
+<ion-header class="modal-header-wrapper">
+  <ion-toolbar class="minimal-toolbar">
+    <ion-title>{{ 'addMember.title' | translate }}</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="cancel()">
+        <ion-icon name="close"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="modal-content">
+  <form [formGroup]="memberForm" class="minimal-form">
+    <div class="form-group">
+      <label>{{ 'addMember.firstName' | translate }}</label>
+      <input
+        type="text"
+        formControlName="firstName"
+        [placeholder]="'addMember.firstNamePlaceholder' | translate"
+        class="minimal-input"
+      />
+      <span *ngIf="memberForm.get('firstName')?.invalid && memberForm.get('firstName')?.touched" class="error-text">
+        {{ 'addMember.required' | translate }}
+      </span>
+    </div>
+
+    <div class="form-group">
+      <label>{{ 'addMember.lastName' | translate }}</label>
+      <input
+        type="text"
+        formControlName="lastName"
+        [placeholder]="'addMember.lastNamePlaceholder' | translate"
+        class="minimal-input"
+      />
+      <span *ngIf="memberForm.get('lastName')?.invalid && memberForm.get('lastName')?.touched" class="error-text">
+        {{ 'addMember.required' | translate }}
+      </span>
+    </div>
+
+    <div class="form-group">
+      <label>{{ 'addMember.role' | translate }}</label>
+      <select formControlName="role" class="minimal-select">
+        <option value="" disabled>{{ 'addMember.rolePlaceholder' | translate }}</option>
+        <option *ngFor="let role of roles" [value]="role.id">
+          {{ role.code }}
+        </option>
+      </select>
+      <span *ngIf="memberForm.get('role')?.invalid && memberForm.get('role')?.touched" class="error-text">
+        {{ 'addMember.required' | translate }}
+      </span>
+    </div>
+
+    <!-- <div class="form-group">
+      <label>{{ 'addMember.color' | translate }}</label>
+      <div class="color-picker-wrapper">
+        <div ngx-colors-trigger [hideTextInput]="true" formControlName="color" class="color-trigger">
+          <div class="color-preview" [style.background-color]="memberForm.value.color"></div>
+          <span class="color-value">{{ memberForm.value.color }}</span>
+        </div>
+      </div>
+    </div> -->
+
+    <div class="form-actions">
+      <button type="button" class="btn-cancel" (click)="cancel()" [disabled]="loading">
+        {{ 'addMember.cancel' | translate }}
+      </button>
+      <button type="button" class="btn-save" (click)="save()" [disabled]="loading || memberForm.invalid">
+        <span *ngIf="!loading">{{ 'addMember.save' | translate }}</span>
+        <span *ngIf="loading" class="loading-text">
+          <ion-spinner name="crescent"></ion-spinner>
+          {{ 'addMember.saving' | translate }}
+        </span>
+      </button>
+    </div>
+  </form>
+</ion-content>

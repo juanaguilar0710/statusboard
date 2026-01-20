@@ -74,7 +74,7 @@ export class SearchableComponentComponent implements AfterViewInit, OnInit {
         break;
       case 'surgeon':
         this.data = this.navParams.get('data').filter((item: any) => {
-          return item.name.toLowerCase().indexOf(this.searchInput.value.toLowerCase()) > -1
+          return item.full_name.toLowerCase().indexOf(this.searchInput.value.toLowerCase()) > -1
         })
         break;
       case 'operating_room':

@@ -28,7 +28,7 @@
               </ion-item>
               <ion-item *ngFor="let item of data;" [ngClass]="{'selected-item': form.controls['value'].value === item}">
                 <ion-radio [value]="item" label-placement="start">
-                  {{ item.name }}
+                  {{ type === 'surgeon' ? item.full_name : item.name }}
                 </ion-radio>
               </ion-item>
             </ion-radio-group>

@@ -166,28 +166,28 @@
             <div class="text-center m-2">
               <h3>{{ 'home.workTeams' | translate }}</h3>
             </div>
-            <div class="room-cards" (click)="editRoom(room, i)" *ngFor="let room of operatingRooms; let i = index"
-              [ngStyle]="{'background-color': room.color}" [dynamicTextColor]="room.color">
+            <ng-container *ngFor="let room of operatingRooms; let i = index">
+              <div class="room-cards" (click)="editRoom(room, i)" *ngIf="shouldShowRoom(room)"
+                [ngStyle]="{'background-color': room.color}" [dynamicTextColor]="room.color">
 
-              <div class="room-edit-icon">
-                <ion-icon name="create-outline"></ion-icon>
-              </div>
+                <div class="room-edit-icon">
+                  <ion-icon name="create-outline"></ion-icon>
+                </div>
 
-              <div class="text-center room-name">
-                <h4>{{room.name}}</h4>
-              </div>
+                <div class="text-center room-name">
+                  <h4>{{room.name}}</h4>
+                </div>
 
-              <div class="room-card-details">
-                <div *ngFor="let role of room.roles">
-                  <div>
-                    <a style="font-weight: bold;">{{ role.code }}: </a>
-                    <!-- Usar el método getUserNames para obtener los nombres de los usuarios -->
-                    <span>{{ getUserNames(role) }}</span>
+                <div class="room-card-details">
+                  <div *ngFor="let role of room.roles">
+                    <div *ngFor="let userName of getUserNames(role)">
+                      <span [innerHTML]="userName"></span>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-            </div>
+              </div>
+            </ng-container>
           </div>
         </div>
 

@@ -49,6 +49,14 @@ ion-modal.logout-modal {
     --height: 30%;
 }
 
+ion-modal.add-member-modal {
+    --width: 90%;
+    --max-width: 550px;
+    --height: 600px;
+    --border-radius: 16px;
+    --box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+}
+
 .wider-popover
 {
   --width: 95% !important;

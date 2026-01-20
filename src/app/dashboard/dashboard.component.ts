@@ -447,7 +447,10 @@ import { TranslateService } from '../services/translate.service';
   }
   getRoomsWithPatients(): any[] {
     this.roomsWithPatients = this.roomsWithPatients || [];
-        this.operatingRooms.forEach(room => {
+        // Filtrar salas usando shouldShowRoom para consistencia
+        const filteredRooms = this.operatingRooms.filter(room => this.shouldShowRoom(room));
+
+        filteredRooms.forEach(room => {
             const patientsInRoom = this.filterPatientsByRoom(room.name);
             const existingRoom = this.roomsWithPatients.find(r => r.name === room.name);
             if (existingRoom) {
@@ -513,8 +516,15 @@ import { TranslateService } from '../services/translate.service';
     }, 1000);
   }
   changePageRooms() {
-    const totalPages = this.operatingRooms && this.operatingRooms.length > 0 ? Math.ceil(this.operatingRooms.length / environment.roomsPerPage) : 0;
-    environment.currentPage = (environment.currentPage + 1) % totalPages;
+    const filteredRooms = this.operatingRooms?.filter(room => this.shouldShowRoom(room)) || [];
+    const totalPages = filteredRooms.length > 0 ? Math.ceil(filteredRooms.length / environment.roomsPerPage) : 1;
+
+    // Solo paginar si hay más de una página
+    if (totalPages > 1) {
+      environment.currentPage = (environment.currentPage + 1) % totalPages;
+    } else {
+      environment.currentPage = 0;
+    }
   }
   changePageRoomsWhitPatients() {
   const roomsWithPatients = this.getRoomsWithPatients();
@@ -524,13 +534,20 @@ import { TranslateService } from '../services/translate.service';
     return;
   }
   this.totalPagesWhitPatients = Math.ceil(roomsWithPatients.length / environment.roomsPerPageWhitPatients);
-  environment.currentPageWhitPatients = (environment.currentPageWhitPatients + 1) % this.totalPagesWhitPatients;
+
+  // Solo paginar si hay más de una página
+  if (this.totalPagesWhitPatients > 1) {
+    environment.currentPageWhitPatients = (environment.currentPageWhitPatients + 1) % this.totalPagesWhitPatients;
+  } else {
+    environment.currentPageWhitPatients = 0;
+  }
   this.totalPagesCurrentPatients = environment.currentPageWhitPatients;
 }
   getRoomsForCurrentPage() {
+    const filteredRooms = this.operatingRooms?.filter(room => this.shouldShowRoom(room)) || [];
     const start = environment.currentPage * environment.roomsPerPage;
     const end = start + environment.roomsPerPage;
-    return this.operatingRooms.slice(start, end);
+    return filteredRooms.slice(start, end);
   }
   getRoomsForCurrentPagewhitpatients() {
     const start = environment.currentPageWhitPatients * environment.roomsPerPageWhitPatients;
@@ -1216,11 +1233,23 @@ private isPusherConnected(): boolean {
   getPatientsByRoom(roomName: string): any[] {
     return this.patients.filter(patient => patient.operating_room_name === roomName);
   }
-  getUserNames(role: any): string {
+  getUserNames(role: any): string[] {
+    const displayCode = role.code?.trim().toUpperCase() === 'MD' ? 'SURG' : role.code;
+
     if (role.persons.length > 0) {
-      return role.persons.map((person:any) => person.full_name).join(', ');
+      return role.persons.map((person: any) => `<strong>${displayCode}:</strong> ${person.full_name}`);
     }
-    return 'No asignado';
+    return [];
+  }
+
+  shouldShowRoom(room: any): boolean {
+    // Verificar si hay al menos un paciente asignado a esta sala
+    const hasPatientsAssigned = this.patients.some(p => p.operating_room_id === room.id);
+
+    // Verificar si hay al menos un rol con miembros
+    const hasRoleWithMembers = room.roles && room.roles.some((role: any) => role.persons && role.persons.length > 0);
+
+    return hasPatientsAssigned || hasRoleWithMembers;
   }
   getRandomColor(operatingRooms: any[]) {
     return operatingRooms.map((room) => {

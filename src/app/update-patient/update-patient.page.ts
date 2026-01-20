@@ -106,7 +106,7 @@ export class UpdatePatientPage implements OnInit, OnDestroy {
         Preferences.remove({ key: 'user' });
         this.router.navigate(['/pin'], { replaceUrl: true });
       }
-      this.surgeons = resp.data?.sort((a: any, b: any) => { return a.name.localeCompare(b.name) });
+      this.surgeons = resp.data.data?.sort((a: any, b: any) => { return a.full_name.localeCompare(b.full_name) });
     },error => {
       console.log('error getBranchSurgeonsByWaitingRoom: ', error);
     });
@@ -222,7 +222,7 @@ export class UpdatePatientPage implements OnInit, OnDestroy {
           this.form.get('operating_room_name')?.setValue(dataSelected.name);
         } else if (type == 'surgeon') {
           this.form.get('surgeon_id')?.setValue(dataSelected.id);
-          this.form.get('surgeon_name')?.setValue(dataSelected.name);
+          this.form.get('surgeon_name')?.setValue(dataSelected.full_name);
         } else if (type == 'procedure') {
           this.form.get('procedure_id')?.setValue(dataSelected.id);
           this.form.get('procedure_name')?.setValue(dataSelected.name);
@@ -458,6 +458,7 @@ export class UpdatePatientPage implements OnInit, OnDestroy {
     } else {
       this.patient.visit_canceled_at = null;
     }
+    this.patient.procedure_time = this.patient.procedure_time.split(':').slice(0, 2).join(':');
     this.modalCancelSurgery?.dismiss();
     this.storage.set('patient', this.patient);
     // const navigationBehaviorOptions: NavigationBehaviorOptions = { state: { update: true, patient: this.patient }, replaceUrl: true };
