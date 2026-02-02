@@ -27,6 +27,7 @@ export class PatientModel {
     status: any;
     branch_Id?: number;
     waiting_area_Id?: number;
+    external_id?: string;
 
     constructor(obj: any) {
         this.id = obj.id;
@@ -57,5 +58,6 @@ export class PatientModel {
         this.status = obj.status;
         this.branch_Id = obj.branch_Id;
         this.waiting_area_Id = obj.waiting_area_Id;
+        this.external_id = obj.external_id;
     }
 }

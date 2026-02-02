@@ -36,6 +36,8 @@ export class AppComponent implements OnInit{
 
   public timeRemaining$: BehaviorSubject<number> = new BehaviorSubject<number>(this.maxInactivityTime);
   private listenerRefs: { [key: string]: any } = {};
+  private isTrackingActive: boolean = false;
+  private isIntervalRunning: boolean = false;
 
   constructor(
     private router: Router,
@@ -172,12 +174,21 @@ export class AppComponent implements OnInit{
   }
 
   private startInactivityTracking(): void {
+    // Evitar iniciar si ya está activo
+    if (this.isTrackingActive) {
+      return;
+    }
+
     this.stopInactivityTracking();
+    this.isTrackingActive = true;
     this.initListener();
     this.initInterval();
   }
 
   private initListener(): void {
+    // Remover listeners existentes primero para evitar duplicados
+    this.removeListeners();
+
     this.events.forEach(event => {
       const passiveEvents = ['scroll', 'wheel', 'touchstart', 'touchmove', 'touchend'];
       const options = passiveEvents.includes(event) ? { passive: true } : undefined;
@@ -187,21 +198,29 @@ export class AppComponent implements OnInit{
   }
 
   private resetTimer(): void {
+    // Solo resetear si el tracking está activo
+    if (!this.isTrackingActive) {
+      return;
+    }
+
     this.inactivityTime = 0;
     this.timeRemaining$.next(this.maxInactivityTime);
   }
 
   stopInactivityTracking(): void {
+    this.isTrackingActive = false;
     this.removeListeners();
     this.stopInterval();
   }
 
   private stopInterval(): void {
     this.inactivityTime = 0;
+    this.isIntervalRunning = false;
     if (this.timer) {
       clearInterval(this.timer);
       this.timer = undefined;
     }
+    this.timeRemaining$.next(this.maxInactivityTime);
   }
 
   private removeListeners(): void {
@@ -214,15 +233,34 @@ export class AppComponent implements OnInit{
   }
 
   private initInterval(): void {
+    // Evitar crear múltiples intervalos
+    if (this.isIntervalRunning || this.timer) {
+      return;
+    }
+
+    this.isIntervalRunning = true;
+    this.inactivityTime = 0;
+    this.timeRemaining$.next(this.maxInactivityTime);
+
     this.timer = setInterval(() => {
+      // Verificar si el tracking sigue activo
+      if (!this.isTrackingActive || !this.isIntervalRunning) {
+        this.stopInterval();
+        return;
+      }
+
       const excludedUrls = ['/login', '/pin', '/configuration', '/dashboard'];
       const currentUrl = this.router.url;
+
       if (excludedUrls.some(url => currentUrl.includes(url))) {
         this.stopInactivityTracking();
         return;
       }
+
       this.inactivityTime++;
-      this.timeRemaining$.next(this.maxInactivityTime - this.inactivityTime);
+      const remaining = this.maxInactivityTime - this.inactivityTime;
+      this.timeRemaining$.next(remaining);
+
       if (this.inactivityTime >= this.maxInactivityTime) {
         this.modalController.dismiss(null).then(() => true).catch(() => false);
         this.handleLogout();
@@ -239,12 +277,15 @@ export class AppComponent implements OnInit{
 
   public resetSession(): void {
     this.stopInactivityTracking();
+    this.inactivityTime = 0;
+    this.timeRemaining$.next(this.maxInactivityTime);
     this.startInactivityTracking();
   }
 
   async startListeners(): Promise<boolean> {
     return new Promise(async (resolve, reject) => {
-      if (!this.timer) {
+      // Solo iniciar si no está ya activo
+      if (!this.isTrackingActive && !this.timer) {
         await this.initListener();
         await this.initInterval();
       }

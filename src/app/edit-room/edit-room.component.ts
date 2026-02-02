@@ -312,7 +312,7 @@ async update() {
         this.roles.controls.forEach((roleControl, index) => {
           this.onRoleChange(index);
         });
-      }, 500);
+      }, 1000);
       this.showToast('Miembro agregado exitosamente');
     }
   }

@@ -28,7 +28,7 @@ export class ConfigurationPage implements OnInit {
 
   selectedApplication: string = '';
   selectedStatus: any;
-  selectedLanguage: string = 'es';
+  selectedLanguage: string = 'en';
   translations: any = {};
 
   turnOnTime: string = '';
@@ -44,6 +44,7 @@ export class ConfigurationPage implements OnInit {
     stationType: ["OR Controller"],
     aplication: [null, [Validators.required]],
     statuses: [null],
+    anonymousMode: [false], // Modo anónimo para mostrar iniciales en lugar de nombre completo
     turnOnTime: [null],
     turnOffTime: [null],
   }, { validators: this.statusRequiredValidator.bind(this) });

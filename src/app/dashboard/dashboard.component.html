@@ -41,7 +41,7 @@
                     <ng-container *ngFor="let patient of getPatientsForCurrentPage()">
                       <tr  [ngClass]="{'highlight-updated': isPatientUpdated(patient.id)}" style="border-bottom: 1px solid #f0f0f0;">
                         <td class="textCardPatients text-ellipsis" style="padding: 8px; width: 5%;">{{patient.identifier}}</td>
-                        <td class="textCardPatients text-ellipsis" style="padding: 8px; width: 20%;"><strong>{{patient.fullName | uppercase}}</strong></td>
+                        <td class="textCardPatients text-ellipsis" style="padding: 8px; width: 20%;"><strong>{{getPatientDisplayName(patient) | uppercase}}</strong></td>
                         <td class="textCardPatients text-ellipsis" style="padding: 8px; width: 10%;">{{patient.age}}{{ translate.getCurrentLanguage() === 'en' ? 'y' : 'a' }}</td>
                         <td class="textCardPatients text-ellipsis" style="padding: 8px; width: 10%;">{{patient.operating_room_name}}</td>
                         <td class="textCardPatients text-ellipsis" style="padding: 8px; width: 20%;">
@@ -107,7 +107,7 @@
                     <ion-row style="height: 22px;" class="ion-no-wrap" [ngClass]="{'highlight-updated': isPatientUpdated(patient.id)}">
                       <ion-col size="1.2" class="textCardPatients text-ellipsis" style="text-align: left !important;"><strong>{{patient.recovery_room}}</strong></ion-col>
                       <!-- <ion-col size="1" class="textCardPatients" style="padding-right: 0px;" [ngClass]="{'canceled': patient.visit_canceled_at}"><strong>{{patient.age}}y</strong></ion-col> -->
-                      <ion-col size="3" class="textCardPatients text-ellipsis" style="margin-right: 0px;" [ngClass]="{ 'surgery': patient.status.type === 'surgery', 'holding': patient.status.type === 'holding', 'nextSurgery': patient.status.type === 'next_to_surgery'}"><strong>({{patient.age}}y) {{patient.fullName}}</strong></ion-col>
+                      <ion-col size="3" class="textCardPatients text-ellipsis" style="margin-right: 0px;" [ngClass]="{ 'surgery': patient.status.type === 'surgery', 'holding': patient.status.type === 'holding', 'nextSurgery': patient.status.type === 'next_to_surgery'}"><strong>{{getPatientDisplayNameWithAge(patient)}}</strong></ion-col>
                  <!-- <ion-col size="3" class="textCardPatients text-ellipsis" style="margin-right: 11px;" [ngClass]="{ 'surgery': patient.status.type === 'surgery', 'holding': patient.status.type === 'holding', 'nextSurgery': patient.status.type === 'next_to_surgery', 'canceled': patient.visit_canceled_at}"><strong>{{patient.fullName}}<strong>  ({{patient.age}}y)</strong></strong></ion-col> -->
                       <ion-col size="3.7" class="textCardPatients text-ellipsis" style="text-align: left !important;" [ngClass]="{'canceled': patient.visit_canceled_at}"><strong>{{patient.procedure_name}}</strong></ion-col>
                       <ion-col size="3" class="textCardPatients text-ellipsis" style="text-align: left !important;" [ngClass]="{'canceled': patient.visit_canceled_at}"><strong>{{patient.surgeon_name}}</strong></ion-col>

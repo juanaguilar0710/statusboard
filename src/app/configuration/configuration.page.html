@@ -1,64 +1,173 @@
-<ion-content [fullscreen]="true">
-  <div class="d-flex align-items-center flex-column justify-content-between" style="height: 100%;">
-    <div>
-      <img class="logo" src="assets/logos/StatusBoard_Black.png" alt="logo" style="margin-top: 15px;" />
+<ion-content [fullscreen]="true" class="config-content">
+  <div class="config-container">
+    <!-- Header con logo -->
+    <div class="config-header">
+      <img class="logo-main" src="assets/logos/StatusBoard_Black.png" alt="logo" />
+      <h1 class="config-title">{{ translate.instant('configuration.title') }}</h1>
+      <p class="config-subtitle" *ngIf="waiting_rooms.length <= 1">
+        {{ translate.instant('configuration.configurationFor') }} <strong>{{ selectedBranchName }}</strong>
+      </p>
     </div>
-    <div style="min-width: 300px; max-width: 400px;">
+
+    <!-- Formulario en Card -->
+    <div class="config-card">
       <form [formGroup]="form">
-        <div class="text-center">
-          <h1><b>{{ translate.instant('configuration.title') }}</b></h1>
-          <!-- <span *ngIf="waiting_rooms.length > 1">{{ translate.instant('configuration.selectWaitingRoom') }}</span> -->
-          <span *ngIf="waiting_rooms.length <= 1">{{ translate.instant('configuration.configurationFor') }} {{ selectedBranchName }}</span>
-        </div>
-        <br />
-        <br />
-            <!-- Selector de Idioma -->
-            <ion-select fill="outline" aria-label="Language" [(ngModel)]="selectedLanguage" [ngModelOptions]="{standalone: true}" interface="popover" [placeholder]="translate.instant('configuration.language')" (ionChange)="onLanguageChange($event)">
-              <ion-select-option value="es">{{ translate.instant('configuration.spanish') }}</ion-select-option>
-              <ion-select-option value="en">{{ translate.instant('configuration.english') }}</ion-select-option>
-            </ion-select>
-        <br/>
-            <!-- Mostrar selector solo si hay más de un waiting room -->
-            <ion-select *ngIf="waiting_rooms.length > 1" fill="outline" aria-label="Waiting Rooms" formControlName="waitingRoom" interface="popover" [placeholder]="translate.instant('configuration.waitingRoom')">
-              <ion-select-option [value]="room" *ngFor="let room of waiting_rooms">{{room.name}}</ion-select-option>
-            </ion-select>
 
-            <!-- Mostrar info del waiting room seleccionado automáticamente -->
-            <div *ngIf="waiting_rooms.length <= 1 && selectedWaitingRoomName" class="selected-room-info">
-              <ion-item lines="none">
-                <ion-icon name="checkmark-circle" color="success" slot="start"></ion-icon>
-                <ion-label>
-                  <h3>{{ translate.instant('configuration.waitingRoom') }}: {{ selectedWaitingRoomName }}</h3>
-                  <p>{{ translate.instant('configuration.automaticallySelected') }}</p>
-                </ion-label>
-              </ion-item>
-            </div>
-          <br/>
-            <ion-input fill="outline" [label]="translate.instant('configuration.stationLocation')" formControlName="stationName" label-placement="floating"
-              [errorText]="translate.instant('configuration.stationLocationRequired')"></ion-input>
-          <br />
-            <ion-select fill="outline" aria-label="Application" formControlName="aplication" interface="popover" [placeholder]="translate.instant('configuration.application')" (ionChange)="onApplicationChange($event)">
-              <ion-select-option value="1">{{ translate.instant('configuration.tablet') }}</ion-select-option>
-              <ion-select-option value="2">{{ translate.instant('configuration.dashboardCard') }}</ion-select-option>
-              <ion-select-option value="3">{{ translate.instant('configuration.dashboardList') }}</ion-select-option>
-            </ion-select>
-          <br *ngIf="selectedApplication !== '1'"/>
-          <ion-select *ngIf="selectedApplication !== '1'"  multiple="true" formControlName="statuses" fill="outline" aria-label="Status to Show" interface="popover" [placeholder]="translate.instant('configuration.statusToShow')" (ionChange)="onStatusChange($event)">
-            <ion-select-option [value]="status.id" *ngFor="let status of statuses">{{status.name}}</ion-select-option>
-          </ion-select>
-          <div *ngIf="selectedApplication !== '1' && form.hasError('statusRequired') && (form.get('statuses')?.touched || form.touched)" class="error-message">
-            <small style="color: var(--ion-color-danger);">{{ translate.instant('configuration.selectAtLeastOneStatus') }}</small>
+        <!-- Sección: Idioma -->
+        <div class="form-section">
+          <div class="section-header">
+            <ion-icon name="language-outline" class="section-icon"></ion-icon>
+            <span class="section-label">{{ translate.instant('configuration.language') }}</span>
           </div>
-          <br *ngIf="selectedApplication !== '1'"/>
-            <!-- <ion-input *ngIf="this.selectedApplication !== '1'" fill="outline" [value]="formattedTime" placeholder="HH:MM - HH:MM" (ionFocus)="openTimeRangePicker()"></ion-input> -->
+          <ion-select
+            fill="outline"
+            aria-label="Language"
+            [(ngModel)]="selectedLanguage"
+            [ngModelOptions]="{standalone: true}"
+            interface="popover"
+            [placeholder]="translate.instant('configuration.language')"
+            (ionChange)="onLanguageChange($event)"
+            class="custom-select">
+            <ion-select-option value="es">{{ translate.instant('configuration.spanish') }}</ion-select-option>
+            <ion-select-option value="en">{{ translate.instant('configuration.english') }}</ion-select-option>
+          </ion-select>
+        </div>
 
-        <br />
-        <ion-button class="w-100" color="primary" size="large" [disabled]="form.invalid"
-          (click)="save()">{{ translate.instant('configuration.saveButton') }}</ion-button>
+        <!-- Sección: Sala de Espera -->
+        <div class="form-section" *ngIf="waiting_rooms.length > 1">
+          <div class="section-header">
+            <ion-icon name="business-outline" class="section-icon"></ion-icon>
+            <span class="section-label">{{ translate.instant('configuration.waitingRoom') }}</span>
+          </div>
+          <ion-select
+            fill="outline"
+            aria-label="Waiting Rooms"
+            formControlName="waitingRoom"
+            interface="popover"
+            [placeholder]="translate.instant('configuration.waitingRoom')"
+            class="custom-select">
+            <ion-select-option [value]="room" *ngFor="let room of waiting_rooms">{{room.name}}</ion-select-option>
+          </ion-select>
+        </div>
+
+        <!-- Info de Waiting Room auto-seleccionada -->
+        <div class="form-section success-card" *ngIf="waiting_rooms.length <= 1 && selectedWaitingRoomName">
+          <div class="success-content">
+            <ion-icon name="checkmark-circle" class="success-icon"></ion-icon>
+            <div class="success-text">
+              <h4>{{ translate.instant('configuration.waitingRoom') }}</h4>
+              <p>{{ selectedWaitingRoomName }}</p>
+              <span class="success-badge">{{ translate.instant('configuration.automaticallySelected') }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sección: Ubicación de Estación -->
+        <div class="form-section">
+          <div class="section-header">
+            <ion-icon name="location-outline" class="section-icon"></ion-icon>
+            <span class="section-label">{{ translate.instant('configuration.stationLocation') }}</span>
+          </div>
+          <ion-input
+            fill="outline"
+            [label]="translate.instant('configuration.stationLocation')"
+            formControlName="stationName"
+            label-placement="floating"
+            [errorText]="translate.instant('configuration.stationLocationRequired')"
+            class="custom-input">
+          </ion-input>
+        </div>
+
+        <!-- Sección: Tipo de Aplicación -->
+        <div class="form-section">
+          <div class="section-header">
+            <ion-icon name="apps-outline" class="section-icon"></ion-icon>
+            <span class="section-label">{{ translate.instant('configuration.application') }}</span>
+          </div>
+          <ion-select
+            fill="outline"
+            aria-label="Application"
+            formControlName="aplication"
+            interface="popover"
+            [placeholder]="translate.instant('configuration.application')"
+            (ionChange)="onApplicationChange($event)"
+            class="custom-select">
+            <ion-select-option value="1">
+              <ion-icon name="tablet-portrait-outline"></ion-icon>
+              {{ translate.instant('configuration.tablet') }}
+            </ion-select-option>
+            <ion-select-option value="2">
+              <ion-icon name="grid-outline"></ion-icon>
+              {{ translate.instant('configuration.dashboardCard') }}
+            </ion-select-option>
+            <ion-select-option value="3">
+              <ion-icon name="list-outline"></ion-icon>
+              {{ translate.instant('configuration.dashboardList') }}
+            </ion-select-option>
+          </ion-select>
+        </div>
+
+        <!-- Sección: Opciones Dashboard (solo visible si no es tablet) -->
+        <div class="dashboard-options" *ngIf="selectedApplication !== '1'">
+
+          <!-- Checkbox Modo Anónimo -->
+          <div class="form-section checkbox-section">
+            <ion-item lines="none" class="checkbox-item">
+              <ion-checkbox formControlName="anonymousMode" slot="start" class="custom-checkbox"></ion-checkbox>
+              <ion-label class="checkbox-label">
+                <div class="checkbox-content">
+                  <ion-icon name="eye-off-outline" class="checkbox-icon"></ion-icon>
+                  <div>
+                    <h4>{{ translate.instant('configuration.anonymousMode') }}</h4>
+                    <p>{{ translate.instant('configuration.anonymousModeDescription') }}</p>
+                  </div>
+                </div>
+              </ion-label>
+            </ion-item>
+          </div>
+
+          <!-- Selector de Estados -->
+          <div class="form-section">
+            <div class="section-header">
+              <ion-icon name="options-outline" class="section-icon"></ion-icon>
+              <span class="section-label">{{ translate.instant('configuration.statusToShow') }}</span>
+            </div>
+            <ion-select
+              multiple="true"
+              formControlName="statuses"
+              fill="outline"
+              aria-label="Status to Show"
+              interface="popover"
+              [placeholder]="translate.instant('configuration.statusToShow')"
+              (ionChange)="onStatusChange($event)"
+              class="custom-select">
+              <ion-select-option [value]="status.id" *ngFor="let status of statuses">{{status.name}}</ion-select-option>
+            </ion-select>
+            <div class="error-text" *ngIf="form.hasError('statusRequired') && (form.get('statuses')?.touched || form.touched)">
+              <ion-icon name="alert-circle-outline"></ion-icon>
+              <span>{{ translate.instant('configuration.selectAtLeastOneStatus') }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Botón de Guardar -->
+        <div class="form-actions">
+          <ion-button
+            expand="block"
+            size="large"
+            [disabled]="form.invalid"
+            (click)="save()"
+            class="save-button">
+            <ion-icon name="save-outline" slot="start"></ion-icon>
+            {{ translate.instant('configuration.saveButton') }}
+          </ion-button>
+        </div>
       </form>
     </div>
-    <div>
-      <img class="logo" src="assets/logos/DTouchmedia_Black.png" alt="logo" style="margin-bottom: 15px;"/>
+
+    <!-- Footer con logo -->
+    <div class="config-footer">
+      <img class="logo-footer" src="assets/logos/DTouchmedia_Black.png" alt="logo" />
     </div>
   </div>
 </ion-content>

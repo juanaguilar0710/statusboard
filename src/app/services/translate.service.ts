@@ -6,7 +6,7 @@ import { BehaviorSubject, Observable } from 'rxjs';
   providedIn: 'root'
 })
 export class TranslateService {
-  private currentLang: string = 'es'; // Idioma por defecto
+  private currentLang: string = 'en'; // Idioma por defecto
   private translations: any = {};
   private langChange$ = new BehaviorSubject<string>(this.currentLang);
 
@@ -23,16 +23,16 @@ export class TranslateService {
       if (response.value) {
         this.currentLang = response.value;
       } else {
-        // Si no hay idioma guardado, usar español por defecto
-        this.currentLang = 'es';
-        await this.setLanguage('es');
+        // Si no hay idioma guardado, usar inglés por defecto
+        this.currentLang = 'en';
+        await this.setLanguage('en');
       }
       await this.loadTranslations(this.currentLang);
       this.langChange$.next(this.currentLang);
     } catch (error) {
       console.error('Error loading language:', error);
-      this.currentLang = 'es';
-      await this.loadTranslations('es');
+      this.currentLang = 'en';
+      await this.loadTranslations('en');
     }
   }
 

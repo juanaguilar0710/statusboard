@@ -98,8 +98,6 @@ import { TranslateService } from '../services/translate.service';
               private audioService: AudioService,
               public translate: TranslateService
   ) {
-
-
     setTimeout(() => {
       setInterval(async () => {
         this.updateTime();
@@ -127,6 +125,37 @@ import { TranslateService } from '../services/translate.service';
         this.checkNetworkStatus();
         this.listenToNetworkChanges();
     }, 3000);
+  }
+
+
+
+  getPatientInitials(fullName: string): string {
+    if (!fullName) return '';
+    return fullName
+      .split(' ')
+      .filter(word => word.length > 0)
+      .map(word => word.charAt(0).toUpperCase())
+      .join('');
+  }
+
+
+  getPatientDisplayName(patient: any): string {
+    if (this.config?.anonymousMode) {
+      const initials = this.getPatientInitials(patient.fullName);
+      const externalId = patient.external_id ? ` (${patient.external_id})` : '';
+      return `${initials}${externalId}`;
+    }
+    return patient.fullName;
+  }
+
+  getPatientDisplayNameWithAge(patient: any): string {
+    const age = `(${patient.age}${this.translate.getCurrentLanguage() === 'en' ? 'y' : 'a'}) `;
+    if (this.config?.anonymousMode) {
+      const initials = this.getPatientInitials(patient.fullName);
+      const externalId = patient.external_id ? ` (${patient.external_id})` : '';
+      return `${age}${initials}${externalId}`;
+    }
+    return `${age}${patient.fullName}`;
   }
 
   async checkNetworkStatus() {

@@ -1,91 +1,125 @@
-<ion-content [fullscreen]="true">
-  <div class="d-flex flex-column justify-content-between h-100 text-center">
-    <div style="margin-top: 5%;">
-      <img class="img-fluid logo" src="assets/logos/StatusBoard_Black.png" alt="logo" />
+<ion-content [fullscreen]="true" class="login-content">
+  <div class="login-container">
+    <!-- Header con logo -->
+    <div class="login-header">
+      <img class="logo-main" src="assets/logos/StatusBoard_Black.png" alt="logo" />
+      <h1 class="login-title">Welcome</h1>
+      <p class="login-subtitle">Please login with manager account</p>
     </div>
-    <div class="container">
-      <div class="row justify-content-center">
-        <!-- <div class="col-12 col-md-8 col-lg-6"> -->
-        <div class="col-6 col-md-4 col-lg-3">
-          <form [formGroup]="form">
-            <div>
-              <h1><b>Welcome</b></h1>
-              <span>Please login with manager account</span>
-            </div>
-            <br />
-            <ion-input tabindex="1" label="Username" formControlName="username" label-placement="floating" fill="outline"
-              errorText="Username required" [readonly]="loading" [disabled]="loading"></ion-input>
-            <br />
-            <ion-item fill="outline">
-              <ion-input
-                tabindex="2"
-                label="Password"
-                formControlName="password"
-                label-placement="floating"
-                [type]="showPassword ? 'text' : 'password'"
-                errorText="Password required"
-                (keyup.enter)="login()"
-                [readonly]="loading"
-                [disabled]="loading"
-                style="text-align: center;">
-              </ion-input>
-              <ion-button fill="clear" slot="end" (click)="togglePassword()" style="font-size: 1.5rem;">
-                <ion-icon [name]="showPassword ? 'eye-off' : 'eye'"></ion-icon>
-              </ion-button>
-            </ion-item>
 
-            <br />
-              <p *ngIf="this.two_fa_source === 'sms'" class="text-center" style="color: black; margin-bottom: 20px;">We've sent a access code to your phone.</p> <!-- sms -->
-              <p *ngIf="this.two_fa_source === 'app'" class="text-center" style="color: black; margin-bottom: 20px;">Open you two-factor authenticator (TOTP) app or browser extension to view your authentication code.</p><!-- qr -->
-              <p *ngIf="this.two_fa_source === 'email'" class="text-center" style="color: black; margin-bottom: 20px;">We've sent a access code to your email.</p> <!-- email -->
+    <!-- Card de Login -->
+    <div class="login-card">
+      <form [formGroup]="form">
 
-              <ion-input
-              hidden
-              #twoFactorCode
-              tabindex="3"
-              label="2FA Code"
+        <!-- Campo Usuario -->
+        <div class="form-section">
+          <div class="section-header">
+            <ion-icon name="person-outline" class="section-icon"></ion-icon>
+            <span class="section-label">Username</span>
+          </div>
+          <ion-input
+            tabindex="1"
+            label="Username"
+            formControlName="username"
+            label-placement="floating"
+            fill="outline"
+            errorText="Username required"
+            [readonly]="loading"
+            [disabled]="loading"
+            class="custom-input">
+          </ion-input>
+        </div>
+
+        <!-- Campo Password -->
+        <div class="form-section">
+          <div class="section-header">
+            <ion-icon name="lock-closed-outline" class="section-icon"></ion-icon>
+            <span class="section-label">Password</span>
+          </div>
+          <ion-item lines="none" fill="outline" class="password-item">
+            <ion-input
+              tabindex="2"
+              label="Password"
+              formControlName="password"
               label-placement="floating"
-              fill="outline"
-              errorText="Code is required"
-              formControlName="code">
+              [type]="showPassword ? 'text' : 'password'"
+              errorText="Password required"
+              (keyup.enter)="login()"
+              [readonly]="loading"
+              [disabled]="loading"
+              class="custom-input">
             </ion-input>
-              <br/>
-            <ion-button *ngIf="!authenticationRequired" class="w-100" color="primary" size="large" [disabled]="form.invalid || loading"
-              (click)="login()"><ion-spinner name="dots" *ngIf="loading"></ion-spinner>{{loading ? '' : 'LOGIN'}}</ion-button>
-
-              <ion-button *ngIf="authenticationRequired" class="w-100" color="primary" size="large"
-              (click)="verifyTwoFactorCode()"><ion-spinner name="dots" *ngIf="loading"></ion-spinner>{{loading ? '' : 'Validate Code'}}</ion-button>
-
-          </form>
+            <ion-button fill="clear" slot="end" (click)="togglePassword()" class="password-toggle">
+              <ion-icon [name]="showPassword ? 'eye-off-outline' : 'eye-outline'"></ion-icon>
+            </ion-button>
+          </ion-item>
         </div>
-      </div>
+
+        <!-- Mensajes 2FA -->
+        <div class="twofa-message" *ngIf="two_fa_source">
+          <ion-icon name="information-circle-outline" class="info-icon"></ion-icon>
+          <div class="message-text">
+            <p *ngIf="two_fa_source === 'sms'">We've sent an access code to your phone.</p>
+            <p *ngIf="two_fa_source === 'app'">Open your two-factor authenticator (TOTP) app or browser extension to view your authentication code.</p>
+            <p *ngIf="two_fa_source === 'email'">We've sent an access code to your email.</p>
+          </div>
+        </div>
+
+        <!-- Campo 2FA Code -->
+        <div class="form-section" *ngIf="authenticationRequired">
+          <div class="section-header">
+            <ion-icon name="shield-checkmark-outline" class="section-icon"></ion-icon>
+            <span class="section-label">2FA Code</span>
+          </div>
+          <ion-input
+            #twoFactorCode
+            tabindex="3"
+            label="2FA Code"
+            label-placement="floating"
+            fill="outline"
+            errorText="Code is required"
+            formControlName="code"
+            class="custom-input">
+          </ion-input>
+        </div>
+
+        <!-- Botones de acción -->
+        <div class="form-actions">
+          <ion-button
+            *ngIf="!authenticationRequired"
+            expand="block"
+            size="large"
+            [disabled]="form.invalid || loading"
+            (click)="login()"
+            class="login-button">
+            <ion-spinner name="dots" *ngIf="loading"></ion-spinner>
+            <span *ngIf="!loading">
+              <ion-icon name="log-in-outline" slot="start"></ion-icon>
+              LOGIN
+            </span>
+          </ion-button>
+
+          <ion-button
+            *ngIf="authenticationRequired"
+            expand="block"
+            size="large"
+            [disabled]="loading"
+            (click)="verifyTwoFactorCode()"
+            class="login-button">
+            <ion-spinner name="dots" *ngIf="loading"></ion-spinner>
+            <span *ngIf="!loading">
+              <ion-icon name="checkmark-circle-outline" slot="start"></ion-icon>
+              Validate Code
+            </span>
+          </ion-button>
+        </div>
+      </form>
     </div>
-    <div>
-      <div class="row" style="margin-bottom: 1%;">
-        <div class="col-4">
 
-        </div>
-        <div class="col-4 align-item-logo">
-          <img class="img-fluid logo" src="assets/logos/DTouchmedia_Black.png" alt="logo" />
-        </div>
-        <div class="col-4 align-items">
-          <label>V: {{this.version}}</label>
-        </div>
-      </div>
-
+    <!-- Footer -->
+    <div class="login-footer">
+      <img class="logo-footer" src="assets/logos/DTouchmedia_Black.png" alt="logo" />
+      <span class="version-badge">v{{version}}</span>
     </div>
   </div>
 </ion-content>
-
-
-
-
-
-
-<!-- <ion-card>
-  <ion-card-header>Información de Origen</ion-card-header>
-  <ion-card-content>
-    <p><b>Platform:</b> {{ platformInfo.platform }}</p>
-    <p><b>User-Agent:</b> {{ platformInfo.userAgent }}</p>
-  </ion-card-content>
-</ion-card> -->
