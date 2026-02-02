@@ -14,7 +14,7 @@
 
       <!-- <pre>{{this.config | json}}</pre> -->
 
-      <ion-col size="10" size-md="10" size-lg="10" style="padding-left: 0; padding-right: 0; padding-top: 0;">
+      <ion-col size="10.5" size-md="10.5" size-lg="10.5" style="padding-left: 0; padding-right: 0; padding-top: 0;">
         <ion-grid style="padding-left: 0; padding-right: 0; padding-top: 0;" *ngIf="this.config">
 
 
@@ -143,7 +143,7 @@
         </ion-grid>
       </ion-col>
 
-      <ion-col size="2" size-md="2" size-lg="2" style="padding-left: 0; padding-top: 0;">
+      <ion-col size="1.5" size-md="1.5" size-lg="1.5" style="padding-left: 0; padding-top: 0;">
         <div class="info-box" style="height: fit-content; border: 2px solid #d0e8f2; position: relative;">
 
           <!-- Botón de test de audio flotante -->
@@ -291,7 +291,7 @@
       <!-- <span class="onlineTittle">LAST UPDATE:</span> -->
       <span (click)="this.showLogsAlert();" class="onlineTittle" *ngIf="!deviceWasOffline">{{ 'dashboard.lastSync' | translate }}</span>
       <span (click)="this.showLogsAlert();" class="onlineTittle" style="color: #eb4343;" *ngIf="deviceWasOffline">{{ 'dashboard.offline' | translate }}</span>
-      <span (click)="this.showLogsAlert();" class="textUnderLine" style="padding-left: 5px; font-size: 25px;">{{ this.lastsync | date:'shortTime' }}</span>
+      <span (click)="this.showLogsAlert();" class="textUnderLine" style="padding-left: 5px;">{{ this.lastsync | date:'shortTime' }}</span>
     </ion-col>
 
     <!-- <ion-col size="2" style="text-align: left;">

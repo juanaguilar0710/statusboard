@@ -70,7 +70,7 @@ import { TranslateService } from '../services/translate.service';
   totalPagesCurrentPatients:any;
 
   currentPagePatients: number = 0; // Página actual
-  patientsPerPage: number = 16;   // Número de pacientes por página en el listview
+  patientsPerPage: number = 18;   // Número de pacientes por página en el listview
   totalPatientPages: number = 0;  // Total de páginas
 
   logs: any[] = [];
@@ -153,6 +153,7 @@ import { TranslateService } from '../services/translate.service';
     if (this.config?.anonymousMode) {
       const initials = this.getPatientInitials(patient.fullName);
       const externalId = patient.external_id ? ` (${patient.external_id})` : '';
+      //hay que extraerle el ultimos 5 digitos del id externo
       return `${age}${initials}${externalId}`;
     }
     return `${age}${patient.fullName}`;
@@ -609,6 +610,7 @@ import { TranslateService } from '../services/translate.service';
       return patientsInRoom;
     }
     return patientsInRoom.slice(start, end);
+
   }
   async getAccessToken() {
     var adminResponse:any = await Preferences.get({ key: 'admin' });
@@ -1479,7 +1481,11 @@ private isPusherConnected(): boolean {
 
   getPatientsForCurrentPage(): any[] {
     const visiblePatients = this.getVisiblePatients();
-    const sortedPatients = [...visiblePatients].sort((a, b) => a.status?.id - b.status?.id);
+    const sortedPatients = [...visiblePatients].sort((a, b) => {
+      const surgeonA = (a.surgeon_name || '').toLowerCase();
+      const surgeonB = (b.surgeon_name || '').toLowerCase();
+      return surgeonA.localeCompare(surgeonB);
+    });
     const start = this.currentPagePatients * this.patientsPerPage;
     const end = start + this.patientsPerPage;
     return sortedPatients.slice(start, end);
