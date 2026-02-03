@@ -1,0 +1,66 @@
+<ion-row>
+  <ion-col size="12">
+    <table style="width: 100%; border-collapse: collapse; text-align: left; table-layout: fixed;">
+      <thead>
+        <tr style="background-color: #b5d7f0;">
+          <th style="padding: 8px; width: 5%;">{{ 'dashboard.id' | translate }}</th>
+          <th style="padding: 8px; width: 18%;">{{ 'dashboard.patient' | translate }}</th>
+          <th style="padding: 8px; width: 5%;">{{ 'dashboard.age' | translate }}</th>
+          <th style="padding: 8px; width: 8%;">{{ 'dashboard.oRoom' | translate }}</th>
+          <th style="padding: 8px; width: 15%;">{{ 'dashboard.surgeon' | translate }}</th>
+          <th style="padding: 8px; width: 17%;">{{ 'dashboard.procedure' | translate }}</th>
+          <th style="padding: 8px; width: 7%;">{{ 'dashboard.time' | translate }}</th>
+          <th style="padding: 8px; width: 13%;">{{ 'dashboard.status' | translate }}</th>
+          <th style="padding: 8px; width: 7%;">{{ 'dashboard.room' | translate }}</th>
+          <th style="padding: 20px;"></th>
+        </tr>
+      </thead>
+
+      <tbody style="background-color: white;">
+        <ng-container *ngFor="let patient of getPatientsForCurrentPage()">
+          <tr [ngClass]="{ 'highlight-updated': isPatientUpdated(patient.id) }" style="border-bottom: 1px solid #f0f0f0;">
+            <td class="textCardPatients text-ellipsis" style="padding: 8px; width: 5%;">{{ patient.identifier }}</td>
+            <td class="textCardPatients text-ellipsis" style="padding: 8px; width: 20%;">
+              <strong>{{ getPatientDisplayName(patient) | uppercase }}</strong>
+            </td>
+            <td class="textCardPatients text-ellipsis" style="padding: 8px; width: 10%;">{{ patient.age }}{{ getAgeSuffix() }}</td>
+            <td class="textCardPatients text-ellipsis" style="padding: 8px; width: 10%;">{{ patient.operating_room_name }}</td>
+            <td class="textCardPatients text-ellipsis" style="padding: 8px; width: 20%;">
+              <span class="badge" *ngIf="patient.surgeon" [ngStyle]="{ 'background-color': patient.surgeon.color }">{{ patient.surgeon_name }}</span>
+              <span *ngIf="!patient.surgeon">{{ patient.surgeon_name }}</span>
+            </td>
+            <td class="textCardPatients text-ellipsis ellipsis" style="padding: 8px;">{{ patient.procedure_name }}</td>
+            <td class="textCardPatients text-ellipsis" style="padding: 8px; width: 10%;">
+              {{
+                patient.procedure_time
+                  ? (patient.procedure_time.split(':')[0] % 12 || 12) +
+                    ':' +
+                    patient.procedure_time.split(':')[1] +
+                    (patient.procedure_time.split(':')[0] >= 12 ? ' PM' : ' AM')
+                  : ''
+              }}
+            </td>
+            <td
+              class="textCardPatients text-ellipsis"
+              style="padding: 8px; width: 20%;"
+              [ngClass]="{
+                surgery: patient.status?.type === 'surgery',
+                holding: patient.status?.type === 'holding',
+                nextSurgery: patient.status?.type === 'next_to_surgery',
+                canceled: patient.visit_canceled_at
+              }"
+            >
+              {{ patient.status_name === 'Cancelado' ? patient.status_name : patient.status?.name }}
+            </td>
+            <td class="textCardPatients text-ellipsis" style="padding: 8px; width: 10%;">{{ patient.recovery_room }}</td>
+            <td style="width: 20%;">
+              <div class="icon-container" style="text-align-last: center;" *ngIf="!patient.phone_national_format">
+                <img src="assets/icon/Phone.png" width="45%" />
+              </div>
+            </td>
+          </tr>
+        </ng-container>
+      </tbody>
+    </table>
+  </ion-col>
+</ion-row>

@@ -5,6 +5,8 @@ import { IonicModule } from "@ionic/angular";
 import { DashboardComponent } from "./dashboard.component";
 import { DashboardComponentRoutingModule } from "./dashboard-routing.module";
 import { SharedModule } from "../shared/shared.module";
+import { DashboardTableViewComponent } from "./components/dashboard-table-view/dashboard-table-view.component";
+import { DashboardListViewComponent } from "./components/dashboard-list-view/dashboard-list-view.component";
 
 //generate module searchable-component
 @NgModule({
@@ -16,6 +18,6 @@ import { SharedModule } from "../shared/shared.module";
       ReactiveFormsModule,
       SharedModule
     ],
-    declarations: [DashboardComponent]
+    declarations: [DashboardComponent, DashboardTableViewComponent, DashboardListViewComponent]
   })
   export class DashboardComponentModule {}

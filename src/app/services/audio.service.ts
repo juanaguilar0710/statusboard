@@ -7,6 +7,29 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
 export class AudioService {
   private isEnabled: boolean = true;
   private preferredLang: string = 'es-US';
+  private isInitialized: boolean = false;
+
+  // 🎤 Inicializar TTS con interacción del usuario
+  async initialize(): Promise<void> {
+    if (this.isInitialized) return;
+
+    try {
+      // Prueba inicial para verificar que TTS funciona
+      // await TextToSpeech.speak({
+      //   text: 'Sistema listo',
+      //   lang: this.preferredLang,
+      //   rate: 1.2,
+      //   pitch: 1.0,
+      //   volume: 0.8,
+      //   category: 'ambient'
+      // });
+      this.isInitialized = true;
+      console.log('✅ AudioService inicializado correctamente');
+    } catch (error) {
+      console.warn('⚠️ No se pudo inicializar TTS:', error);
+      // No marcar como inicializado para reintentar después
+    }
+  }
 
   // 🗣️ Reproducir notificación con TTS
   async playNotification(text?: string): Promise<void> {
@@ -19,7 +42,16 @@ export class AudioService {
     try {
       await this.speakWithCapacitorTTS(text);
     } catch (error) {
-      // TTS falló, fallback silencioso
+      console.error('❌ Error en playNotification:', error);
+      // Si no está inicializado, intentar inicializar primero
+      if (!this.isInitialized) {
+        try {
+          await this.initialize();
+          await this.speakWithCapacitorTTS(text);
+        } catch (retryError) {
+          console.error('❌ Error en reintento de TTS:', retryError);
+        }
+      }
     }
   }
 
@@ -28,16 +60,27 @@ export class AudioService {
     const preferredLang = this.getPreferredVoice();
     console.log('🎤 Hablando:', text, 'Idioma:', preferredLang);
 
-    await TextToSpeech.speak({
-      text: text,
-      lang: preferredLang,
-      rate: 1.0,
-      pitch: 1.0,
-      volume: 1.0,
-      category: 'ambient'
-    });
+    try {
+      await TextToSpeech.speak({
+        text: text,
+        lang: preferredLang,
+        rate: 1.0,
+        pitch: 1.0,
+        volume: 1.0,
+        category: 'ambient'
+      });
 
-    console.log('✅ TTS completado');
+      console.log('✅ TTS completado');
+    } catch (error: any) {
+      // Manejar errores específicos
+      if (error?.message?.includes('not-allowed') || error?.error === 'not-allowed') {
+        console.error('🚫 TTS bloqueado - Se requiere interacción del usuario');
+        throw new Error('TTS_NOT_ALLOWED');
+      } else {
+        console.error('❌ Error en TTS:', error);
+        throw error;
+      }
+    }
   }
 
   // 🔊 Obtener voces disponibles del sistema

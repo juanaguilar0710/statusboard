@@ -19,58 +19,14 @@
 
 
 
-          <div *ngIf="this.config.aplication === '3'">
-            <ion-row>
-              <ion-col size="12">
-                <table style="width: 100%; border-collapse: collapse; text-align: left; table-layout: fixed;">
-                  <thead>
-                    <tr style="background-color: #b5d7f0;">
-                      <th style="padding: 8px; width: 5%;">{{ 'dashboard.id' | translate }}</th>
-                      <th style="padding: 8px; width: 18%;">{{ 'dashboard.patient' | translate }}</th>
-                      <th style="padding: 8px; width: 5%;">{{ 'dashboard.age' | translate }}</th>
-                      <th style="padding: 8px; width: 8%;">{{ 'dashboard.oRoom' | translate }}</th>
-                      <th style="padding: 8px; width: 15%;">{{ 'dashboard.surgeon' | translate }}</th>
-                      <th style="padding: 8px; width: 17%;">{{ 'dashboard.procedure' | translate }}</th>
-                      <th style="padding: 8px; width: 7%;">{{ 'dashboard.time' | translate }}</th>
-                      <th style="padding: 8px; width: 13%;">{{ 'dashboard.status' | translate }}</th>
-                      <th style="padding: 8px; width: 7%;">{{ 'dashboard.room' | translate }}</th>
-                      <th style="padding: 20px;"></th>
-                    </tr>
-                  </thead>
-                  <tbody style="background-color: white;">
-                    <ng-container *ngFor="let patient of getPatientsForCurrentPage()">
-                      <tr  [ngClass]="{'highlight-updated': isPatientUpdated(patient.id)}" style="border-bottom: 1px solid #f0f0f0;">
-                        <td class="textCardPatients text-ellipsis" style="padding: 8px; width: 5%;">{{patient.identifier}}</td>
-                        <td class="textCardPatients text-ellipsis" style="padding: 8px; width: 20%;"><strong>{{getPatientDisplayName(patient) | uppercase}}</strong></td>
-                        <td class="textCardPatients text-ellipsis" style="padding: 8px; width: 10%;">{{patient.age}}{{ translate.getCurrentLanguage() === 'en' ? 'y' : 'a' }}</td>
-                        <td class="textCardPatients text-ellipsis" style="padding: 8px; width: 10%;">{{patient.operating_room_name}}</td>
-                        <td class="textCardPatients text-ellipsis" style="padding: 8px; width: 20%;">
-                          <span class="badge" *ngIf="patient.surgeon" [ngStyle]="{'background-color': patient.surgeon.color}">{{patient.surgeon_name}}</span>
-                          <span *ngIf="!patient.surgeon">{{patient.surgeon_name}}</span>
-                        </td>
-                        <td class="textCardPatients text-ellipsis ellipsis" style="padding: 8px;">{{patient.procedure_name}}</td>
-                        <td class="textCardPatients text-ellipsis" style="padding: 8px; width: 10%;">{{
-                                (patient.procedure_time ? (patient.procedure_time.split(':')[0] % 12 || 12) + ':' +
-                                patient.procedure_time.split(':')[1] +
-                                (patient.procedure_time.split(':')[0] >= 12 ? ' PM' : ' AM') : '')
-                              }}
-                        </td>
-                        <td class="textCardPatients text-ellipsis" style="padding: 8px; width: 20%;" [ngClass]="{ 'surgery': patient.status?.type === 'surgery', 'holding': patient.status?.type === 'holding', 'nextSurgery': patient.status?.type === 'next_to_surgery', 'canceled': patient.visit_canceled_at}">
-                          {{patient.status_name === 'Cancelado' ? patient.status_name : patient.status?.name}}
-                        </td>
-                        <td class="textCardPatients text-ellipsis" style="padding: 8px; width: 10%;">{{patient.recovery_room}}</td>
-                        <td style="width: 20%;">
-                          <div class="icon-container" style="text-align-last: center;" *ngIf="!patient.phone_national_format">
-                            <img src="assets/icon/Phone.png" width="45%">
-                          </div>
-                        </td>
-                      </tr>
-                    </ng-container>
-                  </tbody>
-                </table>
-              </ion-col>
-            </ion-row>
-          </div>
+          <app-dashboard-table-view
+            *ngIf="this.config.aplication === '3'"
+            [config]="this.config"
+            [patients]="getVisiblePatients()"
+            [currentPagePatients]="currentPagePatients"
+            [patientsPerPage]="patientsPerPage"
+            [isPatientUpdated]="isPatientUpdated.bind(this)"
+          ></app-dashboard-table-view>
 
 
 
@@ -85,58 +41,14 @@
 
 
 
-          <ion-row *ngIf="this.operatingRooms && this.config.aplication === '2'">
-            <ion-col size="10" size-md="9" size-lg="6" *ngFor="let room of getRoomsForCurrentPagewhitpatients(); let i = index">
-              <ion-card class="ionCard">
-                <ion-card-header class="ionCardHeader" [ngStyle]="{'background-color': room.patients[0].operating_room ? room.patients[0].operating_room.color : '#b5d7f0'}">
-                  <ion-card-title>
-                    <ion-row>
-                      <ion-col size="4" size-md="4" size-lg="4" class="tittleCardText">{{room.name}}</ion-col>
-                      <ion-col *ngIf="this.totalGroups > 1" size="3" size-md="3" size-lg="3" class="tittleCardTextPages"><span *ngIf="this.roomsWithPatients[i].totalpage > 1">{{ 'dashboard.pageLabel' | translate }}: {{this.roomsWithPatients[i].actualPage}}/{{this.roomsWithPatients[i].totalpage}}</span></ion-col>
-                      <ion-col *ngIf="this.totalGroups < 1" size="3" size-md="3" size-lg="3" class="tittleCardTextPages"></ion-col>
-                      <!-- <ion-col size="5" size-md="5" size-lg="5" class="tittleCardTextNumber" style="text-align: end !important;">
-                        {{room.name === "TO FOLLOW"? "": "Completed:"+ getCompletedRoomPatientsCount(room.name) +"/"+ getTotalPatientsInRoom(room.name)}}
-                      </ion-col>             -->
-                    </ion-row>
-                  </ion-card-title>
-                </ion-card-header>
-
-                <ion-card-content>
-                  <!-- Llama a la función en el archivo TS para filtrar los pacientes -->
-                  <div *ngFor="let patient of getPatientsGroup(room.name)">
-                    <ion-row style="height: 22px;" class="ion-no-wrap" [ngClass]="{'highlight-updated': isPatientUpdated(patient.id)}">
-                      <ion-col size="1.2" class="textCardPatients text-ellipsis" style="text-align: left !important;"><strong>{{patient.recovery_room}}</strong></ion-col>
-                      <!-- <ion-col size="1" class="textCardPatients" style="padding-right: 0px;" [ngClass]="{'canceled': patient.visit_canceled_at}"><strong>{{patient.age}}y</strong></ion-col> -->
-                      <ion-col size="3" class="textCardPatients text-ellipsis" style="margin-right: 0px;" [ngClass]="{ 'surgery': patient.status.type === 'surgery', 'holding': patient.status.type === 'holding', 'nextSurgery': patient.status.type === 'next_to_surgery'}"><strong>{{getPatientDisplayNameWithAge(patient)}}</strong></ion-col>
-                 <!-- <ion-col size="3" class="textCardPatients text-ellipsis" style="margin-right: 11px;" [ngClass]="{ 'surgery': patient.status.type === 'surgery', 'holding': patient.status.type === 'holding', 'nextSurgery': patient.status.type === 'next_to_surgery', 'canceled': patient.visit_canceled_at}"><strong>{{patient.fullName}}<strong>  ({{patient.age}}y)</strong></strong></ion-col> -->
-                      <ion-col size="3.7" class="textCardPatients text-ellipsis" style="text-align: left !important;" [ngClass]="{'canceled': patient.visit_canceled_at}"><strong>{{patient.procedure_name}}</strong></ion-col>
-                      <ion-col size="3" class="textCardPatients text-ellipsis" style="text-align: left !important;" [ngClass]="{'canceled': patient.visit_canceled_at}"><strong>{{patient.surgeon_name}}</strong></ion-col>
-                      <!-- <ion-col size="auto" *ngIf="!patient.phone_national_format" class="textCardPatients text-ellipsis" style="text-align: center !important;" [ngClass]="{'canceled': patient.visit_canceled_at}">
-                        <div class="icon-container" style="margin-top: -3px;">
-                          <img src="assets/icon/Phone.png" style="width: 30%;">
-                        </div>
-                      </ion-col> -->
-                      <ion-col size="0.5" class="textCardPatients text-ellipsis" style="text-align: left !important;" [ngClass]="{'canceled': patient.visit_canceled_at}">
-                        <img  *ngIf="!patient.phone_national_format" src="assets/icon/Phone.png" style="width: 15px; margin-top: -10px;">
-                      </ion-col>
-
-                      <ion-col *ngIf="patient.phone_national_format && patient.phone_error" size="auto" class="textCardPatients text-ellipsis" style="text-align: center !important;">
-                        <!-- <ion-icon name="phone-portrait-outline" aria-label="icon"></ion-icon> -->
-                         <img src="assets/icon/smartphone.png" style="width: 15px; margin-top: -10px;">
-                      </ion-col>
-                      <ion-col size="auto" *ngIf="patient.has_note" class="textCardPatients text-ellipsis" style="text-align: center !important;" [ngClass]="{'canceled': patient.visit_canceled_at}">
-                        <!-- <ion-icon style="margin-left: -6.7px;width: 19px;height: 32px;margin-top: -10px;" name="chatbox-ellipses-outline" aria-label="icon"></ion-icon> -->
-                        <img src="assets/icon/notepad.png" style="width: 15px; margin-top: -10px;">
-                      </ion-col>
-                    </ion-row>
-                  </div>
-                  <div *ngIf="getPatientsGroup(room.name).length === 0">
-                    <p style="text-align: center;">{{ 'dashboard.noPatients' | translate }}</p>
-                  </div>
-                </ion-card-content>
-              </ion-card>
-            </ion-col>
-          </ion-row>
+          <app-dashboard-list-view
+            *ngIf="this.operatingRooms && this.config.aplication === '2'"
+            [config]="this.config"
+            [rooms]="getRoomsForCurrentPagewhitpatients()"
+            [pageSize]="pageSize"
+            [currentGroups]="currentGroups"
+            [isPatientUpdated]="isPatientUpdated.bind(this)"
+          ></app-dashboard-list-view>
 
 
 

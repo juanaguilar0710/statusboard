@@ -86,6 +86,10 @@ import { TranslateService } from '../services/translate.service';
   // 🎤 Sistema de cola de speech
   private readonly SPEECH_QUEUE_KEY = 'speech_queue';
 
+  // UI: cache para evitar lecturas/mutaciones en template (NG0100)
+  private updatedPatientIdsCache: { ids: Set<number>; validUntil: number } | null = null;
+  private readonly UPDATED_PATIENT_CACHE_TTL_MS = 250;
+
   constructor(private LocaldataService: LocaldataService,
               public requestsService: RequestsService,
               private router: Router,
@@ -138,11 +142,20 @@ import { TranslateService } from '../services/translate.service';
       .join('');
   }
 
+  private formatExternalIdSuffix(externalId: any): string {
+    if (externalId === null || externalId === undefined || externalId === '') return '';
+    const raw = String(externalId);
+    const digits = raw.replace(/\D/g, '');
+    const base = digits.length > 0 ? digits : raw;
+    const last6 = base.slice(-6);
+    return last6 ? ` (${last6})` : '';
+  }
+
 
   getPatientDisplayName(patient: any): string {
     if (this.config?.anonymousMode) {
       const initials = this.getPatientInitials(patient.fullName);
-      const externalId = patient.external_id ? ` (${patient.external_id})` : '';
+      const externalId = this.formatExternalIdSuffix(patient.external_id);
       return `${initials}${externalId}`;
     }
     return patient.fullName;
@@ -152,7 +165,7 @@ import { TranslateService } from '../services/translate.service';
     const age = `(${patient.age}${this.translate.getCurrentLanguage() === 'en' ? 'y' : 'a'}) `;
     if (this.config?.anonymousMode) {
       const initials = this.getPatientInitials(patient.fullName);
-      const externalId = patient.external_id ? ` (${patient.external_id})` : '';
+      const externalId = this.formatExternalIdSuffix(patient.external_id);
       //hay que extraerle el ultimos 5 digitos del id externo
       return `${age}${initials}${externalId}`;
     }
@@ -728,23 +741,49 @@ import { TranslateService } from '../services/translate.service';
   }
 
   addUpdatedPatient(patient: any) {
+    const now = Date.now();
+    const expiry = now + 60000; // 60 segundos
     const updatedPatients = JSON.parse(localStorage.getItem('updatedPatients') || '[]');
-    const expiry = new Date().getTime() + 60000; // 60 segundos
-    updatedPatients.push({ ...patient, expiry });
-    localStorage.setItem('updatedPatients', JSON.stringify(updatedPatients));
+
+    // Prune de expirados aquí (fuera de change detection) para evitar NG0100
+    const validPatients = Array.isArray(updatedPatients)
+      ? updatedPatients.filter((p: any) => p && typeof p.expiry === 'number' && now <= p.expiry)
+      : [];
+
+    // Guardar mínimo necesario para el highlight
+    validPatients.push({ id: patient?.id, expiry });
+    localStorage.setItem('updatedPatients', JSON.stringify(validPatients));
+
+    // Invalidar cache para que el highlight se refleje inmediatamente
+    this.updatedPatientIdsCache = null;
 }
 
-getUpdatedPatients() {
+getUpdatedPatients(now: number = Date.now()) {
   const updatedPatients = JSON.parse(localStorage.getItem('updatedPatients') || '[]');
-  const currentTime = new Date().getTime();
-  const validPatients = updatedPatients.filter((patient: any) => currentTime <= patient.expiry);
-  localStorage.setItem('updatedPatients', JSON.stringify(validPatients));
-  return validPatients;
+  if (!Array.isArray(updatedPatients)) return [];
+  return updatedPatients.filter((patient: any) => patient && typeof patient.expiry === 'number' && now <= patient.expiry);
+}
+
+private getUpdatedPatientIdsSnapshot(): Set<number> {
+  const now = Date.now();
+  if (this.updatedPatientIdsCache && this.updatedPatientIdsCache.validUntil > now) {
+    return this.updatedPatientIdsCache.ids;
+  }
+
+  const validPatients = this.getUpdatedPatients(now);
+  const ids = new Set<number>();
+  for (const p of validPatients) {
+    if (p && typeof p.id === 'number') {
+      ids.add(p.id);
+    }
+  }
+
+  this.updatedPatientIdsCache = { ids, validUntil: now + this.UPDATED_PATIENT_CACHE_TTL_MS };
+  return ids;
 }
 
 isPatientUpdated(patientId: number): boolean {
-  const updatedPatients = this.getUpdatedPatients();
-  return updatedPatients.some((p: any) => p.id === patientId);
+  return this.getUpdatedPatientIdsSnapshot().has(patientId);
 }
 
 
@@ -1650,33 +1689,31 @@ private isPusherConnected(): boolean {
     if (this.audioContextInitialized) return;
 
     try {
+      console.log('🎤 Inicializando contexto de audio...');
+
       // Activar contexto de audio web
       const AudioContext = (window as any).AudioContext || (window as any).webkitAudioContext;
       if (AudioContext) {
         const context = new AudioContext();
         if (context.state === 'suspended') {
           await context.resume();
+          console.log('✅ AudioContext resumido');
         }
       }
 
-      // Hacer una prueba silenciosa de TTS para activarlo
+      // Inicializar el AudioService con interacción del usuario
       try {
-        await TextToSpeech.speak({
-          text: '',
-          lang: 'es-ES',
-          rate: 1.0,
-          pitch: 1.0,
-          volume: 0.01 // Volumen muy bajo
-        });
+        await this.audioService.initialize();
+        console.log('✅ AudioService inicializado correctamente');
       } catch (ttsError) {
-        // TTS no disponible, usar solo audio context
+        console.warn('⚠️ Error inicializando AudioService:', ttsError);
       }
 
       this.audioContextInitialized = true;
       console.log('✅ Contexto de audio y TTS activados');
 
     } catch (error) {
-      console.log('⚠️ No se pudo activar el contexto de audio:', error);
+      console.error('❌ Error al activar contexto de audio:', error);
     }
   }
 
