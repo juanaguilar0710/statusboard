@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { App } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
+import { Toast } from '@capacitor/toast';
 import { reload, sync } from '@capacitor/live-updates';
 import { AlertController, Platform } from '@ionic/angular';
 
@@ -17,9 +18,12 @@ export class LiveUpdatesService {
   private syncInFlight = false;
   private pendingReload = false;
   private lastSyncAt = 0;
+  private appIsActive = true;
+  private pollTimer: any;
 
   // Avoid excessive sync calls on resume loops.
   private readonly minSyncIntervalMs = 60_000;
+  private readonly pollIntervalMs = 120_000;
 
   constructor(
     private platform: Platform,
@@ -38,11 +42,27 @@ export class LiveUpdatesService {
     }
 
     App.addListener('appStateChange', ({ isActive }) => {
+      this.appIsActive = isActive;
       if (!isActive) return;
       void this.syncAndMaybeReload('resume');
     });
 
+    this.startPolling();
+
     void this.syncAndMaybeReload('startup');
+  }
+
+  /** Manual trigger, useful for a future "Check updates" button. */
+  async checkNow(): Promise<void> {
+    await this.syncAndMaybeReload('resume');
+  }
+
+  private startPolling(): void {
+    if (this.pollTimer) return;
+    this.pollTimer = setInterval(() => {
+      if (!this.appIsActive) return;
+      void this.syncAndMaybeReload('resume');
+    }, this.pollIntervalMs);
   }
 
   private isSyncResult(result: any): result is LiveUpdateSyncResult {
@@ -82,7 +102,12 @@ export class LiveUpdatesService {
       }
 
       if (this.isSafeToAutoReload(this.router.url)) {
+        await Toast.show({ text: 'Applying update…' });
         await this.reloadApp();
+        return;
+      }
+
+      if (this.pendingReload) {
         return;
       }
 
