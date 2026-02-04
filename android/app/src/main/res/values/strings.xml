@@ -1,8 +1,14 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Status Board</string>
-    <string name="title_activity_main">Status Board</string>
-    <string name="package_name">io.ionic.starter</string>
-    <string name="custom_url_scheme">io.ionic.starter</string>
-    <string name="no_updates_available">No Update Available</string>
+  <string name="app_name">Status Board</string>
+  <string name="title_activity_main">Status Board</string>
+  <string name="package_name">io.ionic.starter</string>
+  <string name="custom_url_scheme">io.ionic.starter</string>
+  <string name="no_updates_available">No Update Available</string>
+  <string name="ionic_app_id">e6702712</string>
+  <string name="ionic_channel_name">Production</string>
+  <string name="ionic_update_method">background</string>
+  <string name="ionic_max_versions">2</string>
+  <string name="ionic_min_background_duration">30</string>
+  <string name="ionic_update_api">https://api.ionicjs.com</string>
 </resources>
