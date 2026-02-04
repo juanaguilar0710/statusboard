@@ -627,6 +627,49 @@ export class RequestsService {
         });
     }
 
+        searchOperatingRoomUsers(params: {
+            roleId: number;
+            waitingRoomId: number;
+            search?: string;
+            perPage?: number;
+            orderBy?: string;
+            direction?: 'asc' | 'desc';
+        }): Observable<any> {
+            const {
+                roleId,
+                waitingRoomId,
+                search = '',
+                perPage = 20,
+                orderBy = 'name',
+                direction = 'asc'
+            } = params;
+
+            const query = [
+                `orderBy=${encodeURIComponent(orderBy)}`,
+                `direction=${encodeURIComponent(direction)}`,
+                `perPage=${encodeURIComponent(String(perPage))}`,
+                `role_id=${encodeURIComponent(String(roleId))}`,
+                `waiting_room_id=${encodeURIComponent(String(waitingRoomId))}`,
+                `search=${encodeURIComponent(search)}`,
+            ].join('&');
+
+            const options = {
+                url: `${environment.url}${environment.operatingroomusers}?${query}`,
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer ' + this.token },
+            };
+
+            return new Observable(observer => {
+                CapacitorHttp.get(options)
+                    .then(response => {
+                        observer.next(response);
+                        observer.complete();
+                    })
+                    .catch(error => {
+                        observer.error(error);
+                    });
+            });
+        }
+
     // update waiting room and assign staff members
     updateWaitingRoom = async (waitingRoom: any): Promise<any> => {
         return new Promise(async (resolve, reject) => {

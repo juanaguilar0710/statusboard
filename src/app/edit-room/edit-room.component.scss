@@ -58,7 +58,9 @@ button {
   }
 
   .room-card-row {
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr 1fr 44px;
+    column-gap: 10px;
     align-items: center;
     margin-bottom: 10px; /* Espaciado entre filas */
   }
@@ -130,7 +132,8 @@ button {
 
   .prueba{
     width: 100%;
-    height: 60px;
+    height: auto;
+    min-height: 60px;
   }
     .columnAvailable{
       min-width: 445px;
@@ -158,10 +161,6 @@ button {
     .selectedUserDropdown{
       width: 100%;
       min-width: 243px;
-    }
-
-    .heightFild{
-      height: 47px;
     }
 }
 
@@ -264,3 +263,115 @@ h6 {
 }
 
 /* fin loading */
+
+/* Role/User row sizing */
+/* Make ion-cols not affect widths via padding */
+
+.team-row {
+  display: grid;
+  grid-template-columns: 0.6fr 1fr 45px;
+  column-gap: 0px;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+}
+
+.roles-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.team-role,
+.team-user,
+.team-delete {
+  min-width: 0;
+  width: 85%;
+}
+
+.team-delete {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+.trash-icon {
+  color: red;
+  cursor: pointer;
+  font-size: 1.5em;
+}
+
+.role-select {
+  width: 100%;
+  min-width: 0;
+}
+
+/* Keep role select visually aligned with the smaller search */
+.role-select.heightFild {
+  height: 32px;
+  font-size: 17px;
+  padding: 3px 8px;
+}
+
+.selectedUserDropdown {
+  width: 100%;
+}
+
+.heightFild {
+  box-sizing: border-box;
+  height: 34px;
+}
+
+.user-search-input {
+  height: 32px !important;
+  font-size: 17px;
+  padding: 3px 8px;
+}
+
+.user-col {
+  display: flex;
+  flex-direction: column;
+  overflow: visible;
+  position: relative;
+}
+
+.team-user {
+  display: flex;
+  flex-direction: column;
+  overflow: visible;
+  position: relative;
+}
+
+.autocomplete-dropdown {
+  position: absolute;
+  top: calc(32px + 6px);
+  left: 0;
+  right: 0;
+  max-height: 220px;
+  overflow: auto;
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
+  z-index: 9999;
+}
+
+.autocomplete-loading,
+.autocomplete-empty {
+  padding: 8px 10px;
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.65);
+}
+
+.autocomplete-option {
+  padding: 8px 10px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.autocomplete-option:hover {
+  background: rgba(0, 122, 255, 0.08);
+}

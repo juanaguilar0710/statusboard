@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { ModalController, NavController } from '@ionic/angular';
 import { LocaldataService } from '../api/localdata.service';
@@ -32,6 +32,12 @@ export class EditRoomComponent implements OnInit {
   selectedRoles: any[] = [];
   filteredUsers: any[] = [];
 
+  userSearchTexts: string[] = [];
+  userSearchLoading: boolean[] = [];
+  showUserDropdown: boolean[] = [];
+  private userSearchTimers: { [index: number]: any } = {};
+  private readonly USER_SEARCH_DEBOUNCE_MS = 350;
+
   constructor(private router: Router,
     private navController: NavController,
     private LocaldataService: LocaldataService,
@@ -39,7 +45,8 @@ export class EditRoomComponent implements OnInit {
     private fb: FormBuilder,
     public requestsService: RequestsService,
     public translate: TranslateService,
-    private modalController: ModalController
+    private modalController: ModalController,
+    private cdr: ChangeDetectorRef
   ) {
     const navParams = this.router.getCurrentNavigation()?.extras?.state;
     if (navParams) {
@@ -103,22 +110,133 @@ getUpdatedPatients(original: any[], current: any[]) {
       selectedUser: ['', Validators.required]  // FormControl para el usuario seleccionado
     });
     this.roles.push(roleGroup);  // Añadir el grupo al FormArray
+
+    const index = this.roles.length - 1;
+    this.filteredUsers[index] = [];
+    this.userSearchTexts[index] = '';
+    this.userSearchLoading[index] = false;
+    this.showUserDropdown[index] = false;
   }
 
   // Eliminar una fila específica
   removeRole(index: number) {
     this.roles.removeAt(index);  // Remover el grupo del FormArray
+    this.filteredUsers.splice(index, 1);
+    this.userSearchTexts.splice(index, 1);
+    this.userSearchLoading.splice(index, 1);
+    this.showUserDropdown.splice(index, 1);
+    if (this.userSearchTimers[index]) {
+      clearTimeout(this.userSearchTimers[index]);
+      delete this.userSearchTimers[index];
+    }
+  }
+
+  openUserDropdown(index: number) {
+    this.showUserDropdown[index] = true;
+  }
+
+  closeUserDropdown(index: number) {
+    this.showUserDropdown[index] = false;
+  }
+
+  closeUserDropdownDelayed(index: number) {
+    // Permite que el click sobre una opción ocurra antes de cerrar.
+    setTimeout(() => this.closeUserDropdown(index), 150);
+  }
+
+  selectUser(index: number, person: any) {
+    this.roles.at(index).get('selectedUser')?.setValue(person?.id ?? '');
+    this.userSearchTexts[index] = person?.full_name ?? '';
+    this.closeUserDropdown(index);
   }
 
   // Filtrar los usuarios cuando se selecciona un rol
   onRoleChange(index: number) {
     const selectedRole = this.roles.at(index).get('roleType')?.value;
     const role = this.allUsers.find((r:any) => r.code === selectedRole);
-    if (role) {
-      this.filteredUsers[index] = role.persons;  // Filtrar los usuarios
-    } else {
+
+    // Reset de selección/criterio cuando cambia el rol
+    this.roles.at(index).get('selectedUser')?.setValue('');
+    this.userSearchTexts[index] = '';
+    this.showUserDropdown[index] = false;
+
+    if (!role) {
       this.filteredUsers[index] = [];
+      return;
     }
+
+    // Cargar primeros resultados (sin búsqueda) para el rol
+    this.fetchUsersForRole(index, role.id, '');
+  }
+
+  onUserSearchTextChange(index: number, text: string) {
+    this.userSearchTexts[index] = text;
+
+    // Si el usuario escribe, invalidar selección anterior.
+    this.roles.at(index).get('selectedUser')?.setValue('');
+
+    const selectedRoleCode = this.roles.at(index).get('roleType')?.value;
+    const role = this.allUsers?.find((r: any) => r.code === selectedRoleCode);
+    if (!role) {
+      this.filteredUsers[index] = [];
+      return;
+    }
+
+    if (this.userSearchTimers[index]) {
+      clearTimeout(this.userSearchTimers[index]);
+    }
+
+    const searchText = (text || '').trim();
+    this.userSearchTimers[index] = setTimeout(() => {
+      this.fetchUsersForRole(index, role.id, searchText);
+    }, this.USER_SEARCH_DEBOUNCE_MS);
+  }
+
+  private getWaitingRoomIdForSearch(): number {
+    const id = this.requestsService?.config?.waitingRoom?.id ?? this.room?.waiting_room_id;
+    return Number(id);
+  }
+
+  private fetchUsersForRole(index: number, roleId: number, searchText: string) {
+    const waitingRoomId = this.getWaitingRoomIdForSearch();
+    this.userSearchLoading[index] = true;
+
+    const existing = Array.isArray(this.filteredUsers[index]) ? this.filteredUsers[index] : [];
+    const selectedUserId = this.roles.at(index).get('selectedUser')?.value;
+    const selectedUserObj = selectedUserId ? existing.find((u: any) => String(u?.id) === String(selectedUserId)) : null;
+
+    this.requestsService.searchOperatingRoomUsers({
+      roleId,
+      waitingRoomId,
+      search: searchText,
+      perPage: 20,
+      orderBy: 'name',
+      direction: 'asc'
+    }).subscribe((resp: any) => {
+      const raw = resp?.data;
+      let users: any[] = [];
+
+      if (Array.isArray(raw)) {
+        users = raw;
+      } else if (Array.isArray(raw?.data)) {
+        users = raw.data;
+      } else if (Array.isArray(raw?.items)) {
+        users = raw.items;
+      }
+
+      // Asegurar que el seleccionado actual esté en el listado (si no viene en el top 20)
+      if (selectedUserObj && !users.some((u: any) => String(u?.id) === String(selectedUserId))) {
+        users = [selectedUserObj, ...users];
+      }
+
+      this.filteredUsers[index] = users;
+      this.userSearchLoading[index] = false;
+      this.cdr.detectChanges();
+    }, _error => {
+      this.filteredUsers[index] = selectedUserObj ? [selectedUserObj] : [];
+      this.userSearchLoading[index] = false;
+      this.cdr.detectChanges();
+    });
   }
 
   initializeRoles() {
@@ -156,6 +274,11 @@ getUpdatedPatients(original: any[], current: any[]) {
     this.loading = true;
     this.requestsService.getOperatingRoomWithRolesUsers(this.room.id).subscribe(resp => {
       this.roles.clear();
+      this.filteredUsers = [];
+      this.userSearchTexts = [];
+      this.userSearchLoading = [];
+      this.showUserDropdown = [];
+
       resp.data.data.roles.forEach((role:any) => {
         const availableUsers = this.allUsers.find((item: any) => item.id === role.id)?.persons || [];
         if (role.persons.length > 0) {
@@ -166,7 +289,14 @@ getUpdatedPatients(original: any[], current: any[]) {
                 selectedUser: [person.id, Validators.required]  // Preseleccionar el usuario
               })
             );
-            this.filteredUsers.push(availableUsers);
+            // Inicialmente incluir el usuario seleccionado para que el select lo muestre.
+            this.filteredUsers.push([person]);
+            this.userSearchTexts.push(person?.full_name ?? '');
+            this.userSearchLoading.push(false);
+            this.showUserDropdown.push(false);
+
+            const rowIndex = this.roles.length - 1;
+            this.fetchUsersForRole(rowIndex, role.id, '');
           });
         } else {
           this.roles.push(
@@ -175,10 +305,16 @@ getUpdatedPatients(original: any[], current: any[]) {
               selectedUser: ['', Validators.required]  // Sin usuario seleccionado
             })
           );
-          this.filteredUsers.push(availableUsers);
+          this.filteredUsers.push([]);
+          this.userSearchTexts.push('');
+          this.userSearchLoading.push(false);
+          this.showUserDropdown.push(false);
+
+          const rowIndex = this.roles.length - 1;
+          this.fetchUsersForRole(rowIndex, role.id, '');
         }
       });
-      this.filteredUsers = this.filteredUsers.map(group => group.sort((a:any, b:any) => a.full_name.localeCompare(b.full_name)));
+
       this.loading = false;
     }, error => {
       console.log(error);

@@ -71,33 +71,53 @@
         <div class="container">
           <ion-grid>
             <form [formGroup]="roleForm" *ngIf="this.allUsers">
-              <ion-row formArrayName="roles">
+              <div formArrayName="roles" class="roles-list">
                 <ng-container *ngFor="let role of roles.controls; let i = index">
-                  <ion-row [formGroupName]="i" class="room-card-row prueba fs-22" style="align-items: center; margin-bottom: 0px;">
+                  <div [formGroupName]="i" class="team-row prueba fs-22">
 
-                    <!-- Selector de rol con ancho fijo -->
-                    <ion-col size="2">
-                      <select formControlName="roleType" class="heightFild" (change)="onRoleChange(i)" style="width: 100%; min-width: 100px;">
-                        <option value="" disabled selected>{{ 'editRoom.selectRole' | translate }}</option>
-                        <option *ngFor="let user of allUsers" [value]="user.code">{{ user.code }}</option>
+                    <div class="team-role">
+                      <select formControlName="roleType" class="heightFild role-select" (change)="onRoleChange(i)">
+                        <option value="" disabled>{{ 'editRoom.selectRole' | translate }}</option>
+                        <option *ngFor="let user of allUsers" [value]="user.code">{{ user.code === 'MD' ? 'SURG' : user.code }}</option>
                       </select>
-                    </ion-col>
+                    </div>
 
-                    <!-- Selector de usuario filtrado con ancho fijo -->
-                    <ion-col size="8" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-left: 8%;">
-                      <select formControlName="selectedUser" class="selectedUserDropdown heightFild">
-                        <option value="" disabled selected>{{ 'editRoom.selectUser' | translate }}</option>
-                        <option *ngFor="let person of filteredUsers[i]" [value]="person.id">{{ person.full_name }}</option>
-                      </select>
-                    </ion-col>
+                    <div class="team-user">
+                      <input
+                        type="text"
+                        class="selectedUserDropdown heightFild user-search-input"
+                        [value]="userSearchTexts[i] || ''"
+                        (focus)="openUserDropdown(i)"
+                        (blur)="closeUserDropdownDelayed(i)"
+                        (input)="onUserSearchTextChange(i, $any($event.target).value); openUserDropdown(i)"
+                        placeholder="Search user..."
+                      />
 
-                    <!-- Ícono para eliminar con tamaño fijo -->
-                    <ion-col size="1" class="ion-text-center">
-                      <ion-icon (click)="removeRole(i)" name="trash" style="color: red; cursor: pointer; font-size: 1.5em;"></ion-icon>
-                    </ion-col>
-                  </ion-row>
+                      <div class="autocomplete-dropdown" *ngIf="showUserDropdown[i]">
+                        <div class="autocomplete-loading" *ngIf="userSearchLoading[i]">
+                          Loading...
+                        </div>
+
+                        <div
+                          class="autocomplete-option"
+                          *ngFor="let person of filteredUsers[i]"
+                          (mousedown)="selectUser(i, person)"
+                        >
+                          {{ person.full_name }}
+                        </div>
+
+                        <div class="autocomplete-empty" *ngIf="!userSearchLoading[i] && (!filteredUsers[i] || filteredUsers[i].length === 0)">
+                          No results
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="team-delete">
+                      <ion-icon (click)="removeRole(i)" name="trash-outline" class="trash-icon"></ion-icon>
+                    </div>
+                  </div>
                 </ng-container>
-              </ion-row>
+              </div>
             </form>
           </ion-grid>
         </div>

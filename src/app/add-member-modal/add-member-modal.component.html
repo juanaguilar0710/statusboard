@@ -42,7 +42,7 @@
       <select formControlName="role" class="minimal-select">
         <option value="" disabled>{{ 'addMember.rolePlaceholder' | translate }}</option>
         <option *ngFor="let role of roles" [value]="role.id">
-          {{ role.code }}
+          {{ role.code === 'MD' ? 'SURG' : role.code }}
         </option>
       </select>
       <span *ngIf="memberForm.get('role')?.invalid && memberForm.get('role')?.touched" class="error-text">
