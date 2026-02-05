@@ -45,6 +45,7 @@ export class AppComponent implements OnInit {
   liveUpdateDetail = '';
   liveUpdateDownloaded = false;
   liveUpdateLastCheck: Date | null = null;
+  liveUpdateLastResult = '';
 
   constructor(
     private router: Router,
@@ -101,6 +102,7 @@ export class AppComponent implements OnInit {
       this.liveUpdateDetail = 'Setting up listeners';
       this.liveUpdateDownloaded = false;
       this.liveUpdateLastCheck = new Date();
+      this.liveUpdateLastResult = 'Init';
       console.log('🚀 Inicializando Live Updates (recarga inmediata)...');
 
       // Verificar al volver del background
@@ -128,6 +130,7 @@ export class AppComponent implements OnInit {
       this.liveUpdateStatus = 'Checking';
       this.liveUpdateDetail = reason === 'startup' ? 'At app start' : 'On resume';
       this.liveUpdateLastCheck = new Date();
+      this.liveUpdateLastResult = `Checking (${reason})`;
 
       const result = await LiveUpdates.sync();
 
@@ -136,17 +139,20 @@ export class AppComponent implements OnInit {
         this.liveUpdateDownloaded = true;
         this.liveUpdateStatus = 'Downloaded';
         this.liveUpdateDetail = 'Reloading now';
+        this.liveUpdateLastResult = 'Downloaded and reloading';
         await LiveUpdates.reload();
       } else {
         console.log('ℹ️ App actualizada');
         this.liveUpdateDownloaded = false;
         this.liveUpdateStatus = 'No update';
         this.liveUpdateDetail = 'Already on latest';
+        this.liveUpdateLastResult = 'No update (latest)';
       }
     } catch (error) {
       console.error('❌ Error al verificar/aplicar actualizaciones:', error);
       this.liveUpdateStatus = 'Error';
       this.liveUpdateDetail = 'Sync failed';
+      this.liveUpdateLastResult = `Error: ${(error as any)?.message || 'sync failed'}`;
     }
   }
 

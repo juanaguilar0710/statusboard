@@ -21,6 +21,10 @@
     <span class="label">Downloaded:</span>
     <span class="value">{{ liveUpdateDownloaded ? 'Yes (ready)' : 'No' }}</span>
   </div>
+  <div class="live-update-row">
+    <span class="label">Last result:</span>
+    <span class="value">{{ liveUpdateLastResult || '—' }}</span>
+  </div>
 </div>
 
 <div id="screensaver" class="screensaver-container">
