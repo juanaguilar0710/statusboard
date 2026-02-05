@@ -1,31 +1,32 @@
 import { Component, HostListener, OnInit } from '@angular/core';
-import { NavigationEnd, NavigationStart, Router } from '@angular/router';
+import { NavigationEnd, Router } from '@angular/router';
 import { Preferences } from '@capacitor/preferences';
 import { RequestsService } from './api/requests.service';
 import { Storage } from '@ionic/storage-angular';
-import { Toast } from '@capacitor/toast';
 import { NetworkService } from './api/network.service';
 import { environment } from 'src/environments/environment';
 import { LocaldataService } from './api/localdata.service';
 import { BehaviorSubject } from 'rxjs';
 import { NotificationService } from './api/notification.service';
-import { Insomnia } from '@awesome-cordova-plugins/insomnia/ngx';
 import { ModalController, Platform } from '@ionic/angular';
 import { LoggerService } from './api/logger.service';
+
+import { App } from '@capacitor/app';
+import * as LiveUpdates from '@capacitor/live-updates';
 
 @Component({
   selector: 'app-root',
   templateUrl: 'app.component.html',
   styleUrls: ['app.component.scss'],
 })
-export class AppComponent implements OnInit{
+export class AppComponent implements OnInit {
 
   timeoutHandle: any;
   enableScreensaver = true;
-  excludedUrls:any;
-  isExcluded:any;
-  currentUrl:any;
-  inactiveTime = environment.timeSaveScreen * 60 * 1000;  // 5 minutos de inactividad
+  excludedUrls: any;
+  isExcluded: any;
+  currentUrl: any;
+  inactiveTime = environment.timeSaveScreen * 60 * 1000;
 
   private hasNavigated = false;
 
@@ -62,15 +63,13 @@ export class AppComponent implements OnInit{
     new NetworkService();
   }
 
-
   ngOnInit() {
-
     this.router.events.subscribe((event) => {
       if (event instanceof NavigationEnd) {
         this.excludedUrls = ['/login', '/pin', '/configuration', '/dashboard'];
         this.currentUrl = event.url || event.urlAfterRedirects;
-        this.isExcluded = this.excludedUrls.some((url:any) => this.currentUrl.includes(url));
-        this.checkRoute(this.currentUrl)
+        this.isExcluded = this.excludedUrls.some((url: any) => this.currentUrl.includes(url));
+        this.checkRoute(this.currentUrl);
         if (this.isExcluded) {
           this.stopInactivityTracking();
         } else {
@@ -81,8 +80,75 @@ export class AppComponent implements OnInit{
 
     this.platform.ready().then(() => {
       this.resetInactivityTimer();
+      this.initializeLiveUpdates();
     });
   }
+
+  // ========== LIVE UPDATES - ACTUALIZACIÓN SIEMPRE PERMITIDA ==========
+
+  /**
+   * Inicializa Live Updates - Sin restricciones, se actualiza siempre
+   */
+  private async initializeLiveUpdates(): Promise<void> {
+    try {
+      console.log('🚀 Inicializando Live Updates (sin restricciones)...');
+
+      // Listener: cuando la app vuelve del background
+      App.addListener('resume', async () => {
+        console.log('📱 App resumida desde background');
+        await this.checkAndApplyUpdate();
+      });
+
+      // Primera verificación al iniciar
+      await this.checkForUpdates();
+
+    } catch (error) {
+      console.error('❌ Error al inicializar Live Updates:', error);
+    }
+  }
+
+  /**
+   * Verifica y aplica actualizaciones inmediatamente si están disponibles
+   */
+  private async checkAndApplyUpdate(): Promise<void> {
+    const shouldReload = localStorage.getItem('shouldReloadApp');
+
+    if (shouldReload === 'true') {
+      console.log('🔄 Aplicando actualización inmediatamente...');
+      localStorage.removeItem('shouldReloadApp');
+
+      try {
+        await LiveUpdates.reload();
+      } catch (error) {
+        console.error('❌ Error al aplicar actualización:', error);
+        localStorage.removeItem('shouldReloadApp');
+      }
+    } else {
+      await this.checkForUpdates();
+    }
+  }
+
+  /**
+   * Verifica si hay actualizaciones disponibles y las descarga
+   */
+  private async checkForUpdates(): Promise<void> {
+    try {
+      console.log('🔍 Verificando actualizaciones...');
+
+      const result = await LiveUpdates.sync();
+
+      if (result.activeApplicationPathChanged) {
+        console.log('✅ Nueva actualización descargada');
+        localStorage.setItem('shouldReloadApp', 'true');
+      } else {
+        console.log('ℹ️ App actualizada');
+      }
+    } catch (error) {
+      console.error('❌ Error al verificar actualizaciones:', error);
+    }
+  }
+
+  // ========== FIN LIVE UPDATES ==========
 
   checkRoute(url: string) {
     if (url.includes('/dashboard')) {
@@ -102,19 +168,18 @@ export class AppComponent implements OnInit{
     this.timeoutHandle = setTimeout(() => this.showScreensaver(), this.inactiveTime);
   }
 
-    showScreensaver() {
-      document.getElementById('screensaver')?.classList.add('active');
-    }
+  showScreensaver() {
+    document.getElementById('screensaver')?.classList.add('active');
+  }
 
-    hideScreensaver() {
-      document.getElementById('screensaver')?.classList.remove('active');
-    }
+  hideScreensaver() {
+    document.getElementById('screensaver')?.classList.remove('active');
+  }
 
-    @HostListener('document:mousemove') onUserActivity() { this.resetInactivityTimer(); }
-    @HostListener('document:click') onClick() { this.resetInactivityTimer(); }
-    @HostListener('document:touchstart') onTouchStart() { this.resetInactivityTimer(); }
-    @HostListener('document:keydown') onKeyDown() { this.resetInactivityTimer(); }
-
+  @HostListener('document:mousemove') onUserActivity() { this.resetInactivityTimer(); }
+  @HostListener('document:click') onClick() { this.resetInactivityTimer(); }
+  @HostListener('document:touchstart') onTouchStart() { this.resetInactivityTimer(); }
+  @HostListener('document:keydown') onKeyDown() { this.resetInactivityTimer(); }
 
   async init(): Promise<any> {
     if (this.hasNavigated) return;
@@ -134,7 +199,6 @@ export class AppComponent implements OnInit{
 
       var tokenAdmin = await this.logger.getTokenAdmin();
       this.requestsService.setAdminToken(tokenAdmin);
-
 
       if (!tokenAdmin) {
         this.router.navigate(['/login'], { replaceUrl: true });
@@ -171,10 +235,10 @@ export class AppComponent implements OnInit{
 
   ngOnDestroy() {
     this.stopInactivityTracking();
+    App.removeAllListeners();
   }
 
   private startInactivityTracking(): void {
-    // Evitar iniciar si ya está activo
     if (this.isTrackingActive) {
       return;
     }
@@ -186,7 +250,6 @@ export class AppComponent implements OnInit{
   }
 
   private initListener(): void {
-    // Remover listeners existentes primero para evitar duplicados
     this.removeListeners();
 
     this.events.forEach(event => {
@@ -198,7 +261,6 @@ export class AppComponent implements OnInit{
   }
 
   private resetTimer(): void {
-    // Solo resetear si el tracking está activo
     if (!this.isTrackingActive) {
       return;
     }
@@ -233,7 +295,6 @@ export class AppComponent implements OnInit{
   }
 
   private initInterval(): void {
-    // Evitar crear múltiples intervalos
     if (this.isIntervalRunning || this.timer) {
       return;
     }
@@ -243,7 +304,6 @@ export class AppComponent implements OnInit{
     this.timeRemaining$.next(this.maxInactivityTime);
 
     this.timer = setInterval(() => {
-      // Verificar si el tracking sigue activo
       if (!this.isTrackingActive || !this.isIntervalRunning) {
         this.stopInterval();
         return;
@@ -284,7 +344,6 @@ export class AppComponent implements OnInit{
 
   async startListeners(): Promise<boolean> {
     return new Promise(async (resolve, reject) => {
-      // Solo iniciar si no está ya activo
       if (!this.isTrackingActive && !this.timer) {
         await this.initListener();
         await this.initInterval();

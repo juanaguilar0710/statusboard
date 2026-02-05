@@ -8,6 +8,7 @@ import { NotificationService } from '../api/notification.service';
 import { LoggerService } from '../api/logger.service';
 import { environment } from 'src/environments/environment';
 import { Capacitor } from '@capacitor/core';
+import { sync } from '@capacitor/live-updates';
 import { AlertController } from '@ionic/angular';
 
 
@@ -40,6 +41,8 @@ export class LoginPage implements OnInit {
   authenticationRequired: boolean = false;
   twoFactorCodeValue: string = '';
 
+  private liveUpdateCheckInFlight = false;
+
 
   constructor(private _formbuilder: FormBuilder,
     private requestsService: RequestsService,
@@ -64,9 +67,39 @@ export class LoginPage implements OnInit {
       await Preferences.set({ key: 'language', value: 'en' });
     }
 
+    // Comprobación puntual de Live Update con toasts (auto-aplicado por el plugin)
+    if (Capacitor.isNativePlatform()) {
+      void this.checkLiveUpdateOnce();
+    }
   }
 
-  // Live Updates se gestionan ahora sólo por configuración automática del plugin.
+  private async checkLiveUpdateOnce(): Promise<void> {
+    if (this.liveUpdateCheckInFlight) {
+      return;
+    }
+
+    this.liveUpdateCheckInFlight = true;
+
+    try {
+      await Toast.show({ text: 'Live Update: checking…', duration: 'short' });
+
+      const result: any = await sync();
+
+      if (result && typeof result === 'object' && typeof result.activeApplicationPathChanged === 'boolean') {
+        if (!result.activeApplicationPathChanged) {
+          await Toast.show({ text: 'Live Update: no update', duration: 'short' });
+        } else {
+          await Toast.show({ text: 'Live Update: downloaded (auto apply)', duration: 'long' });
+        }
+      } else if (result && typeof result === 'object' && typeof result.message === 'string') {
+        await Toast.show({ text: `Live Update error: ${result.message}`, duration: 'long' });
+      }
+    } catch {
+      await Toast.show({ text: 'Live Update: check failed', duration: 'long' });
+    } finally {
+      this.liveUpdateCheckInFlight = false;
+    }
+  }
 
   togglePassword() {
     this.showPassword = !this.showPassword;
