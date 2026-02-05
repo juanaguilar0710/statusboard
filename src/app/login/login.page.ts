@@ -184,9 +184,11 @@ export class LoginPage implements OnInit, OnDestroy {
       // Ignore and fallback to JS reload below.
     }
 
-    if (Capacitor.getPlatform() === 'android') {
-      window.location.reload();
-    }
+    // Give the Bridge a beat to apply the new base path, then hard-navigate with a
+    // cache-busting query param so the WebView won't reuse a cached index.html.
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    const cacheBustUrl = `${window.location.origin}${window.location.pathname}?liveupdate=${Date.now()}`;
+    window.location.replace(cacheBustUrl);
   }
 
   togglePassword() {
