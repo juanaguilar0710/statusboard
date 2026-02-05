@@ -176,9 +176,15 @@ export class LoginPage implements OnInit, OnDestroy {
   }
 
   private async reloadApp(): Promise<void> {
+    // NOTE: In @capacitor/live-updates@0.1.3 Android's native `reload()` only updates the
+    // server base path and does NOT refresh the WebView. Force a JS reload on Android.
     try {
       await reload();
     } catch {
+      // Ignore and fallback to JS reload below.
+    }
+
+    if (Capacitor.getPlatform() === 'android') {
       window.location.reload();
     }
   }
