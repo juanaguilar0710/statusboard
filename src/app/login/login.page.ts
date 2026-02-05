@@ -176,19 +176,12 @@ export class LoginPage implements OnInit, OnDestroy {
   }
 
   private async reloadApp(): Promise<void> {
-    // NOTE: In @capacitor/live-updates@0.1.3 Android's native `reload()` only updates the
-    // server base path and does NOT refresh the WebView. Force a JS reload on Android.
     try {
       await reload();
     } catch {
-      // Ignore and fallback to JS reload below.
+      // Fallback: last resort JS reload.
+      window.location.reload();
     }
-
-    // Give the Bridge a beat to apply the new base path, then hard-navigate with a
-    // cache-busting query param so the WebView won't reuse a cached index.html.
-    await new Promise((resolve) => setTimeout(resolve, 250));
-    const cacheBustUrl = `${window.location.origin}${window.location.pathname}?liveupdate=${Date.now()}`;
-    window.location.replace(cacheBustUrl);
   }
 
   togglePassword() {

@@ -1,0 +1,5 @@
+# Ensure patches produced by patch-package keep LF line endings
+patches/*.patch text eol=lf
+
+# Default behavior for text files (optional)
+* text=auto
