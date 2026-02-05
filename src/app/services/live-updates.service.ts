@@ -20,6 +20,7 @@ export class LiveUpdatesService {
   private lastSyncAt = 0;
   private appIsActive = true;
   private pollTimer: any;
+  private restartTimer: any;
 
   // Avoid excessive sync calls on resume loops.
   private readonly minSyncIntervalMs = 60_000;
@@ -38,6 +39,7 @@ export class LiveUpdatesService {
     await this.platform.ready();
 
     if (!Capacitor.isNativePlatform()) {
+      alert('Live Updates solo está disponible en plataformas nativas.');
       return;
     }
 
@@ -81,7 +83,7 @@ export class LiveUpdatesService {
     const now = Date.now();
     if (now - this.lastSyncAt < this.minSyncIntervalMs) {
       if (this.pendingReload && this.isSafeToAutoReload(this.router.url)) {
-        await this.reloadApp();
+        this.scheduleDelayedRestart();
       }
       return;
     }
@@ -102,8 +104,8 @@ export class LiveUpdatesService {
       }
 
       if (this.isSafeToAutoReload(this.router.url)) {
-        await Toast.show({ text: 'Applying update…' });
-        await this.reloadApp();
+        await Toast.show({ text: 'Update downloaded. App will restart in 2 minutes.' });
+        this.scheduleDelayedRestart();
         return;
       }
 
@@ -148,10 +150,25 @@ export class LiveUpdatesService {
   private async reloadApp(): Promise<void> {
     try {
       this.pendingReload = false;
+      if (this.restartTimer) {
+        clearTimeout(this.restartTimer);
+        this.restartTimer = undefined;
+      }
       await reload();
     } catch {
       // Fallback: if native reload fails for any reason.
       window.location.reload();
     }
+  }
+
+  private scheduleDelayedRestart(): void {
+    if (this.restartTimer) {
+      return;
+    }
+
+    this.restartTimer = setTimeout(async () => {
+      this.restartTimer = undefined;
+      await this.reloadApp();
+    }, 2 * 60 * 1000); // 2 minutos
   }
 }
