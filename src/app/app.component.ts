@@ -40,6 +40,11 @@ export class AppComponent implements OnInit {
   private isTrackingActive: boolean = false;
   private isIntervalRunning: boolean = false;
 
+  // Live Updates polling control
+  private liveUpdatePollTimer: any;
+  private liveUpdateInFlight = false;
+  private readonly liveUpdatePollIntervalMs = 60_000; // 2 min
+
   // Live Updates status for on-screen diagnostics
   liveUpdateStatus = 'Idle';
   liveUpdateDetail = '';
@@ -114,6 +119,8 @@ export class AppComponent implements OnInit {
       // Primera verificación al iniciar
       await this.checkForUpdatesAndReload('startup');
 
+      this.startLiveUpdatePolling();
+
     } catch (error) {
       console.error('❌ Error al inicializar Live Updates:', error);
       this.liveUpdateStatus = 'Error';
@@ -124,11 +131,19 @@ export class AppComponent implements OnInit {
   /**
    * Verifica si hay actualización y la aplica de inmediato
    */
-  private async checkForUpdatesAndReload(reason: 'startup' | 'resume'): Promise<void> {
+  private async checkForUpdatesAndReload(reason: 'startup' | 'resume' | 'poll'): Promise<void> {
+    if (this.liveUpdateInFlight) return;
+
+    this.liveUpdateInFlight = true;
     try {
       console.log('🔍 Verificando actualizaciones...');
       this.liveUpdateStatus = 'Checking';
-      this.liveUpdateDetail = reason === 'startup' ? 'At app start' : 'On resume';
+      this.liveUpdateDetail =
+        reason === 'startup'
+          ? 'At app start'
+          : reason === 'resume'
+            ? 'On resume'
+            : 'Periodic poll';
       this.liveUpdateLastCheck = new Date();
       this.liveUpdateLastResult = `Checking (${reason})`;
 
@@ -153,7 +168,17 @@ export class AppComponent implements OnInit {
       this.liveUpdateStatus = 'Error';
       this.liveUpdateDetail = 'Sync failed';
       this.liveUpdateLastResult = `Error: ${(error as any)?.message || 'sync failed'}`;
+    } finally {
+      this.liveUpdateInFlight = false;
     }
+  }
+
+  private startLiveUpdatePolling(): void {
+    if (this.liveUpdatePollTimer) return;
+
+    this.liveUpdatePollTimer = setInterval(() => {
+      void this.checkForUpdatesAndReload('poll');
+    }, this.liveUpdatePollIntervalMs);
   }
 
   // ========== FIN LIVE UPDATES ==========
