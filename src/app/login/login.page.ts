@@ -1,4 +1,4 @@
-import { Component, ElementRef, OnDestroy, OnInit, Renderer2, ViewChild } from '@angular/core';
+import { Component, ElementRef, OnInit, Renderer2, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { RequestsService } from '../api/requests.service';
 import { Toast } from '@capacitor/toast';
@@ -8,7 +8,6 @@ import { NotificationService } from '../api/notification.service';
 import { LoggerService } from '../api/logger.service';
 import { environment } from 'src/environments/environment';
 import { Capacitor } from '@capacitor/core';
-import { reload, sync } from '@capacitor/live-updates';
 import { AlertController } from '@ionic/angular';
 
 
@@ -18,7 +17,7 @@ import { AlertController } from '@ionic/angular';
   templateUrl: './login.page.html',
   styleUrls: ['./login.page.scss'],
 })
-export class LoginPage implements OnInit, OnDestroy {
+export class LoginPage implements OnInit {
 
   platformInfo = {
   platform: Capacitor.getPlatform(),
@@ -40,11 +39,6 @@ export class LoginPage implements OnInit, OnDestroy {
   two_fa_source: string = '';
   authenticationRequired: boolean = false;
   twoFactorCodeValue: string = '';
-
-  private liveUpdatesTimer: any;
-  private liveUpdatesCheckInFlight = false;
-  private liveUpdatesAlertOpen = false;
-  private readonly liveUpdatesCheckIntervalMs = 60_000;
 
 
   constructor(private _formbuilder: FormBuilder,
@@ -72,120 +66,7 @@ export class LoginPage implements OnInit, OnDestroy {
 
   }
 
-  ionViewDidEnter() {
-    this.startLiveUpdatesChecks();
-  }
-
-  ionViewWillLeave() {
-    this.stopLiveUpdatesChecks();
-  }
-
-  ngOnDestroy(): void {
-    this.stopLiveUpdatesChecks();
-  }
-
-  private startLiveUpdatesChecks(): void {
-    if (!Capacitor.isNativePlatform()) {
-      return;
-    }
-
-    if (this.liveUpdatesTimer) {
-      return;
-    }
-
-    void this.checkLiveUpdateOnce('startup');
-    this.liveUpdatesTimer = setInterval(() => {
-      void this.checkLiveUpdateOnce('interval');
-    }, this.liveUpdatesCheckIntervalMs);
-  }
-
-  private stopLiveUpdatesChecks(): void {
-    if (this.liveUpdatesTimer) {
-      clearInterval(this.liveUpdatesTimer);
-      this.liveUpdatesTimer = undefined;
-    }
-  }
-
-  private async checkLiveUpdateOnce(reason: 'startup' | 'interval'): Promise<void> {
-    if (this.liveUpdatesCheckInFlight) {
-      return;
-    }
-
-    this.liveUpdatesCheckInFlight = true;
-
-    try {
-      await Toast.show({
-        text: reason === 'startup' ? 'Live Update: checking…' : 'Live Update: checking (1 min)…',
-        duration: 'short',
-      });
-
-      const result: any = await sync();
-
-      // SyncResult
-      if (result && typeof result === 'object' && typeof result.activeApplicationPathChanged === 'boolean') {
-        if (!result.activeApplicationPathChanged) {
-          await Toast.show({ text: 'Live Update: no update', duration: 'short' });
-          return;
-        }
-
-        await Toast.show({ text: 'Live Update: downloaded (ready to apply)', duration: 'long' });
-
-        if (this.liveUpdatesAlertOpen) {
-          return;
-        }
-
-        this.liveUpdatesAlertOpen = true;
-        const alert = await this.alertController.create({
-          header: 'Update available',
-          message: 'A Live Update was downloaded. Reload to apply it now?',
-          buttons: [
-            {
-              text: 'Later',
-              role: 'cancel',
-              handler: () => {
-                this.liveUpdatesAlertOpen = false;
-              },
-            },
-            {
-              text: 'Reload',
-              handler: () => {
-                this.liveUpdatesAlertOpen = false;
-                void this.reloadApp();
-              },
-            },
-          ],
-          backdropDismiss: true,
-        });
-
-        alert.onDidDismiss().then(() => {
-          this.liveUpdatesAlertOpen = false;
-        });
-
-        await alert.present();
-        return;
-      }
-
-      // LiveUpdateError
-      if (result && typeof result === 'object' && typeof result.message === 'string') {
-        await Toast.show({ text: `Live Update error: ${result.message}`, duration: 'long' });
-      }
-    } catch {
-      await Toast.show({ text: 'Live Update: check failed', duration: 'long' });
-    } finally {
-      this.liveUpdatesCheckInFlight = false;
-    }
-  }
-
-  private async reloadApp(): Promise<void> {
-    try {
-      await reload();
-    } catch {
-      // Fallback: last resort JS reload.
-      window.location.reload();
-    }
-  }
-
-  // (Sin botón manual ni diagnóstico extra; sólo la comprobación básica por intervalo.)
+  // Live Updates se gestionan ahora sólo por configuración automática del plugin.
 
   togglePassword() {
     this.showPassword = !this.showPassword;
