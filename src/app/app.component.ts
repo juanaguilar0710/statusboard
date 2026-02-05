@@ -12,7 +12,6 @@ import { NotificationService } from './api/notification.service';
 import { Insomnia } from '@awesome-cordova-plugins/insomnia/ngx';
 import { ModalController, Platform } from '@ionic/angular';
 import { LoggerService } from './api/logger.service';
-import { LiveUpdatesService } from './services/live-updates.service';
 
 @Component({
   selector: 'app-root',
@@ -48,8 +47,7 @@ export class AppComponent implements OnInit{
     private localdataService: LocaldataService,
     private notificationService: NotificationService,
     private modalController: ModalController,
-    private platform: Platform,
-    private liveUpdatesService: LiveUpdatesService
+    private platform: Platform
   ) {
     this.init();
 
@@ -83,7 +81,6 @@ export class AppComponent implements OnInit{
 
     this.platform.ready().then(() => {
       this.resetInactivityTimer();
-      void this.liveUpdatesService.init();
     });
   }
 
