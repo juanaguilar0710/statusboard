@@ -1,6 +1,27 @@
 <ion-app style="overflow: hidden;">
-  <ion-router-outlet></ion-router-outlet>  
+  <ion-router-outlet></ion-router-outlet>
 </ion-app>
+
+<!-- Live Updates debug panel (always visible on screen) -->
+<div class="live-update-panel">
+  <div class="live-update-title">Live Update</div>
+  <div class="live-update-row">
+    <span class="label">Status:</span>
+    <span class="value status">{{ liveUpdateStatus }}</span>
+  </div>
+  <div class="live-update-row">
+    <span class="label">Detail:</span>
+    <span class="value">{{ liveUpdateDetail || '—' }}</span>
+  </div>
+  <div class="live-update-row">
+    <span class="label">Last check:</span>
+    <span class="value">{{ liveUpdateLastCheck ? (liveUpdateLastCheck | date:'HH:mm:ss') : '—' }}</span>
+  </div>
+  <div class="live-update-row">
+    <span class="label">Downloaded:</span>
+    <span class="value">{{ liveUpdateDownloaded ? 'Yes (ready)' : 'No' }}</span>
+  </div>
+</div>
 
 <div id="screensaver" class="screensaver-container">
   <video class="screensaver-video" autoplay loop muted>

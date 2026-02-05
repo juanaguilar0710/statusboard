@@ -40,6 +40,12 @@ export class AppComponent implements OnInit {
   private isTrackingActive: boolean = false;
   private isIntervalRunning: boolean = false;
 
+  // Live Updates status for on-screen diagnostics
+  liveUpdateStatus = 'Idle';
+  liveUpdateDetail = '';
+  liveUpdateDownloaded = false;
+  liveUpdateLastCheck: Date | null = null;
+
   constructor(
     private router: Router,
     private requestsService: RequestsService,
@@ -84,67 +90,63 @@ export class AppComponent implements OnInit {
     });
   }
 
-  // ========== LIVE UPDATES - ACTUALIZACIÓN SIEMPRE PERMITIDA ==========
+  // ========== LIVE UPDATES: descarga y recarga inmediata ==========
 
   /**
-   * Inicializa Live Updates - Sin restricciones, se actualiza siempre
+   * Inicializa Live Updates y recarga inmediatamente cuando haya una nueva versión
    */
   private async initializeLiveUpdates(): Promise<void> {
     try {
-      console.log('🚀 Inicializando Live Updates (sin restricciones)...');
+      this.liveUpdateStatus = 'Initializing';
+      this.liveUpdateDetail = 'Setting up listeners';
+      this.liveUpdateDownloaded = false;
+      this.liveUpdateLastCheck = new Date();
+      console.log('🚀 Inicializando Live Updates (recarga inmediata)...');
 
-      // Listener: cuando la app vuelve del background
+      // Verificar al volver del background
       App.addListener('resume', async () => {
         console.log('📱 App resumida desde background');
-        await this.checkAndApplyUpdate();
+        await this.checkForUpdatesAndReload('resume');
       });
 
       // Primera verificación al iniciar
-      await this.checkForUpdates();
+      await this.checkForUpdatesAndReload('startup');
 
     } catch (error) {
       console.error('❌ Error al inicializar Live Updates:', error);
+      this.liveUpdateStatus = 'Error';
+      this.liveUpdateDetail = 'Init failed';
     }
   }
 
   /**
-   * Verifica y aplica actualizaciones inmediatamente si están disponibles
+   * Verifica si hay actualización y la aplica de inmediato
    */
-  private async checkAndApplyUpdate(): Promise<void> {
-    const shouldReload = localStorage.getItem('shouldReloadApp');
-
-    if (shouldReload === 'true') {
-      console.log('🔄 Aplicando actualización inmediatamente...');
-      localStorage.removeItem('shouldReloadApp');
-
-      try {
-        await LiveUpdates.reload();
-      } catch (error) {
-        console.error('❌ Error al aplicar actualización:', error);
-        localStorage.removeItem('shouldReloadApp');
-      }
-    } else {
-      await this.checkForUpdates();
-    }
-  }
-
-  /**
-   * Verifica si hay actualizaciones disponibles y las descarga
-   */
-  private async checkForUpdates(): Promise<void> {
+  private async checkForUpdatesAndReload(reason: 'startup' | 'resume'): Promise<void> {
     try {
       console.log('🔍 Verificando actualizaciones...');
+      this.liveUpdateStatus = 'Checking';
+      this.liveUpdateDetail = reason === 'startup' ? 'At app start' : 'On resume';
+      this.liveUpdateLastCheck = new Date();
 
       const result = await LiveUpdates.sync();
 
       if (result.activeApplicationPathChanged) {
-        console.log('✅ Nueva actualización descargada');
-        localStorage.setItem('shouldReloadApp', 'true');
+        console.log('✅ Nueva actualización descargada, recargando app...');
+        this.liveUpdateDownloaded = true;
+        this.liveUpdateStatus = 'Downloaded';
+        this.liveUpdateDetail = 'Reloading now';
+        await LiveUpdates.reload();
       } else {
         console.log('ℹ️ App actualizada');
+        this.liveUpdateDownloaded = false;
+        this.liveUpdateStatus = 'No update';
+        this.liveUpdateDetail = 'Already on latest';
       }
     } catch (error) {
-      console.error('❌ Error al verificar actualizaciones:', error);
+      console.error('❌ Error al verificar/aplicar actualizaciones:', error);
+      this.liveUpdateStatus = 'Error';
+      this.liveUpdateDetail = 'Sync failed';
     }
   }
 
