@@ -8,6 +8,7 @@ import { NotificationService } from '../api/notification.service';
 import { LoggerService } from '../api/logger.service';
 import { environment } from 'src/environments/environment';
 import { Capacitor } from '@capacitor/core';
+import { App } from '@capacitor/app';
 import { reload, sync } from '@capacitor/live-updates';
 import { AlertController } from '@ionic/angular';
 
@@ -36,6 +37,13 @@ export class LoginPage implements OnInit, OnDestroy {
   });
 
   version: string = environment.version;
+
+  // Datos de diagnóstico
+  diagnosticsVisible = false;
+  nativeVersion: string | undefined;
+  nativeBuild: number | string | undefined;
+  liveUpdatesAppId: string = 'e6702712';
+  liveUpdatesChannel: string = 'Production';
 
   two_fa_source: string = '';
   authenticationRequired: boolean = false;
@@ -68,6 +76,16 @@ export class LoginPage implements OnInit, OnDestroy {
       await Preferences.set({ key: 'language', value: savedLanguage });
     } else {
       await Preferences.set({ key: 'language', value: 'en' });
+    }
+
+    // Cargar información nativa para diagnóstico
+    if (Capacitor.isNativePlatform()) {
+      const info = await App.getInfo();
+      this.nativeVersion = info.version;
+      this.nativeBuild = info.build;
+    } else {
+      this.nativeVersion = 'web';
+      this.nativeBuild = '-';
     }
   }
 
@@ -187,6 +205,12 @@ export class LoginPage implements OnInit, OnDestroy {
   // Comprobación manual de Live Updates desde el botón del login
   async manualCheckUpdate(): Promise<void> {
     await this.checkLiveUpdateOnce('startup');
+  }
+
+  toggleDiagnostics(): void {
+    console.log('entro aqui');
+
+    this.diagnosticsVisible = !this.diagnosticsVisible;
   }
 
   togglePassword() {

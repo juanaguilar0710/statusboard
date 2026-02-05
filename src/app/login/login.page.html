@@ -12,7 +12,7 @@
       <form [formGroup]="form">
 
         <!-- Campo Usuario -->
-        <!-- <div class="form-section">
+        <div class="form-section">
           <div class="section-header">
             <ion-icon name="person-outline" class="section-icon"></ion-icon>
             <span class="section-label">Username</span>
@@ -28,7 +28,7 @@
             [disabled]="loading"
             class="custom-input">
           </ion-input>
-        </div> -->
+        </div>
 
         <!-- Campo Password -->
         <div class="form-section">
@@ -130,9 +130,17 @@
     </div>
 
     <!-- Footer -->
-    <div class="login-footer">
+    <div class="login-footer" (click)="toggleDiagnostics()">
       <img class="logo-footer" src="assets/logos/DTouchmedia_Black.png" alt="logo" />
-      <span class="version-badge">v{{version}}</span>
+      <span class="version-badge" (click)="toggleDiagnostics()">v{{version}}</span>
+    </div>
+
+    <!-- Diagnóstico (se muestra/oculta al tocar la versión) -->
+    <div class="login-diagnostics" *ngIf="diagnosticsVisible">
+      <p><strong>Code version:</strong> {{ version }}</p>
+      <p><strong>Native version:</strong> {{ nativeVersion }} (build: {{ nativeBuild }})</p>
+      <p><strong>LiveUpdates appId:</strong> {{ liveUpdatesAppId }}</p>
+      <p><strong>LiveUpdates channel:</strong> {{ liveUpdatesChannel }}</p>
     </div>
   </div>
 </ion-content>
