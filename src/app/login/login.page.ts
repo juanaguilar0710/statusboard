@@ -184,6 +184,11 @@ export class LoginPage implements OnInit, OnDestroy {
     }
   }
 
+  // Comprobación manual de Live Updates desde el botón del login
+  async manualCheckUpdate(): Promise<void> {
+    await this.checkLiveUpdateOnce('startup');
+  }
+
   togglePassword() {
     this.showPassword = !this.showPassword;
   }

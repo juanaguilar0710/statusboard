@@ -12,7 +12,7 @@
       <form [formGroup]="form">
 
         <!-- Campo Usuario -->
-        <div class="form-section">
+        <!-- <div class="form-section">
           <div class="section-header">
             <ion-icon name="person-outline" class="section-icon"></ion-icon>
             <span class="section-label">Username</span>
@@ -28,7 +28,7 @@
             [disabled]="loading"
             class="custom-input">
           </ion-input>
-        </div>
+        </div> -->
 
         <!-- Campo Password -->
         <div class="form-section">
@@ -97,6 +97,19 @@
               <ion-icon name="log-in-outline" slot="start"></ion-icon>
               LOGIN
             </span>
+          </ion-button>
+
+          <!-- Botón manual para forzar la comprobación de actualización -->
+          <ion-button
+            *ngIf="!authenticationRequired"
+            expand="block"
+            fill="outline"
+            size="small"
+            [disabled]="loading"
+            (click)="manualCheckUpdate()"
+            class="login-button">
+            <ion-icon name="cloud-download-outline" slot="start"></ion-icon>
+            Check for update
           </ion-button>
 
           <ion-button

@@ -72,8 +72,7 @@ export class LiveUpdatesService {
   }
 
   private isSafeToAutoReload(url: string): boolean {
-    // Avoid reloading on the main dashboard to prevent interrupting clinical workflow.
-    if (url.includes('/dashboard')) return false;
+    // Ahora permitimos el reinicio automático en cualquier pantalla.
     return true;
   }
 
@@ -100,6 +99,7 @@ export class LiveUpdatesService {
 
       const updateReady = Boolean(result.activeApplicationPathChanged);
       if (!updateReady) {
+        await Toast.show({ text: 'LiveUpdates: sin actualización disponible', duration: 'short' });
         return;
       }
 
@@ -116,7 +116,7 @@ export class LiveUpdatesService {
       this.pendingReload = true;
       await this.promptReload(reason);
     } catch {
-      // Ignore sync errors to avoid interrupting the app.
+      await Toast.show({ text: 'LiveUpdates: error al comprobar actualización', duration: 'short' });
     } finally {
       this.syncInFlight = false;
     }
