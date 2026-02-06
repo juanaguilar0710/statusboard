@@ -7,7 +7,7 @@
       >
         <ion-card-title>
           <ion-row>
-            <ion-col size="4" size-md="4" size-lg="4" class="tittleCardText">aaaaaaaa</ion-col>
+            <ion-col size="4" size-md="4" size-lg="4" class="tittleCardText">{{ room.name }}</ion-col>
             <ion-col size="3" size-md="3" size-lg="3" class="tittleCardTextPages">
               <span *ngIf="getRoomPageLabel(room)">{{ 'dashboard.pageLabel' | translate }}: {{ getRoomPageLabel(room) }}</span>
             </ion-col>
