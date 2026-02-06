@@ -12,7 +12,7 @@
       <form [formGroup]="form">
 
         <!-- Campo Usuario -->
-        <!-- <div class="form-section">
+        <div class="form-section">
           <div class="section-header">
             <ion-icon name="person-outline" class="section-icon"></ion-icon>
             <span class="section-label">Username</span>
@@ -28,10 +28,10 @@
             [disabled]="loading"
             class="custom-input">
           </ion-input>
-        </div> -->
+        </div>
 
         <!-- Campo Password -->
-        <!-- <div class="form-section">
+        <div class="form-section">
           <div class="section-header">
             <ion-icon name="lock-closed-outline" class="section-icon"></ion-icon>
             <span class="section-label">juan camilo A</span>
@@ -53,7 +53,7 @@
               <ion-icon [name]="showPassword ? 'eye-off-outline' : 'eye-outline'"></ion-icon>
             </ion-button>
           </ion-item>
-        </div> -->
+        </div>
 
         <!-- Mensajes 2FA -->
         <div class="twofa-message" *ngIf="two_fa_source">
