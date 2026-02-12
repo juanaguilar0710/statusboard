@@ -26,9 +26,9 @@
             <td class="textCardPatients text-ellipsis" style="padding: 8px; width: 10%;">{{ patient.age }}{{ getAgeSuffix() }}</td>
             <td class="textCardPatients text-ellipsis" style="padding: 8px; width: 10%;">{{ patient.operating_room_name }}</td>
             <td class="textCardPatients text-ellipsis" style="padding: 8px; width: 20%;">
-              <span class="badge" *ngIf="patient.surgeon" [ngStyle]="{ 'background-color': patient.surgeon.color }">{{ patient.surgeon_name }}</span>
+              <span class="badge" *ngIf="patient.surgeon_color" [ngStyle]="{ 'background-color': patient.surgeon_color }">{{ patient.surgeon_name }}</span>
               <!-- no se esta aplicando el color -->
-              <span *ngIf="!patient.surgeon">{{ patient.surgeon_name }}</span>
+              <span *ngIf="!patient.surgeon_color">{{ patient.surgeon_name }}</span>
             </td>
             <td class="textCardPatients text-ellipsis ellipsis" style="padding: 8px;">{{ patient.procedure_name }}</td>
             <td class="textCardPatients text-ellipsis" style="padding: 8px; width: 10%;">
