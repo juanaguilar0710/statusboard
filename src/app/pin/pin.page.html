@@ -1,5 +1,5 @@
 <ion-content [fullscreen]="true">
-  <div *ngIf="!this.loading" class="d-flex align-items-center flex-column justify-content-between" style="height: 100%;">
+  <div *ngIf="!this.loading && !isInitializing" class="d-flex align-items-center flex-column justify-content-between" style="height: 100%;">
     <div>
       <img class="logo" src="assets/logos/StatusBoard_Black.png" alt="logo" (click)="headerClicked()" style="margin-top: 15px;" />
       <div style="position: absolute; top: 15px; left: 15px; text-align: center;">
