@@ -1,5 +1,6 @@
 import { NgModule } from '@angular/core';
 import { PreloadAllModules, RouterModule, Routes } from '@angular/router';
+import { PinEntryGuard } from './pin-entry.guard';
 
 const routes: Routes = [
   {
@@ -20,6 +21,8 @@ const routes: Routes = [
   },
   {
     path: 'pin',
+    canActivate: [PinEntryGuard],
+    canLoad: [PinEntryGuard],
     loadChildren: () => import('./pin/pin.module').then( m => m.PinPageModule)
   },
   {
