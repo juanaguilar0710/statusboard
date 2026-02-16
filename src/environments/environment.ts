@@ -1,5 +1,5 @@
 export const environment = {
-  version: "2.0.1.2",
+  version: "2.0.1.3",
   production: false,
   resetPin: '1111',
   maxInactivityTime: 6000,
