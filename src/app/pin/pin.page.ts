@@ -20,7 +20,8 @@ import { TranslateService } from '../services/translate.service';
 })
 export class PinPage implements OnInit {
   @Input() pagetitle: String = "Enter Pin";
-  loading: boolean = false;
+  loading: boolean = true;
+  isInitializing: boolean = true;
   pin: string = "";
   clicks = 0;
   version: string = environment.version;
@@ -110,6 +111,7 @@ export class PinPage implements OnInit {
     this.pin += pin;
     if (this.pin.length === 6) {
       this.loading = true;
+      this.isInitializing = false;
       //this.presentLoading();
       this.login();
       return;
@@ -119,17 +121,13 @@ export class PinPage implements OnInit {
    async ngOnInit() {
     this.appComponent.stopInactivityTracking();
     this.loading = true;
+    this.isInitializing = true;
     this.lastsync = this.requestsService.lastSync;
-    setTimeout(() => {
-      this.image_url = this.requestsService.config?.branch?.image_url ?? 'assets/logos/logotipo_placeholder.png';
-      this.branch_name = this.requestsService.config?.branch?.name ?? "";
-      this.waitingRoom_name = this.requestsService.config?.waitingRoom?.name ?? "";
-      this.loading = false;
-    }, 2500);
 
     // Obtener configuración local y redirigir según el modo
     const config = await this.localdataService.getConfiguration();
     if (!config) {
+      this.isInitializing = false;
       this.router.navigate(['/login'], { replaceUrl: true });
       this.loading = false;
       return;
@@ -138,9 +136,16 @@ export class PinPage implements OnInit {
     // Redirección según el valor de aplication
     if (String(this.configResponse.aplication) === "1") {
       // Tablet: no redirige, espera PIN y luego va a /home
-      // No hacer nada aquí
+      setTimeout(() => {
+        this.image_url = this.requestsService.config?.branch?.image_url ?? 'assets/logos/logotipo_placeholder.png';
+        this.branch_name = this.requestsService.config?.branch?.name ?? "";
+        this.waitingRoom_name = this.requestsService.config?.waitingRoom?.name ?? "";
+        this.isInitializing = false;
+        this.loading = false;
+      }, 2500);
     } else if (String(this.configResponse.aplication) === "2" || String(this.configResponse.aplication) === "3") {
       // Dashboard o modo especial: ir directo a dashboard
+      this.isInitializing = false;
       this.router.navigate(['/dashboard'], { replaceUrl: true });
     }
   }

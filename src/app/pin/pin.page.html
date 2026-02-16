@@ -99,9 +99,12 @@
 
   <div class="loading-overlay" *ngIf="this.loading">
     <div class="loading-content">
-      <div class="loading-spinner"></div>
-      <div class="loading-text">{{this.image_url ? ('pin.verifyingCredentials' | translate) : ('pin.preparingExperience' | translate)}}</div>
-      <div class="loading-subtext">{{ 'pin.pleaseWait' | translate }}</div>
+      <img *ngIf="isInitializing" src="assets/splash.png" alt="Splash" class="startup-splash" />
+      <ng-container *ngIf="!isInitializing">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">{{this.image_url ? ('pin.verifyingCredentials' | translate) : ('pin.preparingExperience' | translate)}}</div>
+        <div class="loading-subtext">{{ 'pin.pleaseWait' | translate }}</div>
+      </ng-container>
     </div>
   </div>
 
