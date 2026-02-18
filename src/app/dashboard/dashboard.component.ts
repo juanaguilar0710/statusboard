@@ -740,6 +740,35 @@ import { TranslateService } from '../services/translate.service';
     );
   }
 
+  private normalizePatientId(id: any): string {
+    if (id === null || id === undefined) return '';
+    return String(id).trim();
+  }
+
+  private findPatientIndexById(list: any[], patientId: any): number {
+    const normalizedId = this.normalizePatientId(patientId);
+    if (!normalizedId) return -1;
+    return list.findIndex((item: any) => this.normalizePatientId(item?.id) === normalizedId);
+  }
+
+  private deduplicatePatientsById(list: any[]): any[] {
+    const deduplicated = new Map<string, any>();
+    const withoutId: any[] = [];
+
+    for (const item of list) {
+      const normalizedId = this.normalizePatientId(item?.id);
+      if (!normalizedId) {
+        withoutId.push(item);
+        continue;
+      }
+
+      const existing = deduplicated.get(normalizedId);
+      deduplicated.set(normalizedId, existing ? { ...existing, ...item } : item);
+    }
+
+    return [...deduplicated.values(), ...withoutId];
+  }
+
   addUpdatedPatient(patient: any) {
     const now = Date.now();
     const expiry = now + 60000; // 60 segundos
@@ -874,14 +903,39 @@ private async handlePatientEvent(type: 'updated' | 'created' | 'deleted', e: any
   private listenToPatientEvents(channel: string): void {
     this.laravelEcho?.leave(channel);
     const channelListeners = this.laravelEcho?.private(channel);
-    channelListeners.listen('.patient.created', (e: any) => {console.log('entro evento'), this.handlePatientEvent('created', e), this.listPatients.push(e.patient);});
-    channelListeners.listen('.patient.deleted', (e: any) => {console.log('entro evento'), this.listPatients = this.listPatients.filter((patient: any) => patient.id !== e.patient.id); this.handlePatientEvent('deleted', e)});
+    channelListeners.listen('.patient.created', (e: any) => {
+      console.log('entro evento');
+      this.handlePatientEvent('created', e);
+
+      const existingPatientIndex = this.findPatientIndexById(this.listPatients, e.patient?.id);
+      if (existingPatientIndex === -1) {
+        this.listPatients.push(e.patient);
+      } else {
+        this.listPatients[existingPatientIndex] = {
+          ...this.listPatients[existingPatientIndex],
+          ...e.patient,
+        };
+      }
+
+      this.listPatients = this.deduplicatePatientsById(this.listPatients);
+    });
+    channelListeners.listen('.patient.deleted', (e: any) => {
+      console.log('entro evento');
+      this.listPatients = this.listPatients.filter(
+        (patient: any) => this.normalizePatientId(patient?.id) !== this.normalizePatientId(e.patient?.id)
+      );
+      this.handlePatientEvent('deleted', e);
+    });
     channelListeners.listen('.patient.updated', (e: any) => {
       console.log('entro evento');
-      const existingPatientIndex = this.listPatients.findIndex(p => p.id === e.patient.id);
+      const existingPatientIndex = this.findPatientIndexById(this.listPatients, e.patient?.id);
 
       this.handlePatientEvent('updated', e);
-      if(e.patient.status.id !== this.listPatients[existingPatientIndex].status.id){
+      if (
+        existingPatientIndex !== -1 &&
+        this.listPatients[existingPatientIndex]?.status?.id !== undefined &&
+        e.patient?.status?.id !== this.listPatients[existingPatientIndex]?.status?.id
+      ) {
         this.notificationService.showSuccessEvent('<strong>Patient Updated: </strong><br>&ensp;&ensp;'+e.patient.fullName+'<br>&ensp;&ensp;'+e.patient.status_name,10000)
       }
 
@@ -890,11 +944,11 @@ private async handlePatientEvent(type: 'updated' | 'created' | 'deleted', e: any
           ...this.listPatients[existingPatientIndex],
           ...e.patient
         };
+      } else {
+        this.listPatients.push(e.patient);
       }
 
-
-
-
+      this.listPatients = this.deduplicatePatientsById(this.listPatients);
     });
     channelListeners.listen('.play.speech', async (e: any) => {
       console.log("🎤 Evento recibido:", e);
@@ -1192,7 +1246,7 @@ private isPusherConnected(): boolean {
   private async updatePatientList(eventType: string, patient: any) {
 
     this.lastUpdateTime = Date.now();
-    const index = this.patients.findIndex((p: any) => p.id === patient.id);
+    const index = this.findPatientIndexById(this.patients, patient?.id);
     const shouldBeVisible = this.shouldPatientBeVisible(patient.status_Id);
 
     switch(eventType) {
@@ -1207,42 +1261,30 @@ private isPusherConnected(): boolean {
         }
         break;
         case 'updated':
-        if (index > -1) {
-          console.log('updated');
-          const updatedPatient: any = patient;
+          if (index > -1 || shouldBeVisible) {
+            console.log('updated');
+            const updatedPatient: any = patient;
 
-          if (shouldBeVisible) {
-            // El paciente debe estar visible - actualizar o agregar
-            const existingPatientIndex = this.patients.findIndex(p => p.id === updatedPatient.id);
-            if (existingPatientIndex !== -1) {
-              this.patients[existingPatientIndex] = {
-                ...this.patients[existingPatientIndex],
-                ...updatedPatient
-              };
-            } else {
-              this.patients.push(updatedPatient);
-            }
-            this.addUpdatedPatient(updatedPatient);
-          } else {
-            // El paciente NO debe estar visible - remover si existe
-            const existingPatientIndex = this.patients.findIndex(p => p.id === updatedPatient.id);
-            if (existingPatientIndex !== -1) {
+            if (shouldBeVisible) {
+              // El paciente debe estar visible - actualizar o agregar
+              if (index !== -1) {
+                this.patients[index] = {
+                  ...this.patients[index],
+                  ...updatedPatient
+                };
+              } else {
+                this.patients.push(updatedPatient);
+              }
+              this.addUpdatedPatient(updatedPatient);
+            } else if (index !== -1) {
+              // El paciente NO debe estar visible - remover si existe
               console.log('Removiendo paciente del listado - estado no válido:', updatedPatient.status_Id);
-              this.patients.splice(existingPatientIndex, 1);
+              this.patients.splice(index, 1);
             }
-          }
 
-          this.patientsCopy = [...this.patients];
-          this.lastsync = new Date();
-          this.LocaldataService.setPatients(this.patients);
-        } else if (shouldBeVisible) {
-          // Paciente no existe en la lista pero debería estar visible - agregarlo
-          console.log('Agregando paciente al listado - nuevo estado válido:', patient.status_Id);
-          this.patients.push(patient);
-          this.patientsCopy = [...this.patients];
-          this.lastsync = new Date();
-          this.LocaldataService.setPatients(this.patients);
-          this.addUpdatedPatient(patient);
+            this.patientsCopy = [...this.patients];
+            this.lastsync = new Date();
+            this.LocaldataService.setPatients(this.patients);
         }
         break;
       case 'deleted':
@@ -1252,6 +1294,7 @@ private isPusherConnected(): boolean {
         }
         break;
     }
+      this.patients = this.deduplicatePatientsById(this.patients);
     this.patientsCopy = [...this.patients];
     this.LocaldataService.setPatients(this.patients);
     this.requestsService.lastSync = new Date().toLocaleString();
