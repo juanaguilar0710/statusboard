@@ -8,11 +8,12 @@ import { environment } from 'src/environments/environment';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { LoggerService } from './logger.service';
 
+const urlMonitor = environment.url.replace('api', 'monitor');
+
 @Injectable({
     providedIn: 'root'
 })
 export class RequestsService {
-
     config: any = null;
     private token: string | null = null;
     ExpiresIn:any
@@ -200,12 +201,7 @@ export class RequestsService {
     }
 
     loginWithPin = async (pin: string): Promise<any> => {
-        // var token = await this.logger.getTokenPin()
-
-        // if(!token){
-          var token = await this.logger.getTokenAdmin()
-        // }
-
+        var token = await this.logger.getTokenAdmin()
         const options = {
           url: environment.url + environment.auth + environment.pin,
           headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer ' + token },
@@ -220,10 +216,8 @@ export class RequestsService {
           const response = await CapacitorHttp.post(options);
           if (response && response.status === 200) {
             console.log('Login exitoso con PIN:', response);
-
-            // this.setToken(response.data.jwt.access_token);
             await Preferences.set({ key: 'user', value: JSON.stringify(response.data) });
-            return response;  // Resuelve la promesa con la respuesta
+            return response;
           } else if (response.status === 500 && response.data.error.detail === "Unauthenticated.") {
             const refreshResponse = await this.refreshToken(this.adminToken);
             if (refreshResponse && refreshResponse.status === 200) {
@@ -232,14 +226,13 @@ export class RequestsService {
                 key: 'admin',
                 value: JSON.stringify(refreshResponse.data)
               });
-              // Intentar login nuevamente con el token actualizado
               return this.loginWithPin(pin);
             }
           }
-          return Promise.reject(response);  // Rechaza la promesa con la respuesta de error
+          return Promise.reject(response);
         } catch (error) {
           console.error('Error en loginWithPin:', error);
-          return Promise.reject(error);  // Rechaza la promesa con el error capturado
+          return Promise.reject(error);
         }
       }
 
@@ -284,7 +277,7 @@ export class RequestsService {
 
 
             const options = {
-                url: `${environment.url}${environment.visitor}?visit_date=${formatedDate}&orderBy=fullName&direction=asc&branchID=${this.config.branch.id}&roomID=${this.config.waitingRoom.id}`,
+                url: `${urlMonitor}/api${environment.visitor}?visit_date=${formatedDate}`,
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
@@ -294,6 +287,7 @@ export class RequestsService {
 
             CapacitorHttp.get(options)
                 .then((result) => {
+                    this.adaptVisitorsResponse(result);
                     this.lastSync = new Date().toLocaleString();
                     Preferences.set({ key: 'lastSync', value: this.lastSync }).then(() => {
                         observer.next(result);
@@ -322,7 +316,8 @@ export class RequestsService {
             const formatedDate = getLocalDate(date);
 
             const options = {
-                url: `${environment.url}${environment.visitor}?visit_date=${formatedDate}&orderBy=fullName&direction=asc&branchID=${this.config.branch.id}&roomID=${this.config.waitingRoom.id}`,
+                // url: `${environment.url}${environment.visitor}?visit_date=${formatedDate}&orderBy=fullName&direction=asc&branchID=${this.config.branch.id}&roomID=${this.config.waitingRoom.id}`,
+                url: `${urlMonitor}/api${environment.visitor}?visit_date=${formatedDate}`,
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
@@ -343,6 +338,7 @@ export class RequestsService {
 
             // Realiza la llamada HTTP
             const result = await CapacitorHttp.get(options);
+            this.adaptVisitorsResponse(result);
             const duration = Date.now() - startTime;
 
             // Log de respuesta exitosa
@@ -350,7 +346,7 @@ export class RequestsService {
                 requestId,
                 status: result.status,
                 duration: `${duration}ms`,
-                dataSize: result.data?.length || 0,
+                dataSize: this.getVisitorsCountFromResult(result),
                 timestamp: new Date().toISOString()
             }, 'success');
 
@@ -439,6 +435,10 @@ export class RequestsService {
         return this.http.get(environment.url + environment.status + '/' + id + '?orderBy=sequence&direction=asc',);
     }
 
+    getBranchStatusesDevices(id:any): Observable<any> {
+        return this.http.get(urlMonitor + '/api' +environment.status + '?orderBy=sequence&direction=asc',);
+    }
+
 
 
     getBranchComments(): Observable<any> {
@@ -483,6 +483,60 @@ export class RequestsService {
 
             const options = {
               url: `${environment.url}${environment.waitingRooms}/${this.config.waitingRoom.id}${environment.operatingroomsschedules}`,
+              headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'Authorization': `Bearer ${token}`,
+              },
+            };
+
+            return from(CapacitorHttp.get(options)).pipe(
+              tap((response) => {
+                this.logger.addLog(
+                  'Petición exitosa getOperatingRooms',
+                  {
+                    url: options.url,
+                    status: response.status,
+                    data: response.data,
+                    timestamp: new Date().toISOString(),
+                  },
+                  'success'
+                );
+              }),
+              catchError((error) => {
+                this.logger.addLog(
+                  'Error en petición getOperatingRooms',
+                  {
+                    url: options.url,
+                    status: error.status,
+                    error: error.error,
+                    message: error.message,
+                    timestamp: new Date().toISOString(),
+                  },
+                  'error'
+                );
+
+                if (error.status === 401 || error.status === 403) {
+                  return this.handleTokenError(error);
+                }
+
+                return throwError(() => new Error(error.message));
+              })
+            );
+          })
+        );
+      }
+
+    getOperatingRoomsDevices(): Observable<any> {
+        return from(this.getValidToken()).pipe(
+          switchMap((token) => {
+            if (!token) {
+              return throwError(() => new Error('No se pudo obtener un token válido'));
+            }
+
+            const options = {
+              // url: `${environment.url}${environment.waitingRooms}/${this.config.waitingRoom.id}${environment.operatingroomsschedules}`,
+              url: urlMonitor + '/api' + environment.operatingroomsschedules,
               headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
@@ -735,7 +789,7 @@ export class RequestsService {
                 action: 'Autorización en progreso'
             }, 'info')
         ).pipe(
-            switchMap(() => this.http.post<any>(`${environment.url}/broadcasting/auth`, {
+            switchMap(() => this.http.post<any>(`${urlMonitor}/api/broadcasting/auth`, {
                 socket_id: socketId,
                 channel_name: channelName
             }, { headers }))
@@ -772,7 +826,53 @@ export class RequestsService {
     }
 
     patientsStats(idBranch:any, idRoom:any): Observable<any> {
-        return this.http.get(environment.url + environment.branches +'/'+idBranch + environment.rooms +'/'+idRoom + environment.visitors + environment.stats);
+      return this.http.get(urlMonitor +'/api'+ environment.visitors + environment.stats);
+        // return this.http.get(environment.url + environment.branches +'/'+idBranch + environment.rooms +'/'+idRoom + environment.visitors + environment.stats);
+    }
+
+    private adaptVisitorsResponse(result: any): void {
+        const visitors = Array.isArray(result?.data)
+            ? result.data
+            : Array.isArray(result?.data?.data)
+                ? result.data.data
+                : [];
+
+        const mappedVisitors = visitors.map((item: any) => this.mapVisitorForUi(item));
+        result.data = mappedVisitors;
+    }
+
+    private mapVisitorForUi(item: any): any {
+        const status = item?.status ?? {};
+        const operatingRoom = item?.operating_room ?? null;
+        const surgeon = item?.surgeon ?? null;
+        const procedure = item?.procedure ?? null;
+
+        return {
+            ...item,
+            status_Id: status?.id ?? item?.status_Id ?? null,
+            status_name: status?.name ?? item?.status_name ?? null,
+            operating_room_id: operatingRoom?.id ?? item?.operating_room_id ?? null,
+            operating_room_name: operatingRoom?.name ?? item?.operating_room_name ?? null,
+            operating_room: operatingRoom ?? item?.operating_room ?? null,
+            surgeon_name: surgeon?.name ?? item?.surgeon_name ?? null,
+            surgeon_color: surgeon?.color ?? item?.surgeon_color ?? null,
+            surgeon: surgeon ?? item?.surgeon ?? null,
+            procedure_name: procedure?.name ?? item?.procedure_name ?? null,
+            procedure_time: procedure?.time ?? item?.procedure_time ?? '',
+            procedure: procedure ?? item?.procedure ?? null,
+        };
+    }
+
+    private getVisitorsCountFromResult(result: any): number {
+        if (Array.isArray(result?.data)) {
+            return result.data.length;
+        }
+
+        if (Array.isArray(result?.data?.data)) {
+            return result.data.data.length;
+        }
+
+        return 0;
     }
 
     statusesColor: any[] = [

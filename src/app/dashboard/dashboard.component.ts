@@ -385,7 +385,7 @@ import { TranslateService } from '../services/translate.service';
     this.getOperatingRooms = true;
     try {
         await this.logger.addLog('Iniciando petición getOperatingRooms', {}, 'info');
-        await this.requestsService.getOperatingRooms().subscribe(async (response: any) => {
+        await this.requestsService.getOperatingRoomsDevices().subscribe(async (response: any) => {
           if(response.status == 500 || response.status == 403){
             if(response.status == 403 || response.data.error.code == 1000){
               console.log('aqui');
@@ -529,7 +529,20 @@ import { TranslateService } from '../services/translate.service';
         } else if (existingUnassignedRoom) {
             this.roomsWithPatients = this.roomsWithPatients.filter(room => room.name !== 'TO FOLLOW');
         }
-        this.roomsWithPatients = this.roomsWithPatients.filter(room => room.patients && room.patients.length > 0);
+        
+        // Filtrar salas que ya no tienen pacientes ni roles asignados
+        this.roomsWithPatients = this.roomsWithPatients.filter(room => {
+            if (room.name === 'TO FOLLOW') return room.patients && room.patients.length > 0;
+            
+            const originalRoom = this.operatingRooms.find(r => r.name === room.name);
+            if (!originalRoom) return false;
+            
+            const hasPatientsAssigned = room.patients && room.patients.length > 0;
+            const hasRoleWithMembers = originalRoom.roles && originalRoom.roles.some((role: any) => role.persons && role.persons.length > 0);
+            
+            return hasPatientsAssigned || hasRoleWithMembers;
+        });
+
          // Ordenar las salas alfabéticamente por nombre
         this.roomsWithPatients.sort((a, b) => {
           // Si el id es string (ej: 'unassigned-room'), lo ponemos al final
@@ -606,7 +619,7 @@ import { TranslateService } from '../services/translate.service';
     }
     return this.patients.filter(patient =>
       patient.operating_room_name === roomName &&
-      this.config.statuses.includes(patient.status_Id)
+      this.shouldPatientBeVisible(patient.status?.id || patient.status_Id)
     );
   }
   getPatientsGroup(roomName: string): any[] {
@@ -653,7 +666,7 @@ import { TranslateService } from '../services/translate.service';
         }else{
           console.log(this.requestsService.config);
           await this.conectionPusher();
-          const channel = `rooms.${this.requestsService.config.waitingRoom.id}`;
+          const channel = `rooms.${this.requestsService.config.waitingRoom.id}.monitors`;
           await this.logger.addLog('Canal configurado', {
             channel: channel,
             config: this.sanitizeConfig(this.requestsService.config)
@@ -902,9 +915,31 @@ private async handlePatientEvent(type: 'updated' | 'created' | 'deleted', e: any
 
   private listenToPatientEvents(channel: string): void {
     this.laravelEcho?.leave(channel);
-    const channelListeners = this.laravelEcho?.private(channel);
+    const channelListeners = this.laravelEcho?.join(channel);
     channelListeners.listen('.patient.created', (e: any) => {
       console.log('entro evento');
+      
+      // Mapear propiedades anidadas a propiedades planas si vienen en el payload
+      if (e.patient) {
+        if (e.patient.operating_room) {
+          e.patient.operating_room_name = e.patient.operating_room.name;
+          e.patient.operating_room_id = e.patient.operating_room.id;
+        }
+        if (e.patient.status) {
+          e.patient.status_name = e.patient.status.name;
+          e.patient.status_Id = e.patient.status.id;
+        }
+        if (e.patient.surgeon) {
+          e.patient.surgeon_name = e.patient.surgeon.name;
+          e.patient.surgeon_id = e.patient.surgeon.id;
+          e.patient.surgeon_color = e.patient.surgeon.color;
+        }
+        if (e.patient.procedure) {
+          e.patient.procedure_name = e.patient.procedure.name;
+          e.patient.procedure_id = e.patient.procedure.id;
+        }
+      }
+
       this.handlePatientEvent('created', e);
 
       const existingPatientIndex = this.findPatientIndexById(this.listPatients, e.patient?.id);
@@ -928,6 +963,28 @@ private async handlePatientEvent(type: 'updated' | 'created' | 'deleted', e: any
     });
     channelListeners.listen('.patient.updated', (e: any) => {
       console.log('entro evento');
+      
+      // Mapear propiedades anidadas a propiedades planas si vienen en el payload
+      if (e.patient) {
+        if (e.patient.operating_room) {
+          e.patient.operating_room_name = e.patient.operating_room.name;
+          e.patient.operating_room_id = e.patient.operating_room.id;
+        }
+        if (e.patient.status) {
+          e.patient.status_name = e.patient.status.name;
+          e.patient.status_Id = e.patient.status.id;
+        }
+        if (e.patient.surgeon) {
+          e.patient.surgeon_name = e.patient.surgeon.name;
+          e.patient.surgeon_id = e.patient.surgeon.id;
+          e.patient.surgeon_color = e.patient.surgeon.color;
+        }
+        if (e.patient.procedure) {
+          e.patient.procedure_name = e.patient.procedure.name;
+          e.patient.procedure_id = e.patient.procedure.id;
+        }
+      }
+
       const existingPatientIndex = this.findPatientIndexById(this.listPatients, e.patient?.id);
 
       this.handlePatientEvent('updated', e);
@@ -1247,12 +1304,13 @@ private isPusherConnected(): boolean {
 
     this.lastUpdateTime = Date.now();
     const index = this.findPatientIndexById(this.patients, patient?.id);
-    const shouldBeVisible = this.shouldPatientBeVisible(patient.status_Id);
+    const shouldBeVisible = this.shouldPatientBeVisible(patient.status?.id || patient.status_Id);
 
     switch(eventType) {
       case 'created':
         if (index === -1 && shouldBeVisible) {
           const updatedPatient: any = patient;
+
           this.patients.push(updatedPatient);
           this.patientsCopy = [...this.patients];
           this.lastsync = new Date();
@@ -1278,13 +1336,17 @@ private isPusherConnected(): boolean {
               this.addUpdatedPatient(updatedPatient);
             } else if (index !== -1) {
               // El paciente NO debe estar visible - remover si existe
-              console.log('Removiendo paciente del listado - estado no válido:', updatedPatient.status_Id);
+              console.log('Removiendo paciente del listado - estado no válido:', updatedPatient.status?.id || updatedPatient.status_Id);
               this.patients.splice(index, 1);
             }
 
             this.patientsCopy = [...this.patients];
             this.lastsync = new Date();
             this.LocaldataService.setPatients(this.patients);
+            
+            // Actualizar la lista de salas para reflejar si alguna quedó vacía
+            this.roomsWithPatients = [];
+            this.getRoomsWithPatients();
         }
         break;
       case 'deleted':
@@ -1492,7 +1554,7 @@ private isPusherConnected(): boolean {
   async loadBranchStatuses(branchId: number): Promise<void> {
     return new Promise((resolve, reject) => {
       try {
-        this.requestsService.getBranchStatuses(branchId).subscribe(
+        this.requestsService.getBranchStatusesDevices(branchId).subscribe(
           (response: any) => {
             console.log(response);
 

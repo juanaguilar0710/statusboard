@@ -1,21 +1,19 @@
-import { Component, ElementRef, EventEmitter, Input, OnInit, Output, ViewChild } from '@angular/core';
+import { Component, ElementRef, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
 import { RequestsService } from '../api/requests.service';
 import { ChatService } from '../api/chat.service';
-import Pusher from 'pusher-js';
-import Echo from 'laravel-echo';
-import { environment } from 'src/environments/environment';
 import { ModalController } from '@ionic/angular';
 import * as _ from "lodash";
 import { AudioService } from '../services/audio.service';
 import * as moment from "moment";
 import { TranslateService } from '../services/translate.service';
+import { WebhookService } from '../services/webhook.service';
 
 @Component({
   selector: 'app-patient-chat',
   templateUrl: './patient-chat.component.html',
   styleUrls: ['./patient-chat.component.scss']
 })
-export class PatientChatComponent implements OnInit{
+export class PatientChatComponent implements OnInit, OnDestroy {
   @Input() patient: any;
   @ViewChild('scrollMe') private myScrollContainer!: ElementRef;
   @Output() onMessageRead = new EventEmitter<any>();
@@ -25,12 +23,13 @@ export class PatientChatComponent implements OnInit{
   authUser: any = '';
   loading: boolean = false;
   chatRoom: any;
-  laravelEcho: Echo<any> | undefined;
+  private unsubscribeChatEvent?: () => void;
 
   constructor(private chatservice: ChatService,
            private modalController: ModalController,
            public requestsService: RequestsService,
            private audioService: AudioService,
+           private webhookService: WebhookService,
            public translate: TranslateService
   ) {}
 
@@ -52,34 +51,10 @@ export class PatientChatComponent implements OnInit{
     });
   }
 
-  initListeners() {
-    (<any>window).Pusher = Pusher;
-    this.laravelEcho = new Echo({
-      broadcaster: 'pusher',
-      key: environment.pusher.key,
-      cluster: environment.pusher.cluster,
-      forceTLS: environment.pusher.forceTLS,
-      disableStats: true,
-
-      authorizer: (channel: any, options: any) => {
-        return {
-          authorize: (socketId: any, callback: any) => {
-            localStorage.setItem('socketId', socketId);
-            this.requestsService.authorizeBroadcasting(socketId, channel.name).subscribe( response => {
-              callback(false, response);
-            }, error => {
-              callback(true, error);
-            });
-          }
-        };
-      },
-    });
-
+  async initListeners() {
     const channelForChat = `branch.${this.requestsService.config.branch.id}.room.${this.requestsService.config.waitingRoom.id}`;
 
-    console.log('this.laravelEcho desde el chat', this.laravelEcho);
-
-    this.laravelEcho.channel(channelForChat).listen('.chat.message.created', (e: any) => {
+    this.unsubscribeChatEvent = await this.webhookService.subscribePublic(channelForChat, '.chat.message.created', (e: any) => {
       console.log(e);
       console.log('Received chat message event:', e);
       if (e.message.sender_type == "App\\Models\\Patients") {
@@ -169,6 +144,13 @@ export class PatientChatComponent implements OnInit{
       return "You";
     }
     return message.sender_name;
+  }
+
+  ngOnDestroy(): void {
+    if (this.unsubscribeChatEvent) {
+      this.unsubscribeChatEvent();
+      this.unsubscribeChatEvent = undefined;
+    }
   }
 
     stringAsHour(date: any) {

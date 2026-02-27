@@ -1,3 +1,16 @@
+.activation-wrapper {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background-image: url('/assets/DTouchMedia%20Wallpaper.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
 .login-content {
   --background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%);
   --padding-top: 0;

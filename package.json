@@ -35,6 +35,7 @@
     "@capacitor/app": "^5.0.6",
     "@capacitor/core": "5.4.2",
     "@capacitor/dialog": "^5.0.6",
+    "@capacitor/device": "^5.0.6",
     "@capacitor/haptics": "5.0.6",
     "@capacitor/ios": "5.4.2",
     "@capacitor/keyboard": "5.0.6",

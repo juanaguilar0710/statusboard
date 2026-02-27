@@ -1,5 +1,5 @@
 export const environment = {
-  version: "2.0.1.5",
+  version: "2.0.1.6",
   production: false,
   resetPin: '1111',
   maxInactivityTime: 6000,
@@ -265,5 +265,6 @@ export const environment = {
   stats: '/stats',
   rooms: '/rooms',
   chatSms: '/chat-sms',
-  messages: '/messages'
+  messages: '/messages',
+  deviceRegistration: '/register'
 };

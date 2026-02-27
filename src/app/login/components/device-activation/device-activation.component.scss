@@ -1,0 +1,81 @@
+.activation-card {
+  width: min(94vw, 720px);
+  background: #f4f4f4;
+  border-radius: 14px;
+  padding: 24px 24px 18px;
+  text-align: center;
+  position: relative;
+  z-index: 1;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.2);
+}
+
+.brand-logo {
+  max-width: 300px;
+  width: 78%;
+  height: auto;
+  margin: 0 auto 16px;
+  display: block;
+}
+
+.activation-title {
+  margin: 2px 0 8px;
+  color: #777;
+  font-size: 1.75rem;
+  font-weight: 500;
+}
+
+.activation-code-box {
+  background: #e6e6e6;
+  border-radius: 12px;
+  padding: 14px;
+  margin: 0 auto 14px;
+  width: min(85%, 430px);
+}
+
+.activation-code {
+  color: #4b4f54;
+  font-size: clamp(2rem, 8vw, 4.5rem);
+  font-weight: 800;
+  letter-spacing: 2px;
+}
+
+.time-label {
+  margin: 4px 0 2px;
+  font-size: 1.7rem;
+  color: #6a6a6a;
+  font-weight: 600;
+}
+
+.time-value {
+  margin: 0 0 14px;
+  color: #6a6a6a;
+  font-size: 2.2rem;
+  font-weight: 700;
+}
+
+.activation-help {
+  margin: 0 auto;
+  max-width: 86%;
+  color: #6a6a6a;
+  font-size: 1.95rem;
+  line-height: 1.35;
+  font-weight: 500;
+}
+
+.registering {
+  margin-top: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #5f6368;
+  font-size: 1.2rem;
+}
+
+.version-tag {
+  position: absolute;
+  right: 16px;
+  bottom: 10px;
+  color: #7f7f7f;
+  font-size: 1.2rem;
+  font-weight: 600;
+}

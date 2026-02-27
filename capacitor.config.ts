@@ -12,7 +12,7 @@ const config: CapacitorConfig = {
       enabled: true,
     },
     LiveUpdates: {
-      appId: 'e6702712',
+      appId: '111111',
       channel: 'Production',
       autoUpdateMethod: 'background',  // Mantenemos 'none' para control manual
       maxVersions: 2

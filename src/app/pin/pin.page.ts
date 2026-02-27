@@ -265,15 +265,12 @@ export class PinPage implements OnInit {
           console.log('user',user);
           localStorage.setItem('user',JSON.stringify(user));
           this.localdataService.user = user;
-          // this.requestsService.setToken(user.jwt.access_token);
-          // this.localdataService.setTokenBasedOnPin(this.pin, user.jwt.access_token);
           Preferences.set({
             key: 'user',
             value: JSON.stringify(user)
           });
           this.loading = false;
           this.requestsService.logout$.next(false);
-          // await this.logger.setTokenPin(user.jwt.access_token);
           this.router.navigate(['/home'], { replaceUrl: true }).then(() => {
             console.log('Navegación a /home exitosa');
           }).catch(error => {
@@ -300,14 +297,12 @@ export class PinPage implements OnInit {
           this.handleInput("clear");
       });
 
-
     } catch (error: any) {
       this.handleInput("clear");
 
       if (this.loading) {
         try {
           this.loading = false;
-          //await this.loadingController.dismiss();
         } catch (error) {
           console.error('Error al intentar cerrar el loading:', error);
         }

@@ -139,6 +139,7 @@ export class ConfigurationPage implements OnInit {
 
       await this.getBranch();
     }
+
   }
 
   async getBranch() {
@@ -155,7 +156,7 @@ export class ConfigurationPage implements OnInit {
           });
         }
 
-        this.requestsService.getBranchStatuses(this.branches[0].id).subscribe(resp => {
+        this.requestsService.getBranchStatusesDevices(this.branches[0].id).subscribe(resp => {
           if(resp.status != 500){
             this.statuses = resp
           }else{

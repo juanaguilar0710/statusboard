@@ -4,9 +4,6 @@ import { RequestsService } from '../api/requests.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Preferences } from '@capacitor/preferences';
 import { Toast } from '@capacitor/toast';
-import Echo from 'laravel-echo';
-import { environment } from 'src/environments/environment';
-import Pusher from 'pusher-js';
 import { LocaldataService } from '../api/localdata.service';
 import { Storage } from '@ionic/storage-angular';
 import { NetworkService } from '../api/network.service';
@@ -20,6 +17,7 @@ import { PatientChatComponent } from '../patient-chat/patient-chat.component';
 import { EditRoomComponent } from '../edit-room/edit-room.component';
 import { AudioService } from '../services/audio.service';
 import { TranslateService } from '../services/translate.service';
+import { WebhookService } from '../services/webhook.service';
 
 @Component({
   selector: 'app-home',
@@ -42,7 +40,8 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
   filtering = false;
   filteredLetter: string | null = null;
   letters = this.getFirstLetterFromNames();
-  laravelEcho: Echo<any> | undefined;
+  private webhookUnsubscribers: Array<() => void> = [];
+  private webhooksInitialized = false;
   operatingRooms: any = [];
   //create a list of 10 light pallette colors
   updating: boolean = true;
@@ -77,6 +76,7 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
     private appComponent: AppComponent,
     private audioService: AudioService,
     private modalController: ModalController,
+    private webhookService: WebhookService,
     public translate: TranslateService) {
 
     //listen for the network status
@@ -172,80 +172,55 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
     this.requestsService.lastSync = new Date().toLocaleString();
   }
 
-  ngAfterViewInit(): void {
-    if (this.laravelEcho) return;
+  async ngAfterViewInit(): Promise<void> {
+    if (this.webhooksInitialized) return;
 
-    this.requestsService.init().then(async () => {
-      this.requestsService.initDropdowns().then((response: any) => {
-        if (!this.laravelEcho){
-          (<any>window).Pusher = Pusher;
-            this.laravelEcho = new Echo({
-              broadcaster: 'pusher',
-              key: environment.pusher.key,
-              cluster: environment.pusher.cluster,
-              forceTLS: environment.pusher.forceTLS,
-              disableStats: true,
+    await this.requestsService.init();
+    await this.requestsService.initDropdowns();
 
-              authorizer: (channel: any, options: any) => {
-                return {
-                  authorize: (socketId: any, callback: any) => {
-                    localStorage.setItem('socketId', socketId);
-                    this.requestsService.authorizeBroadcasting(socketId, channel.name).subscribe( response => {
-                      callback(false, response);
-                    }, error => {
-                      callback(true, error);
-                    });
-                  }
-                };
-              },
-            });
-         }
+    const channel = `rooms.${this.requestsService.config.waitingRoom.id}`;
+    const channelForChat = `branch.${this.requestsService.config.branch.id}.room.${this.requestsService.config.waitingRoom.id}`;
 
-
-        const channel = `rooms.${this.requestsService.config.waitingRoom.id}`;
-        const channelForChat = `branch.${this.requestsService.config.branch.id}.room.${this.requestsService.config.waitingRoom.id}`;
-
-        console.log('this.laravelEcho', this.laravelEcho);
-
-
-        this.laravelEcho?.private(channel).listen('.patient.created',async (e: any) => {
-          console.log(e);
-          if (this.networkStatus === "ONLINE" && !this.viewYesterdaysPatients) {
-            this.updatePatientList('created', e.patient);
-            await this.getOperatingRoomsFromStorageOrLoadFromServer();
-          }
-        });
-
-        this.laravelEcho?.private(channel).listen('.patient.updated', (e: any) => {
-          console.log(e);
-          if (this.networkStatus === "ONLINE" && !this.viewYesterdaysPatients) {
-            this.updatePatientList('updated', e.patient);
-            this.getOperatingRoomsFromStorageOrLoadFromServer();
-          }
-        });
-
-        this.laravelEcho?.private(channel).listen('.patient.deleted', (e: any) => {
-          console.log(e);
-          if (this.networkStatus === "ONLINE" && !this.viewYesterdaysPatients) {
-            this.updatePatientList('deleted', e.patient);
-            this.getOperatingRoomsFromStorageOrLoadFromServer();
-          }
-        });
-
-
-        this.laravelEcho.channel(channelForChat).listen('.chat.message.created', (e: any) => {
-          console.log(e);
-          if (this.networkStatus === "ONLINE" && !this.viewYesterdaysPatients) {
-              if (e.message.sender_type == "App\\Models\\Patients") {
-                const patientIndex = this.patients.findIndex(p => p.id === e.message.sender_id);
-                this.patients[patientIndex].chat_has_message = true;
-                this.patients[patientIndex].chat_unread_count = this.patients[patientIndex].chat_unread_count + 1;
-              }
-          }
-        });
-
-      });
+    const unsubscribeCreated = await this.webhookService.subscribePrivate(channel, '.patient.created', async (e: any) => {
+      if (this.networkStatus === "ONLINE" && !this.viewYesterdaysPatients) {
+        this.updatePatientList('created', e.patient);
+        await this.getOperatingRoomsFromStorageOrLoadFromServer();
+      }
     });
+
+    const unsubscribeUpdated = await this.webhookService.subscribePrivate(channel, '.patient.updated', (e: any) => {
+      if (this.networkStatus === "ONLINE" && !this.viewYesterdaysPatients) {
+        this.updatePatientList('updated', e.patient);
+        this.getOperatingRoomsFromStorageOrLoadFromServer();
+      }
+    });
+
+    const unsubscribeDeleted = await this.webhookService.subscribePrivate(channel, '.patient.deleted', (e: any) => {
+      if (this.networkStatus === "ONLINE" && !this.viewYesterdaysPatients) {
+        this.updatePatientList('deleted', e.patient);
+        this.getOperatingRoomsFromStorageOrLoadFromServer();
+      }
+    });
+
+    const unsubscribeChat = await this.webhookService.subscribePublic(channelForChat, '.chat.message.created', (e: any) => {
+      if (this.networkStatus === "ONLINE" && !this.viewYesterdaysPatients) {
+          if (e.message.sender_type == "App\\Models\\Patients") {
+            const patientIndex = this.patients.findIndex(p => p.id === e.message.sender_id);
+            if (patientIndex > -1) {
+              this.patients[patientIndex].chat_has_message = true;
+              this.patients[patientIndex].chat_unread_count = this.patients[patientIndex].chat_unread_count + 1;
+            }
+          }
+      }
+    });
+
+    this.webhookUnsubscribers.push(
+      unsubscribeCreated,
+      unsubscribeUpdated,
+      unsubscribeDeleted,
+      unsubscribeChat
+    );
+    this.webhooksInitialized = true;
   }
 
   async playAudio(){
@@ -253,10 +228,9 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    if (this.laravelEcho) {
-      this.laravelEcho.disconnect();
-      this.laravelEcho = undefined;
-    }
+    this.webhookUnsubscribers.forEach((unsubscribe) => unsubscribe());
+    this.webhookUnsubscribers = [];
+    this.webhooksInitialized = false;
   }
 
   getUserNames(role: any): string[] {

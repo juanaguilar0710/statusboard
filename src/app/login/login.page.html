@@ -1,17 +1,14 @@
 <ion-content [fullscreen]="true" class="login-content">
-  <div class="login-container">
-    <!-- Header con logo -->
-    <div class="login-header">
+  <div class="login-container activation-wrapper">
+    <!-- <div class="login-header">
       <img class="logo-main" src="assets/logos/StatusBoard_Black.png" alt="logo" />
       <h1 class="login-title">Welcome</h1>
       <p class="login-subtitle">Please login with manager account</p>
     </div>
 
-    <!-- Card de Login -->
     <div class="login-card">
       <form [formGroup]="form">
 
-        <!-- Campo Usuario -->
         <div class="form-section">
           <div class="section-header">
             <ion-icon name="person-outline" class="section-icon"></ion-icon>
@@ -30,7 +27,6 @@
           </ion-input>
         </div>
 
-        <!-- Campo Password -->
         <div class="form-section">
           <div class="section-header">
             <ion-icon name="lock-closed-outline" class="section-icon"></ion-icon>
@@ -55,7 +51,6 @@
           </ion-item>
         </div>
 
-        <!-- Mensajes 2FA -->
         <div class="twofa-message" *ngIf="two_fa_source">
           <ion-icon name="information-circle-outline" class="info-icon"></ion-icon>
           <div class="message-text">
@@ -65,7 +60,6 @@
           </div>
         </div>
 
-        <!-- Campo 2FA Code -->
         <div class="form-section" *ngIf="authenticationRequired">
           <div class="section-header">
             <ion-icon name="shield-checkmark-outline" class="section-icon"></ion-icon>
@@ -83,7 +77,6 @@
           </ion-input>
         </div>
 
-        <!-- Botones de acción -->
         <div class="form-actions">
           <ion-button
             *ngIf="!authenticationRequired"
@@ -115,13 +108,12 @@
           </ion-button>
         </div>
       </form>
-    </div>
+    </div> -->
 
-    <!-- Footer -->
-    <div class="login-footer">
-      <img class="logo-footer" src="assets/logos/DTouchmedia_Black.png" alt="logo" />
-      <span class="version-badge">v{{version}}</span>
-    </div>
+
+
+
+    <app-device-activation></app-device-activation>
 
   </div>
 </ion-content>

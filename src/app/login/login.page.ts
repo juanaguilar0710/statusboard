@@ -9,7 +9,6 @@ import { LoggerService } from '../api/logger.service';
 import { environment } from 'src/environments/environment';
 import { Capacitor } from '@capacitor/core';
 import { sync } from '@capacitor/live-updates';
-import { AlertController } from '@ionic/angular';
 
 
 
@@ -20,11 +19,6 @@ import { AlertController } from '@ionic/angular';
 })
 export class LoginPage implements OnInit {
 
-  platformInfo = {
-  platform: Capacitor.getPlatform(),
-  userAgent: navigator.userAgent
-  };
-
   @ViewChild('twoFactorCode', { read: ElementRef }) twoFactorCode!: ElementRef<HTMLIonInputElement>;
 
   showPassword: boolean = false;
@@ -34,8 +28,6 @@ export class LoginPage implements OnInit {
     password: [null, [Validators.required, Validators.minLength(3)]],
     code: [null],
   });
-
-  version: string = environment.version;
 
   two_fa_source: string = '';
   authenticationRequired: boolean = false;
@@ -49,8 +41,7 @@ export class LoginPage implements OnInit {
     private renderer: Renderer2,
     private notificationService: NotificationService,
     private logger: LoggerService,
-    private router: Router,
-    private alertController: AlertController) { }
+    private router: Router) { }
 
   async ngOnInit() {
     // Guardar el idioma antes de limpiar las preferencias

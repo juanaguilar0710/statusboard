@@ -1,0 +1,24 @@
+<div class="activation-wrapper">
+  <div class="activation-card">
+    <img class="brand-logo" src="assets/logos/DTouchmedia_Black.png" alt="DTouch" />
+
+    <p class="activation-title">Activation Code</p>
+    <div class="activation-code-box">
+      <span class="activation-code">{{ activationCode }}</span>
+    </div>
+
+    <p class="time-label">Time remaining:</p>
+    <p class="time-value">{{ timeRemaining }}</p>
+
+    <p class="activation-help">
+      To fully control this display, just enter the display code in the portal to activate it.
+    </p>
+
+    <div class="registering" *ngIf="isRegistering">
+      <ion-spinner name="crescent"></ion-spinner>
+      <span>Registering device...</span>
+    </div>
+
+    <span class="version-tag">v{{ version }}</span>
+  </div>
+</div>
