@@ -292,7 +292,7 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
       stationType: appMode === '1' ? 'OR Controller' : 'OR Dashboard',
       aplication: appMode,
       statuses: Array.isArray(monitor.visible_statuses) ? monitor.visible_statuses : [],
-      anonymousMode: !!monitor.privacy_mode,
+      privacy_mode: !!monitor.privacy_mode,
       token: accessToken,
       language: monitor.lang || 'es'
     };

@@ -153,7 +153,7 @@ import { TranslateService } from '../services/translate.service';
 
 
   getPatientDisplayName(patient: any): string {
-    if (this.config?.anonymousMode) {
+    if (this.config?.privacy_mode) {
       const initials = this.getPatientInitials(patient.fullName);
       const externalId = this.formatExternalIdSuffix(patient.external_id);
       return `${initials}${externalId}`;
@@ -163,7 +163,7 @@ import { TranslateService } from '../services/translate.service';
 
   getPatientDisplayNameWithAge(patient: any): string {
     const age = `(${patient.age}${this.translate.getCurrentLanguage() === 'en' ? 'y' : 'a'}) `;
-    if (this.config?.anonymousMode) {
+    if (this.config?.privacy_mode) {
       const initials = this.getPatientInitials(patient.fullName);
       const externalId = this.formatExternalIdSuffix(patient.external_id);
       //hay que extraerle el ultimos 5 digitos del id externo

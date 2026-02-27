@@ -1,5 +1,5 @@
 export const environment = {
-  version: "2.0.1.6",
+  version: "2.0.1.7",
   production: false,
   resetPin: '1111',
   maxInactivityTime: 60,
@@ -8,7 +8,6 @@ export const environment = {
   currentPage: 0,
   roomsPerPage: 3,
   timeRoomsPerPage: 10000,
-
   currentPageWhitPatients: 0,
   roomsPerPageWhitPatients: 8,
   pageSizeWhitPatients: 5,

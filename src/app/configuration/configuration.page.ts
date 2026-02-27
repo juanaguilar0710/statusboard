@@ -44,7 +44,7 @@ export class ConfigurationPage implements OnInit {
     stationType: ["OR Controller"],
     aplication: [null, [Validators.required]],
     statuses: [null],
-    anonymousMode: [false], // Modo anónimo para mostrar iniciales en lugar de nombre completo
+    privacy_mode: [false], // Modo anónimo para mostrar iniciales en lugar de nombre completo
     turnOnTime: [null],
     turnOffTime: [null],
   }, { validators: this.statusRequiredValidator.bind(this) });

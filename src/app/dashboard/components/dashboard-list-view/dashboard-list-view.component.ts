@@ -42,7 +42,7 @@ export class DashboardListViewComponent {
 
   getPatientDisplayNameWithAge(patient: any): string {
     const age = `(${patient.age}${this.getAgeSuffix()}) `;
-    if (this.config?.anonymousMode) {
+    if (this.config?.privacy_mode) {
       const initials = this.getPatientInitials(patient.fullName);
       const externalId = this.formatExternalIdSuffix(patient.external_id);
       return `${age}${initials}${externalId}`;
