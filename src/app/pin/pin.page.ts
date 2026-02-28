@@ -12,6 +12,7 @@ import { AppComponent } from '../app.component';
 import { App } from '@capacitor/app';
 import { LoggerService } from '../api/logger.service';
 import { TranslateService } from '../services/translate.service';
+import { DevicesService } from '../api/devices.service';
 
 @Component({
   selector: 'app-pin',
@@ -47,7 +48,8 @@ export class PinPage implements OnInit {
     private appComponent: AppComponent,
     private logger: LoggerService,
     private notificationService: NotificationService,
-    public translate: TranslateService
+    public translate: TranslateService,
+    private deviceservice: DevicesService,
   ) {
     // Escuchar el estado de la red
     this.networkService.networkStatus$.subscribe((status: string) => {
@@ -112,17 +114,35 @@ export class PinPage implements OnInit {
     if (this.pin.length === 6) {
       this.loading = true;
       this.isInitializing = false;
-      //this.presentLoading();
-      this.login();
+
+      if (localStorage.getItem('is_activation_flow') === 'true') {
+        this.requestTokenFromConfirmation();
+      } else {
+        this.login();
+      }
       return;
     }
   }
 
    async ngOnInit() {
+    console.log('llego al pin');
+
     this.appComponent.stopInactivityTracking();
     this.loading = true;
     this.isInitializing = true;
     this.lastsync = this.requestsService.lastSync;
+
+    if (localStorage.getItem('is_activation_flow') === 'true') {
+      // Estamos en el flujo de activación, no requerimos config previa.
+      setTimeout(() => {
+        this.image_url = 'assets/logos/DTouchmedia_Black.png';
+        this.branch_name = 'Activación de Dispositivo';
+        this.waitingRoom_name = 'Ingrese su PIN para continuar';
+        this.isInitializing = false;
+        this.loading = false;
+      }, 1000);
+      return;
+    }
 
     // Obtener configuración local y redirigir según el modo
     const config = await this.localdataService.getConfiguration();
@@ -137,6 +157,8 @@ export class PinPage implements OnInit {
     if (String(this.configResponse.aplication) === "1") {
       // Tablet: no redirige, espera PIN y luego va a /home
       setTimeout(() => {
+        console.log(this.requestsService);
+
         this.image_url = this.requestsService.config?.branch?.image_url ?? 'assets/logos/logotipo_placeholder.png';
         this.branch_name = this.requestsService.config?.branch?.name ?? "";
         this.waitingRoom_name = this.requestsService.config?.waitingRoom?.name ?? "";
@@ -351,4 +373,128 @@ export class PinPage implements OnInit {
       this.isNavigating = false;
     }
   }
+
+
+    private async requestTokenFromConfirmation(): Promise<void> {
+      try {
+
+        const event = localStorage.getItem('event')
+
+        const IdDevice = event ? JSON.parse(event)?.id : null;
+        console.log('IdDevice: ',IdDevice);
+
+        const tempToken = localStorage.getItem('tempToken') || '';
+        console.log('tempToken: ', tempToken);
+
+        const tokenResponse = await this.deviceservice.requestDeviceToken(IdDevice, {
+          temp_token: tempToken,
+          user_pin: this.pin,
+          client_id: environment.oauthObj.clientId,
+          client_secret: environment.oauthObj.clientSecret,
+        });
+
+        console.log('Device token response:', tokenResponse);
+
+        const payload = (tokenResponse?.data ?? tokenResponse);
+        await this.applyTokenResponseConfiguration(payload);
+      } catch (error: any) {
+          console.log(error);
+          this.loading = false;
+          this.loadingController.dismiss();
+          this.handleInput("clear");
+          this.notificationService.showError(this.translate.instant('pin.incorrectPin') + ' / ' + (error?.error?.detail || error.message || 'Error'), 6000);
+      }
+    }
+
+    private async applyTokenResponseConfiguration(payload: any): Promise<void> {
+      const accessToken = payload?.access_token;
+      const monitor = payload?.monitor;
+      const room = monitor?.room;
+
+      if (!accessToken || !monitor || !room?.id || !room?.branch_id) {
+        this.logger.addLog('applyTokenResponseConfiguration', { payload }, 'error');
+        this.loading = false;
+        this.handleInput("clear");
+        return;
+      }
+
+      // Si tenemos info de la sucursal y sala en el usuario, la usamos. Si no, usamos la minimalista de room/monitor.
+      let branch = payload?.user?.branch || monitor?.branch || {
+        id: room.branch_id,
+        name: `Branch ${room.branch_id}`,
+        image_url: 'assets/logos/logotipo_placeholder.png'
+      };
+
+      // Limpieza de URL de localhost a la del ambiente configurado
+      if (branch?.image_url && branch.image_url.includes('localhost')) {
+          branch.image_url = branch.image_url.replace('http://localhost', environment.url);
+      }
+
+      const waitingRoom = payload?.user?.waitingRoom || {
+        id: room.id,
+        name: room.name,
+        slug: room.slug,
+        branch_Id: room.branch_id,
+        branch_id: room.branch_id,
+        program: 'status_board'
+      };
+
+      const waitingRoomsList = payload?.user?.waitingRooms || [waitingRoom];
+
+      const appMode = String(monitor.view_mode ?? '1');
+      const config = {
+        branch,
+        waitingRoom,
+        stationName: monitor.name,
+        stationType: appMode === '1' ? 'OR Controller' : 'OR Dashboard',
+        aplication: appMode,
+        statuses: Array.isArray(monitor.visible_statuses) ? monitor.visible_statuses : [],
+        privacy_mode: !!monitor.privacy_mode,
+        token: accessToken,
+        language: monitor.lang || 'es'
+      };
+
+      // Guardamos la info completa de 'payload' como el objeto 'user' general para respetar las convenciones de la app,
+      // e inyectamos el monitor en caso de ser necesario.
+      const userToSave = payload?.user ? {
+        ...payload,
+        monitor: monitor
+      } : {
+        id: monitor.id,
+        name: monitor.name,
+        monitor,
+        user: {
+          username: monitor.device_id || monitor.name || 'monitor-device'
+        }
+      };
+
+      await Promise.all([
+        Preferences.set({ key: 'deviceTokenResponse', value: JSON.stringify(payload) }),
+        Preferences.set({ key: 'config', value: JSON.stringify(config) }),
+        Preferences.set({ key: 'branch', value: JSON.stringify(branch) }),
+        Preferences.set({ key: 'waiting_rooms', value: JSON.stringify(waitingRoomsList) }),
+        Preferences.set({ key: 'admin', value: JSON.stringify({ token: accessToken, expires_in: payload.expires_in }) }),
+        Preferences.set({ key: 'user', value: JSON.stringify(userToSave) })
+      ]);
+
+      localStorage.setItem('user', JSON.stringify(userToSave));
+      this.localdataService.user = userToSave;
+
+      // Removemos el flag de activación ya que fue exitosa
+      localStorage.removeItem('is_activation_flow');
+
+      this.requestsService.setToken(accessToken);
+      this.requestsService.setAdminToken(accessToken);
+      this.requestsService.setExpiresIn(payload.expires_in);
+      this.requestsService.setConfig(config);
+      await this.logger.setTokenAdmin(accessToken, payload.expires_in ?? 31535999);
+
+      this.loading = false;
+      this.loadingController.dismiss();
+      const destination = appMode === '2' || appMode === '3' ? '/dashboard' : '/home';
+      await this.router.navigate([destination], { replaceUrl: true });
+    }
+
+
+
 }

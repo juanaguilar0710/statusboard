@@ -35,6 +35,11 @@ interface DeviceTokenResponse {
     visible_statuses?: any[];
     privacy_mode?: boolean;
     lang?: string;
+    branch?: {
+      id: number;
+      name: string;
+      image_url: string;
+    };
     room: {
       id: number;
       name: string;
@@ -166,6 +171,8 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
     console.log(`logevent ${type}: `, event);
 
     if (type === 'confirmed') {
+      console.log(event);
+
       void this.requestTokenFromConfirmation(event);
     }
 
@@ -217,10 +224,38 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
       }
 
       const IdDevice = event?.id
+      console.log('Device ID:', IdDevice);
+
       const tempToken = this.DeviceRegistrationData?.temp_token;
+      console.log('Temp Token:', tempToken);
+
+      localStorage.setItem('tempToken', tempToken || '');
+      localStorage.setItem('event', JSON.stringify(event));
 
       if (!IdDevice || !tempToken) {
         this.logger.addLog('requestTokenFromConfirmation', { IdDevice, hasTempToken: !!tempToken, event }, 'error');
+        return;
+      }
+
+      // Si view_mode === 1, redirigimos a la pantalla de PIN y pausamos la solicitud de token aquí
+      console.log(event?.view_mode === 1 || event?.view_mode === '1');
+
+      if (event?.view_mode === 1 || event?.view_mode === '1') {
+        this.stopCodeCountdown();
+        this.webhookUnsubscribers.forEach((unsubscribe) => unsubscribe());
+        this.webhookUnsubscribers = [];
+
+        // Guardamos un flag para que la vista de PIN sepa que está en versión "Device Activation"
+        localStorage.setItem('is_activation_flow', 'true');
+        console.log('Activation flow flag set in localStorage');
+
+        // Check platform and use run inside zone if necessary for Angular Routing in WebHooks callbacks
+        this.router.navigate(['/pin'], { replaceUrl: true }).then(navResult => {
+            console.log('Navigation to /pin result:', navResult);
+        }).catch(err => {
+            console.error('Error navigating to /pin:', err);
+        });
+
         return;
       }
 
@@ -269,11 +304,16 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const branch = {
+    let branch: any = monitor?.branch || {
       id: room.branch_id,
       name: `Branch ${room.branch_id}`,
       image_url: 'assets/logos/logotipo_placeholder.png'
     };
+
+    // Limpieza de URL de localhost a la del ambiente configurado
+    if (branch?.image_url && branch.image_url.includes('localhost')) {
+        branch.image_url = branch.image_url.replace('http://localhost', environment.url);
+    }
 
     const waitingRoom = {
       id: room.id,

@@ -21,6 +21,10 @@ export class PinEntryGuard implements CanActivate, CanLoad {
 
   private async resolveNavigation(): Promise<boolean | UrlTree> {
     try {
+      if (localStorage.getItem('is_activation_flow') === 'true') {
+        return true; // Permitimos el paso porque viene del flujo de registro/activación
+      }
+
       const config = await this.localdataService.getConfiguration();
 
       if (!config) {

@@ -275,9 +275,15 @@ export class RequestsService {
             const formatedDate = getLocalDate(date);
             console.log(formatedDate);
 
+            let endpointUrl = '';
+            if (String(this.config?.aplication) === '1') {
+                endpointUrl = `${environment.url}${environment.visitor}?visit_date=${formatedDate}&orderBy=fullName&direction=asc&branchID=${this.config.branch.id}&roomID=${this.config.waitingRoom.id}`;
+            } else {
+                endpointUrl = `${urlMonitor}/api${environment.visitor}?visit_date=${formatedDate}`;
+            }
 
             const options = {
-                url: `${urlMonitor}/api${environment.visitor}?visit_date=${formatedDate}`,
+                url: endpointUrl,
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
@@ -315,9 +321,15 @@ export class RequestsService {
             }
             const formatedDate = getLocalDate(date);
 
+            let endpointUrl = '';
+            if (String(this.config?.aplication) === '1') {
+                endpointUrl = `${environment.url}${environment.visitor}?visit_date=${formatedDate}&orderBy=fullName&direction=asc&branchID=${this.config.branch.id}&roomID=${this.config.waitingRoom.id}`;
+            } else {
+                endpointUrl = `${urlMonitor}/api${environment.visitor}?visit_date=${formatedDate}`;
+            }
+
             const options = {
-                // url: `${environment.url}${environment.visitor}?visit_date=${formatedDate}&orderBy=fullName&direction=asc&branchID=${this.config.branch.id}&roomID=${this.config.waitingRoom.id}`,
-                url: `${urlMonitor}/api${environment.visitor}?visit_date=${formatedDate}`,
+                url: endpointUrl,
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
@@ -782,6 +794,16 @@ export class RequestsService {
             'Accept': 'application/json'
           });
 
+
+            let endpointUrl = '';
+            if (String(this.config?.aplication) === '1') {
+                endpointUrl = `${environment.url}/broadcasting/auth`;
+            } else {
+                endpointUrl = `${urlMonitor}/api/broadcasting/auth`;
+            }
+
+
+
           return from(
             this.logger.addLog('Autorizando conexión a Pusher', {
                 socketId: socketId,
@@ -789,7 +811,7 @@ export class RequestsService {
                 action: 'Autorización en progreso'
             }, 'info')
         ).pipe(
-            switchMap(() => this.http.post<any>(`${urlMonitor}/api/broadcasting/auth`, {
+            switchMap(() => this.http.post<any>(endpointUrl, {
                 socket_id: socketId,
                 channel_name: channelName
             }, { headers }))
