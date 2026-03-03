@@ -134,6 +134,8 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
 
   private async initializeDeviceActivationFlow(): Promise<void> {
     this.deviceMetadata = await this.collectDeviceMetadata();
+    console.log(this.deviceMetadata);
+
     if (!this.deviceMetadata.uuid) {
       this.deviceMetadata.uuid = 'WEB-' + Math.random().toString(36).slice(2, 11);
     }
@@ -408,6 +410,12 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
 
       const networkIdentifiers = await this.getNetworkIdentifiers();
 
+      console.log(deviceInfo);
+      console.log(deviceId);
+      console.log(batteryInfo);
+      console.log(languageInfo);
+      console.log(appInfo);
+
       return {
         uuid: deviceId.identifier,
         name: deviceInfo.name,
@@ -435,6 +443,11 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
         userAgent: navigator.userAgent,
         platformInfo: this.platformInfo
       };
+
+
+
+
+
     } catch (error) {
       this.logger.addLog('collectDeviceMetadata', { error }, 'error');
       return {
