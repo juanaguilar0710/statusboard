@@ -3,7 +3,7 @@ import { Router } from '@angular/router';
 import { CapacitorHttp, HttpResponse } from '@capacitor/core';
 import { Preferences } from '@capacitor/preferences';
 import { Platform } from '@ionic/angular';
-import { BehaviorSubject, catchError, from, Observable, switchMap, tap, throwError } from 'rxjs';
+import { BehaviorSubject, Subject, catchError, from, Observable, switchMap, tap, throwError } from 'rxjs';
 import { environment } from 'src/environments/environment';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { LoggerService } from './logger.service';
@@ -23,6 +23,7 @@ export class RequestsService {
     startTimer$ = new BehaviorSubject<boolean>(false);
     logout$ = new BehaviorSubject<boolean>(false);
     loadingPatients$ = new BehaviorSubject<boolean>(false);
+    monitorUpdated$ = new Subject<boolean>();
     comments: any = [];
     operatingRooms: any = [];
     surgeons: any = [];
@@ -931,3 +932,6 @@ function getLocalDate(date: Date): string {
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
 }
+
+
+

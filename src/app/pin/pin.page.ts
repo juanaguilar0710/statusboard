@@ -209,38 +209,59 @@ export class PinPage implements OnInit {
     this.resolution = `Width ${width} x height ${height}`;
   }
 
-  async presentAlert() {
-    // Presentar alerta con opciones para ir a login o configuración
-    const alert = await this.alertController.create({
-      header: this.translate.instant('pin.adminOptions'),
-      message: this.translate.instant('pin.selectOption'),
-      buttons: [
-        {
-          text: this.translate.instant('pin.login'),
-          handler: () => {
-            Preferences.clear();
-            this.router.navigate(['/login'], { replaceUrl: true });
+async deleteCurrentMonitor() {
+      try {
+        const userResp = await Preferences.get({ key: 'user' });
+        if (userResp.value) {
+          const userObj = JSON.parse(userResp.value);
+          const monitorId = userObj?.monitor?.id || userObj?.id;
+          const token = await this.logger.getTokenAdmin();
+          if (monitorId && token) {
+            await this.deviceservice.deleteMonitor(monitorId, token);
+            console.log('Monitor eliminado del servidor con exito:', monitorId);
           }
-        },
-        {
-          text: this.translate.instant('pin.configuration'),
-          handler: () => {
-            // const options: RemoveOptions = { key: 'config' };
-            // Preferences.remove(options);
-            this.router.navigate(['/configuration'], { replaceUrl: true });
-          }
-        },
-        {
-        text: this.translate.instant('pin.showResolution'),
-        handler: () => {
-          this.showResolutionAlert(); // Mostrará la resolución en una nueva alerta
-          return false; // Evita que la alerta se cierre al tocar este botón
         }
-        },
-        {
-          text: this.translate.instant('pin.closeApp'),
+      } catch (err) {
+        console.error('Error eliminando el monitor del backend:', err);
+      }
+    }
+
+    async presentAlert() {
+      // Presentar alerta con opciones para ir a login o configuración
+      const alert = await this.alertController.create({
+        header: this.translate.instant('pin.adminOptions'),
+        message: this.translate.instant('pin.selectOption'),
+        buttons: [
+          {
+            text: this.translate.instant('pin.login'),
+            handler: async () => {
+              this.loading = true;
+              await this.deleteCurrentMonitor();
+              await Preferences.clear();
+              this.router.navigate(['/login'], { replaceUrl: true });
+              this.loading = false;
+            }
+          },
+          {
+            text: this.translate.instant('pin.configuration'),
+            handler: () => {
+              // const options: RemoveOptions = { key: 'config' };
+              // Preferences.remove(options);
+              this.router.navigate(['/configuration'], { replaceUrl: true });
+            }
+          },
+          {
+          text: this.translate.instant('pin.showResolution'),
           handler: () => {
-            Preferences.clear();
+            this.showResolutionAlert(); // Mostrará la resolución en una nueva alerta
+            return false; // Evita que la alerta se cierre al tocar este botón
+          }
+          },
+          {
+            text: this.translate.instant('pin.closeApp'),
+            handler: async () => {
+              await this.deleteCurrentMonitor();
+              await Preferences.clear();
             this.router.navigate(['/login'], { replaceUrl: true });
             App.exitApp(); // Cierra la aplicación
           }

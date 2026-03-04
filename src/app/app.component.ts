@@ -171,7 +171,6 @@ export class AppComponent implements OnInit {
             await Preferences.clear();
             this.localdataService.deletePreviousPatients();
             this.router.navigate(['/login'], { replaceUrl: true });
-            setTimeout(() => window.location.reload(), 500); // Forzar recarga para limpiar memoria
           }
         });
 
@@ -244,7 +243,18 @@ export class AppComponent implements OnInit {
               console.error('[AppComponent] Error actualizando preferencias:', e);
             }
 
-            window.location.reload();
+              let destination = '/pin';
+              const currentConfigRaw2 = await Preferences.get({ key: 'config' });
+              if (currentConfigRaw2.value) {
+                const cConf = JSON.parse(currentConfigRaw2.value);
+                destination = (cConf.aplication === '2' || cConf.aplication === '3') ? '/dashboard' : '/pin';
+              }
+              const currentUrl = this.router.url;
+              if (currentUrl.includes(destination)) {
+                this.requestsService.monitorUpdated$.next(true);
+              } else {
+                this.router.navigate([destination], { replaceUrl: true });
+              }
           }
         });
       };
@@ -552,3 +562,7 @@ export class AppComponent implements OnInit {
     });
   }
 }
+
+
+
+

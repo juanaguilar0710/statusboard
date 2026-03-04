@@ -5,6 +5,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Preferences } from '@capacitor/preferences';
 import { Toast } from '@capacitor/toast';
 import { LocaldataService } from '../api/localdata.service';
+import { DevicesService } from '../api/devices.service';
 import { Storage } from '@ionic/storage-angular';
 import { NetworkService } from '../api/network.service';
 import { RoomColors } from 'colors';
@@ -64,6 +65,7 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
 
   constructor(
     private LocaldataService: LocaldataService,
+    private devicesService: DevicesService,
     private logger: LoggerService,
     public requestsService: RequestsService,
     private router: Router,
@@ -429,7 +431,26 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
     return `${hour}:${minutes} ${ampm}`;
   }
 
+  async deleteCurrentMonitor() {
+    try {
+      const configStr = localStorage.getItem('config');
+      if (configStr) {
+        const pcfg = JSON.parse(configStr);
+        if (pcfg && pcfg.monitor_id) {
+          const token = this.requestsService.getToken();
+          if (token) {
+            await this.devicesService.deleteMonitor(pcfg.monitor_id, token);
+            console.log('Monitor deleted successfully on logout');
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Error deleting monitor during logout', e);
+    }
+  }
+
   async logout() {
+    await this.deleteCurrentMonitor();
     this.notificationService.showInfo(this.translate.instant('home.logoutSuccess'), 5000);
     this.requestsService.startTimer$.next(false);
     Preferences.remove({ key: 'user' });
@@ -438,3 +459,6 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
   }
 
 }
+
+
+

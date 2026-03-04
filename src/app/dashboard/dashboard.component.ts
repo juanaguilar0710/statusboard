@@ -1,5 +1,6 @@
 import { AfterViewInit, ChangeDetectorRef, Component, OnInit, AfterViewChecked, ElementRef, ViewChild } from '@angular/core';
 import { LocaldataService } from '../api/localdata.service';
+import { DevicesService } from '../api/devices.service';
 import { RequestsService } from '../api/requests.service';
 import { RoomColors } from 'colors';
 import { Preferences, RemoveOptions } from '@capacitor/preferences';
@@ -77,6 +78,7 @@ import { TranslateService } from '../services/translate.service';
   newAction: string = '';
   logDetails: string = '';
   isRefreshing = false;
+  private monitorUpdatedSub?: Subscription;
   isLoading = true; // Variable para controlar el estado de loading
   totales:any;
   private dataLoaded = false; // Flag para controlar si los datos fueron cargados
@@ -90,7 +92,7 @@ import { TranslateService } from '../services/translate.service';
   private updatedPatientIdsCache: { ids: Set<number>; validUntil: number } | null = null;
   private readonly UPDATED_PATIENT_CACHE_TTL_MS = 250;
 
-  constructor(private LocaldataService: LocaldataService,
+  constructor(private LocaldataService: LocaldataService, private devicesService: DevicesService,
               public requestsService: RequestsService,
               private router: Router,
               private alertController: AlertController,
@@ -214,6 +216,14 @@ import { TranslateService } from '../services/translate.service';
   }
 
   async ngOnInit() {
+    if (!this.monitorUpdatedSub) {
+      this.monitorUpdatedSub = this.requestsService.monitorUpdated$.subscribe(() => {
+        console.log('[Dashboard] Recibida actualización desde monitorUpdated$. Recargando datos...');
+        this.getTodaysPatients = false;
+        this.getOperatingRooms = false;
+        this.ngOnInit();
+      });
+    }
     this.isLoading = true;
     if (!this.requestsService.statuses) {
       this.requestsService.statuses = [];
@@ -222,12 +232,35 @@ import { TranslateService } from '../services/translate.service';
     this.loadSystemVoicesInBackground();
     await this.loadLogs();
     await Preferences.get({ key: 'config' })
-      .then(async (response: any) => {
-        if (response?.value) {
-          this.config = JSON.parse(response.value);
-          localStorage.setItem('config',this.config)
-          this.requestsService.setToken(this.config.token);
-          this.requestsService.setAdminToken(this.config.token);
+        .then(async (response: any) => {
+          if (response?.value) {
+            this.config = JSON.parse(response.value);
+            this.requestsService.setToken(this.config.token);
+            this.requestsService.setAdminToken(this.config.token);
+
+            try {
+              if (this.config.token) {
+                const monitorResp = await this.devicesService.getMonitorData(this.config.token);
+                if (monitorResp.status === 200 && monitorResp.data?.data) {
+                  const mData = monitorResp.data.data;
+                  this.config.monitor_id = mData.id;
+                  this.config.stationName = mData.name;
+                  this.config.device_id = mData.device_id;
+                  this.config.aplication = mData.view_mode ? mData.view_mode.toString() : this.config.aplication;
+                  this.config.statuses = mData.visible_statuses;
+                  if (mData.lang) this.config.lang = mData.lang;
+                  if (mData.privacy_mode !== undefined) this.config.privacy_mode = mData.privacy_mode;
+                  if (mData.branch) this.config.branch = mData.branch;
+                  if (mData.room) this.config.waitingRoom = mData.room;
+
+                  await Preferences.set({ key: 'config', value: JSON.stringify(this.config) });
+                }
+              }
+            } catch (err) {
+              console.error('Error fetching monitor data from API', err);
+            }
+
+            localStorage.setItem('config', JSON.stringify(this.config));
           if (this.config.branch?.id) {
             await this.loadBranchStatuses(this.config.branch.id);
           }
@@ -1354,6 +1387,9 @@ private isPusherConnected(): boolean {
     this.lastsync = new Date();
   }
   ngOnDestroy() {
+    if (this.monitorUpdatedSub) {
+      this.monitorUpdatedSub.unsubscribe();
+    }
     this.stopCarousel();  // Detener el carousel cuando el componente se destruya
     if (this.intervalIdForPages) {
       clearInterval(this.intervalIdForPages);
@@ -1463,6 +1499,24 @@ private isPusherConnected(): boolean {
     this.resolution = `Width ${width} x height ${height}`;
   }
 
+  async deleteCurrentMonitor() {
+    try {
+      const configStr = localStorage.getItem('config');
+      if (configStr) {
+        const pcfg = JSON.parse(configStr);
+        if (pcfg && pcfg.monitor_id) {
+          const token = this.requestsService.getToken();
+          if (token) {
+            await this.devicesService.deleteMonitor(pcfg.monitor_id, token);
+            console.log('Monitor deleted successfully on logout');
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Error deleting monitor during logout', e);
+    }
+  }
+
   async presentAlert() {
     const alert = await this.alertController.create({
       header: 'Admin Options',
@@ -1471,9 +1525,11 @@ private isPusherConnected(): boolean {
       {
           text: 'Login',
           handler: () => {
-            Preferences.clear();
-            this.logger.clearAdminAuthData();
-            this.router.navigate(['/login'], { replaceUrl: true });
+            this.deleteCurrentMonitor().then(() => {
+              Preferences.clear();
+              this.logger.clearAdminAuthData();
+              this.router.navigate(['/login'], { replaceUrl: true });
+            });
           }
         },
         {
@@ -1814,3 +1870,11 @@ private isPusherConnected(): boolean {
   }
 
 }
+
+
+
+
+
+
+
+

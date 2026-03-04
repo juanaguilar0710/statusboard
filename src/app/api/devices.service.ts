@@ -50,17 +50,31 @@ export class DevicesService {
         return CapacitorHttp.post(options);
     }
 
+    async deleteMonitor(id: string | number, token: string): Promise<HttpResponse> {
+        const options = {
+            url: `${environment.url}${environment.api}/monitors/${id}`,
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'Authorization': `Bearer ${token}`
+            }
+        };
 
-    // getBranches = async (): Promise<any> => {
-    //     return new Promise(async (resolve, reject) => {
-    //         const options = {
-    //             url: environment.url + environment.api + environment.public + environment.branchesrooms,
-    //             headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer ' + this.token },
-    //         };
-    //         try {
-    //             resolve(await CapacitorHttp.get(options));
-    //         } catch (error) {
-    //             reject(error);
+        return CapacitorHttp.delete(options);
+    }
+
+    async getMonitorData(token: string): Promise<HttpResponse> {
+        const options = {
+            url: `${urlMonitor}${environment.api}/monitor`,
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'Authorization': `Bearer ${token}`
+            }
+        };
+
+        return CapacitorHttp.get(options);
+    }
     //         }
     //     });
     // }
