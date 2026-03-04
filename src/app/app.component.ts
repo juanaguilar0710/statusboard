@@ -1,4 +1,4 @@
-import { Component, HostListener, OnInit } from '@angular/core';
+import { Component, HostListener, OnInit, NgZone } from '@angular/core';
 import { NavigationEnd, Router } from '@angular/router';
 import { Preferences } from '@capacitor/preferences';
 import { RequestsService } from './api/requests.service';
@@ -63,7 +63,8 @@ export class AppComponent implements OnInit {
     private notificationService: NotificationService,
     private modalController: ModalController,
     private platform: Platform,
-    private webhookService: WebhookService
+    private webhookService: WebhookService,
+    private ngZone: NgZone
   ) {
     this.init();
 
@@ -112,36 +113,54 @@ export class AppComponent implements OnInit {
         roomId = config?.waitingRoom?.id;
       }
 
-      const checkIsCurrentDevice = async (event: any) => {
-        let isMatch = false;
+        const checkIsCurrentDevice = async (event: any) => {
+          let isMatch = false;
 
-        // 1. Check device_id
-        const storedRegistration = await Preferences.get({ key: 'deviceRegistrationData' });
-        let currentDeviceId = '';
-        if (storedRegistration.value) {
-          const data = JSON.parse(storedRegistration.value);
-          currentDeviceId = data.device_id || data.uuid;
-        }
-        if (!currentDeviceId) {
-          const deviceIdInfo = await Device.getId();
-          currentDeviceId = deviceIdInfo.identifier;
-        }
+          // 1. Check device_id
+          const storedRegistration = await Preferences.get({ key: 'deviceRegistrationData' });
+          let currentDeviceId = '';
+          if (storedRegistration.value) {
+            const data = JSON.parse(storedRegistration.value);
+            currentDeviceId = data.device_id || data.uuid;
+          }
+          if (!currentDeviceId) {
+            const deviceIdInfo = await Device.getId();
+            currentDeviceId = deviceIdInfo.identifier;
+          }
 
-        if (event?.device_id === currentDeviceId || event?.device?.device_id === currentDeviceId) {
-          isMatch = true;
-        }
-
-        // 2. Check monitor id
-        const userResponse = await Preferences.get({ key: 'user' });
-        if (userResponse.value) {
-          const userData = JSON.parse(userResponse.value);
-          const monitorId = userData?.monitor?.id || userData?.id;
-          if (monitorId && (event?.id === monitorId || event?.monitor?.id === monitorId || event?.device?.id === monitorId)) {
+          if (event?.device_id === currentDeviceId || event?.device?.device_id === currentDeviceId) {
             isMatch = true;
           }
-        }
-        return isMatch;
-      };
+
+          // 2. Check monitor id stored on the user object
+          const userResponse = await Preferences.get({ key: 'user' });
+          if (userResponse.value && !isMatch) {
+            const userData = JSON.parse(userResponse.value);
+            const monitorId = userData?.monitor?.id || userData?.id;
+            if (monitorId && (event?.id === monitorId || event?.monitor?.id === monitorId || event?.device?.id === monitorId)) {
+              isMatch = true;
+            }
+          }
+
+          // 3. Fallback: compare against monitor metadata persisted in config
+          if (!isMatch) {
+            const configResponse = await Preferences.get({ key: 'config' });
+            if (configResponse.value) {
+              const configData = JSON.parse(configResponse.value);
+              const configMonitorId = configData?.monitor_id || configData?.monitorId;
+              if (configMonitorId && (event?.id === configMonitorId || event?.monitor?.id === configMonitorId || event?.device?.id === configMonitorId)) {
+                isMatch = true;
+              }
+
+              const configDeviceId = configData?.device_id || configData?.deviceId;
+              if (!isMatch && configDeviceId && (event?.device_id === configDeviceId || event?.device?.device_id === configDeviceId)) {
+                isMatch = true;
+              }
+            }
+          }
+
+          return isMatch;
+        };
 
       const subscribeToChannel = (channel: string, isPresence: boolean) => {
         const subscriber = isPresence ?
@@ -169,14 +188,19 @@ export class AppComponent implements OnInit {
           if (isMatch) {
             console.log('[AppComponent] Match found for deleted event. Clearing data and redirecting to login...');
             await Preferences.clear();
-            this.localdataService.deletePreviousPatients();
-            this.router.navigate(['/login'], { replaceUrl: true });
-          }
-        });
+              localStorage.removeItem('config');
+              localStorage.removeItem('user');
+              this.localdataService.deletePreviousPatients();
+              this.ngZone.run(async () => {
+                await this.router.navigate(['/login'], { replaceUrl: true });
+                setTimeout(() => window.location.reload(), 100);
+              });
+            }
+          });
 
-        // monitor.updated
-        subscriber(channel, '.monitor.updated', async (event: any) => {
-          console.log(`[AppComponent] Evento monitor.updated recibido en ${channel}:`, event);
+          // monitor.updated
+          subscriber(channel, '.monitor.updated', async (event: any) => {
+            console.log(`[AppComponent] Evento monitor.updated recibido en ${channel}:`, event);
 
           let parsedData = event;
           if (typeof event === 'string') {
@@ -225,12 +249,17 @@ export class AppComponent implements OnInit {
                   aplication: appMode,
                   statuses: Array.isArray(monitorPayload?.visible_statuses) ? monitorPayload.visible_statuses : currentConfig.statuses,
                   privacy_mode: !!monitorPayload?.privacy_mode,
-                  language: monitorPayload?.lang || currentConfig.language
+                    language: monitorPayload?.lang || currentConfig.language,
+                    monitor_id: monitorPayload?.id ?? currentConfig.monitor_id,
+                    device_id: monitorPayload?.device_id ?? currentConfig.device_id
                 };
 
                 await Preferences.set({ key: 'config', value: JSON.stringify(newConfig) });
                 await Preferences.set({ key: 'branch', value: JSON.stringify(branch) });
                 await Preferences.set({ key: 'waiting_rooms', value: JSON.stringify([newConfig.waitingRoom]) });
+
+                // IMPORTANTE: Mantener en sincronía localStorage para los Guards y visuales inmediatos
+                localStorage.setItem('config', JSON.stringify(newConfig));
 
                 const currentUserRaw = await Preferences.get({ key: 'user' });
                 if(currentUserRaw.value) {
@@ -238,23 +267,32 @@ export class AppComponent implements OnInit {
                   currentUser.monitor = { ...currentUser.monitor, ...monitorPayload };
                   await Preferences.set({ key: 'user', value: JSON.stringify(currentUser) });
                 }
+
+                const appModeChanged = currentConfig.aplication !== newConfig.aplication;
+
+                this.ngZone.run(async () => {
+                  if (appModeChanged) {
+                    const destination = (newConfig.aplication === '2' || newConfig.aplication === '3') ? '/dashboard' : '/home';
+                    console.log('[AppComponent] Cambiando vista a:', destination);
+                    await this.router.navigate([destination], { replaceUrl: true });
+                    // Micro-refresh para forzar que los guards y la UI tomen el localStorage y context Angular correctos
+                    setTimeout(() => window.location.reload(), 100);
+                  } else {
+                    const destination = (newConfig.aplication === '2' || newConfig.aplication === '3') ? '/dashboard' : '/home';
+                    const currentUrl = this.router.url;
+                    if (!currentUrl.includes(destination)) {
+                      await this.router.navigate([destination], { replaceUrl: true });
+                    } else {
+                      // Mismo modo, solo recargar datos
+                      this.requestsService.monitorUpdated$.next(true);
+                    }
+                  }
+                });
+
               }
             } catch (e) {
               console.error('[AppComponent] Error actualizando preferencias:', e);
             }
-
-              let destination = '/pin';
-              const currentConfigRaw2 = await Preferences.get({ key: 'config' });
-              if (currentConfigRaw2.value) {
-                const cConf = JSON.parse(currentConfigRaw2.value);
-                destination = (cConf.aplication === '2' || cConf.aplication === '3') ? '/dashboard' : '/pin';
-              }
-              const currentUrl = this.router.url;
-              if (currentUrl.includes(destination)) {
-                this.requestsService.monitorUpdated$.next(true);
-              } else {
-                this.router.navigate([destination], { replaceUrl: true });
-              }
           }
         });
       };
@@ -562,6 +600,11 @@ export class AppComponent implements OnInit {
     });
   }
 }
+
+
+
+
+
 
 
 

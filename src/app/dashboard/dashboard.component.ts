@@ -78,6 +78,10 @@ import { TranslateService } from '../services/translate.service';
   newAction: string = '';
   logDetails: string = '';
   isRefreshing = false;
+
+  private timeUpdateIntervalId: any;
+  private pageRoomsIntervalId: any;
+  private pusherMonitorIntervalId: any;
   private monitorUpdatedSub?: Subscription;
   isLoading = true; // Variable para controlar el estado de loading
   totales:any;
@@ -105,7 +109,7 @@ import { TranslateService } from '../services/translate.service';
               public translate: TranslateService
   ) {
     setTimeout(() => {
-      setInterval(async () => {
+      this.timeUpdateIntervalId = setInterval(async () => {
         this.updateTime();
         if (this.isRefreshing) return;
         const expiresAt = await this.storage.get(this.TOKEN_EXPIRATION_KEY_Admin);
@@ -123,7 +127,7 @@ import { TranslateService } from '../services/translate.service';
         }
       }, 1000);
 
-      setInterval(() => {
+      this.pageRoomsIntervalId = setInterval(() => {
         this.changePageRooms();
         const event = new MouseEvent('mousemove');
         document.dispatchEvent(event);
@@ -218,7 +222,7 @@ import { TranslateService } from '../services/translate.service';
   async ngOnInit() {
     if (!this.monitorUpdatedSub) {
       this.monitorUpdatedSub = this.requestsService.monitorUpdated$.subscribe(() => {
-        console.log('[Dashboard] Recibida actualización desde monitorUpdated$. Recargando datos...');
+        console.log('[Dashboard] Recibida actualizaciï¿½n desde monitorUpdated$. Recargando datos...');
         this.getTodaysPatients = false;
         this.getOperatingRooms = false;
         this.ngOnInit();
@@ -1316,7 +1320,7 @@ private isPusherConnected(): boolean {
 
   private monitorConnection(): void {
     const pusherInstance = (<any>this.laravelEcho).connector.pusher;
-    setInterval(async () => {
+    this.pusherMonitorIntervalId = setInterval(async () => {
         if (pusherInstance.connection.state !== 'connected') {
             await this.logger.addLog('Pusher is not connected, attempting to reconnect...', {},'error');
             console.warn('Pusher is not connected, attempting to reconnect...');
@@ -1387,6 +1391,15 @@ private isPusherConnected(): boolean {
     this.lastsync = new Date();
   }
   ngOnDestroy() {
+    if (this.timeUpdateIntervalId) {
+      clearInterval(this.timeUpdateIntervalId);
+    }
+    if (this.pageRoomsIntervalId) {
+      clearInterval(this.pageRoomsIntervalId);
+    }
+    if (this.pusherMonitorIntervalId) {
+      clearInterval(this.pusherMonitorIntervalId);
+    }
     if (this.monitorUpdatedSub) {
       this.monitorUpdatedSub.unsubscribe();
     }
