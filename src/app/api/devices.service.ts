@@ -32,6 +32,16 @@ export class DevicesService {
         return CapacitorHttp.post(options);
     }
 
+    async recoverDevice(deviceId: string): Promise<any> {
+        const options = {
+            url: urlMonitor + environment.api + '/recover',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json' },
+            data: `device_id=${encodeURIComponent(deviceId)}`,
+        };
+
+        return CapacitorHttp.post(options);
+    }
+
     async requestDeviceToken(IdDevice: string | number, payload: { temp_token: string; client_id: string; client_secret: string; user_pin?: string }): Promise<any> {
         // Clonamos el payload para no mutar el objeto original
         const payloadToSend = { ...payload };

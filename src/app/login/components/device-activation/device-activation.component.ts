@@ -120,9 +120,24 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
 
     this.notificationService.showSuccess('Device registered successfully!', 5000);
     this.activationCode = this.DeviceRegistrationData.confirmation_code;
-  }).catch((error) => {
-    this.logger.addLog('manualDeviceRegistration', { error }, 'error');
-    this.notificationService.showError('Failed to register device. Please try again.', 5000);
+  }).catch(async (error) => {
+    const detail = error?.error?.detail || error?.data?.error?.detail || '';
+    if (detail === 'Monitor already registered') {
+      try {
+        const deviceId = this.deviceMetadata?.uuid || 'unknown-uuid';
+        const recoverResp = await this.deviceservice.recoverDevice(deviceId);
+        this.DeviceRegistrationData = recoverResp.data as DeviceRegistrationData;
+        void this.persistDeviceRegistrationData(this.DeviceRegistrationData);
+        this.activationCode = this.DeviceRegistrationData.confirmation_code;
+        this.notificationService.showSuccess('Device recovered successfully!', 5000);
+      } catch (recoverError) {
+        this.logger.addLog('recoverDevice', { recoverError }, 'error');
+        this.notificationService.showError('Failed to recover device. Please try again.', 5000);
+      }
+    } else {
+      this.logger.addLog('manualDeviceRegistration', { error }, 'error');
+      this.notificationService.showError('Failed to register device. Please try again.', 5000);
+    }
   });
   }
 

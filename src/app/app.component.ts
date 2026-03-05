@@ -399,7 +399,7 @@ export class AppComponent implements OnInit {
   // ========== FIN LIVE UPDATES ==========
 
   checkRoute(url: string) {
-    if (url.includes('/dashboard')) {
+    if (url.includes('/dashboard') || url.includes('/login')) {
       this.enableScreensaver = false;
     } else {
       this.enableScreensaver = true;
