@@ -45,6 +45,7 @@ export class DashboardListViewComponent {
     if (this.config?.privacy_mode) {
       const initials = this.getPatientInitials(patient.fullName);
       const externalId = this.formatExternalIdSuffix(patient.external_id);
+
       return `${age}${initials}${externalId}`;
     }
     return `${age}${patient.fullName}`;
