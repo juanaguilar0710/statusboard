@@ -49,8 +49,7 @@
                 holding: patient.status?.type === 'holding',
                 nextSurgery: patient.status?.type === 'next_to_surgery',
                 canceled: patient.visit_canceled_at
-              }"
-            >
+              }">
               {{ patient.status_name === 'Cancelado' ? patient.status_name : patient.status?.name }}
             </td>
             <td class="textCardPatients text-ellipsis" style="padding: 8px; width: 10%;">{{ patient.recovery_room }}</td>
