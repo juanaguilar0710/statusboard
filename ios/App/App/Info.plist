@@ -52,7 +52,8 @@
     <key>IonApi</key>
     <string>https://api.ionicjs.com</string>
     <key>IonAppId</key>
-    <string>e6702712</string>
+    <!-- <string>e6702712</string> -->
+    <string>e3c5f7bf</string>
     <key>IonChannelName</key>
     <string>Production</string>
     <key>IonUpdateMethod</key>
