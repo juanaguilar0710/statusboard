@@ -1,5 +1,5 @@
 export const environment = {
-  version: "2.0.1.14",
+  version: "2.0.1.15",
   production: false,
   resetPin: '1111',
   maxInactivityTime: 60,
@@ -16,8 +16,8 @@ export const environment = {
 
   broadcasting: {
     driver: 'pusher', // 'socket.io',
-    //host: 'https://api.dtouchmedia.cloud' //prod
-    host: 'https://api.dtouchmedia.com' //dev
+    host: 'https://api.dtouchmedia.cloud' //prod
+    //host: 'https://api.dtouchmedia.com' //dev
   },
 
   pusher: {
@@ -223,15 +223,15 @@ export const environment = {
   ],
 
 
-  //url: 'https://api.dtouchmedia.cloud', //prod
-  url: 'https://api.dtouchmedia.dev', //dev
+  url: 'https://api.dtouchmedia.cloud', //prod
+  //url: 'https://api.dtouchmedia.dev', //dev
   oauth: '/oauth',
   token: '/token',
     oauthObj:{
-    //clientId: 'a01efb9a-822e-410a-bb89-3e20f5f606aa', //prod
-    clientId: '9f49cec9-7d3b-4ae1-a211-c0b19225e42c',//dev
-    //clientSecret: 'RYGwzJo2Io4Q3nfbykeH9xEpCv8nV4qzcyXrDzMx', //prod
-    clientSecret: 'UGIJqcPJaXxCmY7tAmGKaBNsqeY0pxV9j008KGvd', //dev
+    clientId: 'a01efb9a-822e-410a-bb89-3e20f5f606aa', //prod
+    //clientId: '9f49cec9-7d3b-4ae1-a211-c0b19225e42c',//dev
+    clientSecret: 'RYGwzJo2Io4Q3nfbykeH9xEpCv8nV4qzcyXrDzMx', //prod
+    //clientSecret: 'UGIJqcPJaXxCmY7tAmGKaBNsqeY0pxV9j008KGvd', //dev
     grantType: 'password',
     grantTypeRefresh: 'refresh_token',
   },
