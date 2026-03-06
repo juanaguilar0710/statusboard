@@ -55,6 +55,7 @@ interface DeviceTokenResponse {
   styleUrls: ['./device-activation.component.scss']
 })
 export class DeviceActivationComponent implements OnInit, OnDestroy {
+
   private readonly DEVICE_REGISTRATION_STORAGE_KEY = 'deviceRegistrationData';
   private readonly DEVICE_TOKEN_RESPONSE_STORAGE_KEY = 'deviceTokenResponse';
 
@@ -73,6 +74,7 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
   private deviceMetadata: any = null;
   private hasInitialized = false;
   private tokenRequestInProgress = false;
+  private useRecoverOnly: boolean = false;
   DeviceRegistrationData: DeviceRegistrationData | null = null;
 
   constructor(
@@ -103,42 +105,77 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
     this.webhookUnsubscribers = [];
   }
 
-  async registerDeviceManually(): Promise<void> {
-    await this.deviceservice.registerDevice({
-      device_id: this.deviceMetadata?.uuid || 'unknown-uuid',
+  registerDeviceManually(): void {
+    console.log('manual');
+    const deviceId = this.deviceMetadata?.uuid || 'unknown-uuid';
+
+    // Si ya sabemos que el monitor está registrado, solo usamos /api/recover
+    if (this.useRecoverOnly) {
+      this.deviceservice.recoverDevice(deviceId).subscribe(
+        (recoverResp: any) => {
+          console.log('recover resp (only)', recoverResp);
+          const data = recoverResp?.data ?? recoverResp;
+          this.DeviceRegistrationData = data as DeviceRegistrationData;
+          void this.persistDeviceRegistrationData(this.DeviceRegistrationData);
+
+          this.notificationService.showSuccess('Device recovered successfully!', 5000);
+          this.activationCode = this.DeviceRegistrationData.confirmation_code;
+          console.log(this.activationCode);
+
+        },
+        (recoverError: any) => {
+          console.log('recover error (only)', recoverError);
+          this.logger.addLog('recoverDevice', { recoverError }, 'error');
+          this.notificationService.showError('Failed to recover device. Please try again.', 5000);
+        }
+      );
+      return;
+    }
+
+    // Primer intento: /api/register
+    this.deviceservice.registerDevice({
+      device_id: deviceId,
       name: this.deviceMetadata?.name || 'Unknown Device',
       model: this.deviceMetadata?.model || 'Unknown Model',
       manufacturer: this.deviceMetadata?.manufacturer || 'Unknown Manufacturer',
       platform: this.deviceMetadata?.platform || 'Unknown Platform',
       os_version: this.deviceMetadata?.osVersion || 'Unknown OS Version',
       generatedAt: new Date().toISOString(),
-  }
-  ).then((resp) => {
-    this.DeviceRegistrationData = resp.data as DeviceRegistrationData;
-    void this.persistDeviceRegistrationData(this.DeviceRegistrationData);
+    }).subscribe(
+      (resp: any) => {
+        console.log('resp', resp);
 
+        if (resp.status === 500 && resp.data?.error?.detail === 'Monitor already registered') {
+          console.log('entro al recover (desde register)');
+          this.useRecoverOnly = true;
 
-    this.notificationService.showSuccess('Device registered successfully!', 5000);
-    this.activationCode = this.DeviceRegistrationData.confirmation_code;
-  }).catch(async (error) => {
-    const detail = error?.error?.detail || error?.data?.error?.detail || '';
-    if (detail === 'Monitor already registered') {
-      try {
-        const deviceId = this.deviceMetadata?.uuid || 'unknown-uuid';
-        const recoverResp = await this.deviceservice.recoverDevice(deviceId);
-        this.DeviceRegistrationData = recoverResp.data as DeviceRegistrationData;
-        void this.persistDeviceRegistrationData(this.DeviceRegistrationData);
-        this.activationCode = this.DeviceRegistrationData.confirmation_code;
-        this.notificationService.showSuccess('Device recovered successfully!', 5000);
-      } catch (recoverError) {
-        this.logger.addLog('recoverDevice', { recoverError }, 'error');
-        this.notificationService.showError('Failed to recover device. Please try again.', 5000);
+          this.deviceservice.recoverDevice(deviceId).subscribe(
+            (recoverResp: any) => {
+              console.log('recover resp', recoverResp);
+              const data = recoverResp?.data ?? recoverResp;
+              this.DeviceRegistrationData = data as DeviceRegistrationData;
+              void this.persistDeviceRegistrationData(this.DeviceRegistrationData);
+
+              this.notificationService.showSuccess('Device recovered successfully!', 5000);
+              this.activationCode = this.DeviceRegistrationData.confirmation_code;
+            },
+            (recoverError: any) => {
+              console.log('recover error', recoverError);
+              this.logger.addLog('recoverDevice', { recoverError }, 'error');
+              this.notificationService.showError('Failed to recover device. Please try again.', 5000);
+            }
+          );
+        } else {
+          this.DeviceRegistrationData = resp.data as DeviceRegistrationData;
+          void this.persistDeviceRegistrationData(this.DeviceRegistrationData);
+          this.notificationService.showSuccess('Device registered successfully!', 5000);
+          this.activationCode = this.DeviceRegistrationData.confirmation_code;
+        }
+      },
+      (error: any) => {
+        console.log('register error', error);
       }
-    } else {
-      this.logger.addLog('manualDeviceRegistration', { error }, 'error');
-      this.notificationService.showError('Failed to register device. Please try again.', 5000);
-    }
-  });
+    );
   }
 
   get timeRemaining(): string {
@@ -218,6 +255,9 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
 
   private async loadStoredDeviceRegistrationData(): Promise<void> {
     try {
+      let cont = 0;
+      console.log('entro aqui', cont++);
+
       const stored = await Preferences.get({ key: this.DEVICE_REGISTRATION_STORAGE_KEY });
       if (!stored.value) {
         return;
@@ -226,7 +266,8 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
       this.DeviceRegistrationData = JSON.parse(stored.value) as DeviceRegistrationData;
       this.activationCode = this.DeviceRegistrationData.confirmation_code || this.activationCode;
     } catch (error) {
-      this.logger.addLog('loadStoredDeviceRegistrationData', { error }, 'error');
+      console.log('loadStoredDeviceRegistrationData', error);
+
     }
   }
 
@@ -410,7 +451,7 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
 
   private async registerAndResetCountdown(): Promise<void> {
     this.remainingSeconds = 300;
-    await this.registerDeviceManually();
+    this.registerDeviceManually();
   }
 
   private async collectDeviceMetadata(): Promise<any> {

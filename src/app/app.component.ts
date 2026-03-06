@@ -83,7 +83,8 @@ export class AppComponent implements OnInit {
     this.router.events.subscribe((event) => {
       if (event instanceof NavigationEnd) {
         this.excludedUrls = ['/login', '/pin', '/configuration', '/dashboard'];
-        this.currentUrl = event.url || event.urlAfterRedirects;
+        // Usar siempre la URL final después de redirecciones (por ejemplo, '' -> '/pin' -> '/login')
+        this.currentUrl = event.urlAfterRedirects || event.url;
         this.isExcluded = this.excludedUrls.some((url: any) => this.currentUrl.includes(url));
         this.checkRoute(this.currentUrl);
         if (this.isExcluded) {
@@ -399,10 +400,13 @@ export class AppComponent implements OnInit {
   // ========== FIN LIVE UPDATES ==========
 
   checkRoute(url: string) {
-    if (url.includes('/dashboard') || url.includes('/login')) {
-      this.enableScreensaver = false;
-    } else {
+    // El screensaver solo debe mostrarse en la pantalla de PIN
+    if (url.includes('/pin')) {
       this.enableScreensaver = true;
+      this.resetInactivityTimer();
+    } else {
+      this.enableScreensaver = false;
+      this.hideScreensaver();
     }
   }
 

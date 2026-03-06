@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { CapacitorHttp, HttpResponse } from '@capacitor/core';
+import { from } from 'rxjs';
 import { environment } from 'src/environments/environment';
 
 const urlMonitor = environment.url.replace('api', 'monitor');
@@ -22,24 +23,27 @@ export class DevicesService {
 
 
 
-    async registerDevice(payload: any): Promise<any> {
+    registerDevice(payload: any) {
         const options = {
             url: urlMonitor + environment.api + environment.deviceRegistration,
             headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
             data: payload,
         };
 
-        return CapacitorHttp.post(options);
+        return from(CapacitorHttp.post(options));
     }
 
-    async recoverDevice(deviceId: string): Promise<any> {
+    recoverDevice(deviceId: string) {
         const options = {
             url: urlMonitor + environment.api + '/recover',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json' },
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Accept': 'application/json'
+            },
             data: `device_id=${encodeURIComponent(deviceId)}`,
         };
 
-        return CapacitorHttp.post(options);
+        return from(CapacitorHttp.post(options));
     }
 
     async requestDeviceToken(IdDevice: string | number, payload: { temp_token: string; client_id: string; client_secret: string; user_pin?: string }): Promise<any> {
@@ -85,8 +89,6 @@ export class DevicesService {
 
         return CapacitorHttp.get(options);
     }
-    //         }
-    //     });
-    // }
+
 
 }
