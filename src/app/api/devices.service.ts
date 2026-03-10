@@ -77,6 +77,19 @@ export class DevicesService {
         return CapacitorHttp.delete(options);
     }
 
+    async deleteMonitorlog(id: string | number, token: string): Promise<HttpResponse> {
+        const options = {
+            url: `${environment.url}/monitors/${id}`,
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'Authorization': `Bearer ${token}`
+            }
+        };
+
+        return CapacitorHttp.delete(options);
+    }
+
     async getMonitorData(token: string): Promise<HttpResponse> {
         const options = {
             url: `${urlMonitor}${environment.api}/monitor`,

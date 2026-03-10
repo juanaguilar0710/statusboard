@@ -101,6 +101,7 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
       this.countdownInterval = null;
     }
 
+    // Cleanup webhooks solamente si tenemos unsubscribers registrados
     this.webhookUnsubscribers.forEach((unsubscribe) => unsubscribe());
     this.webhookUnsubscribers = [];
   }
@@ -216,9 +217,8 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
       this.handleDeviceWebhookEvent('confirmed', event);
     });
 
-
-
-    this.webhookUnsubscribers.push(unsubscribeAllEvents, unsubscribeSave);
+    // NO guardamos los unsubscribers - permitir que la conexión persista para PIN o Dashboard
+    // this.webhookUnsubscribers.push(unsubscribeAllEvents, unsubscribeSave);
   }
 
   private handleDeviceWebhookEvent(type: 'confirmed' | 'update' | 'delete', event: any): void {
@@ -300,8 +300,6 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
 
       if (event?.view_mode === 1 || event?.view_mode === '1') {
         this.stopCodeCountdown();
-        this.webhookUnsubscribers.forEach((unsubscribe) => unsubscribe());
-        this.webhookUnsubscribers = [];
 
         // Guardamos un flag para que la vista de PIN sepa que está en versión "Device Activation"
         localStorage.setItem('is_activation_flow', 'true');
@@ -353,6 +351,8 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
   }
 
   private async applyTokenResponseConfiguration(payload: DeviceTokenResponse): Promise<void> {
+    console.log('payload al inicio de la aplicacion: ', payload);
+    
     const accessToken = payload?.access_token;
     const monitor = payload?.monitor;
     const room = monitor?.room;
@@ -364,7 +364,7 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
 
     let branch: any = monitor?.branch || {
       id: room.branch_id,
-      name: `Branch ${room.branch_id}`,
+      name: `Branch ${room.name}`,
       image_url: 'assets/logos/logotipo_placeholder.png'
     };
 
@@ -403,6 +403,9 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
         username: monitor.device_id || monitor.name || 'monitor-device'
       }
     };
+
+    console.log('configuracion desde aqui: ', config);
+    
 
     await Promise.all([
       Preferences.set({ key: this.DEVICE_TOKEN_RESPONSE_STORAGE_KEY, value: JSON.stringify(payload) }),

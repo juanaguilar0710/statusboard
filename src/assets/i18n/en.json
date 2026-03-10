@@ -118,6 +118,7 @@
     "closeApp": "Close App",
     "deviceResolution": "Device Resolution",
     "incorrectPin": "The PIN you entered is incorrect. Please sign in again.",
+    "incorrectMonitor": "The current monitor does not exist.",
     "internalError": "Internal error.",
     "online": "ONLINE",
     "offline": "OFFLINE"

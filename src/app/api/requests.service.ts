@@ -52,6 +52,8 @@ export class RequestsService {
           }
 
           const configResponse = await Preferences.get({ key: 'config' });
+          console.log('Config Response:', configResponse);
+          
           if (configResponse.value) {
             this.setConfig(JSON.parse(configResponse.value));
           }

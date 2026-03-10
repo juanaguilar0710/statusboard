@@ -19,6 +19,7 @@ import { EditRoomComponent } from '../edit-room/edit-room.component';
 import { AudioService } from '../services/audio.service';
 import { TranslateService } from '../services/translate.service';
 import { WebhookService } from '../services/webhook.service';
+import { Device } from '@capacitor/device';
 
 @Component({
   selector: 'app-home',
@@ -112,6 +113,8 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
       this.user = await this.LocaldataService.getUser();
       this.username = JSON.parse(localStorage.getItem('user')!);
       this.configuration = await this.LocaldataService.getConfiguration();
+      console.log('Configuration:', this.configuration);
+      
       if(this.configuration.aplication == '2'){
         this.router.navigate(['/dashboard'], { replaceUrl: true });
       }
@@ -216,11 +219,47 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
       }
     });
 
+   const channelForMonitor = `presence-rooms.${this.requestsService.config.waitingRoom.id}.monitors`;
+
+    const unsubscribeMonitorUpdated= await this.webhookService.subscribePublic(channelForMonitor, '.monitor.updated', (e: any) => {
+      if (this.networkStatus === "ONLINE" && !this.viewYesterdaysPatients) {
+          console.log('evento monitor updated', e);          
+      }
+    });
+
+    const unsubscribeMonitorDeleted = await this.webhookService.subscribePublic(channelForMonitor, '.monitor.deleted', async (e: any) => {
+      if (this.networkStatus === "ONLINE" && !this.viewYesterdaysPatients) {
+          console.log('evento monitor deleted', e);    
+          console.log('[Dashboard] 🔴 monitor.deleted recibido:', e);
+          const monitorPayload = e?.monitor || e;
+          const isMatch = await this.checkIsCurrentDevice(monitorPayload);
+          if (isMatch) {
+            console.log('[Dashboard] ⚠️ Este dispositivo fue eliminado. Limpiando datos...');
+            await Preferences.clear();
+            localStorage.clear();
+            this.LocaldataService.deletePreviousPatients();
+            await Toast.show({
+              text: 'Dispositivo eliminado por el administrador',
+              duration: 'long',
+              position: 'top'
+            });
+            await this.router.navigate(['/login'], { replaceUrl: true });
+            setTimeout(() => window.location.reload(), 100);
+          }      
+      }
+    });
+
+
+
+
+
     this.webhookUnsubscribers.push(
       unsubscribeCreated,
       unsubscribeUpdated,
       unsubscribeDeleted,
-      unsubscribeChat
+      unsubscribeChat,
+      unsubscribeMonitorUpdated,
+      unsubscribeMonitorDeleted
     );
     this.webhooksInitialized = true;
   }
@@ -456,6 +495,61 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
     Preferences.remove({ key: 'user' });
     this.modallogout?.dismiss(null, 'confirm');
     this.router.navigate(['/pin'], { replaceUrl: true });
+  }
+
+  private async checkIsCurrentDevice(event: any): Promise<boolean> {
+    let isMatch = false;
+
+    try {
+      // 1. Verificar por device_id
+      const storedRegistration = await Preferences.get({ key: 'deviceRegistrationData' });
+      let currentDeviceId = '';
+      if (storedRegistration.value) {
+        const data = JSON.parse(storedRegistration.value);
+        currentDeviceId = data.device_id || data.uuid;
+      }
+      if (!currentDeviceId) {
+        const deviceIdInfo = await Device.getId();
+        currentDeviceId = deviceIdInfo.identifier;
+      }
+
+      if (event?.device_id === currentDeviceId || event?.device?.device_id === currentDeviceId) {
+        console.log('[Dashboard] ✓ Match por device_id:', currentDeviceId);
+        isMatch = true;
+      }
+
+      // 2. Verificar por monitor_id desde config
+      if (!isMatch) {
+        const configResponse = await Preferences.get({ key: 'config' });
+        if (configResponse.value) {
+          const configData = JSON.parse(configResponse.value);
+          const configMonitorId = configData?.monitor_id || configData?.monitorId;
+          if (configMonitorId && (event?.id === configMonitorId || event?.monitor?.id === configMonitorId || event?.monitor_id === configMonitorId)) {
+            console.log('[Dashboard] ✓ Match por monitor_id:', configMonitorId);
+            isMatch = true;
+          }
+        }
+      }
+
+      // 3. Verificar por monitor_id desde user
+      if (!isMatch) {
+        const userResponse = await Preferences.get({ key: 'user' });
+        if (userResponse.value) {
+          const userData = JSON.parse(userResponse.value);
+          const monitorId = userData?.monitor?.id || userData?.id;
+          if (monitorId && (event?.id === monitorId || event?.monitor?.id === monitorId || event?.monitor_id === monitorId)) {
+            console.log('[Dashboard] ✓ Match por user.monitor_id:', monitorId);
+            isMatch = true;
+          }
+        }
+      }
+
+      console.log('[Dashboard] checkIsCurrentDevice result:', isMatch);
+      return isMatch;
+    } catch (error) {
+      console.error('[Dashboard] ❌ Error en checkIsCurrentDevice:', error);
+      return false;
+    }
   }
 
 }

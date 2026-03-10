@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, NgZone, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, NgZone, OnInit, Output, OnDestroy } from '@angular/core';
 import { RequestsService } from '../api/requests.service';
 import { Router } from '@angular/router';
 import { Preferences, RemoveOptions } from '@capacitor/preferences';
@@ -13,13 +13,15 @@ import { App } from '@capacitor/app';
 import { LoggerService } from '../api/logger.service';
 import { TranslateService } from '../services/translate.service';
 import { DevicesService } from '../api/devices.service';
+import { WebhookService } from '../services/webhook.service';
+import { Device } from '@capacitor/device';
 
 @Component({
   selector: 'app-pin',
   templateUrl: './pin.page.html',
   styleUrls: ['./pin.page.scss'],
 })
-export class PinPage implements OnInit {
+export class PinPage implements OnInit{//, OnDestroy {
   @Input() pagetitle: String = "Enter Pin";
   loading: boolean = true;
   isInitializing: boolean = true;
@@ -33,7 +35,7 @@ export class PinPage implements OnInit {
   branch_name = "";
   waitingRoom_name = "";
   configResponse:any
-
+  private webhookUnsubscribers: Array<() => void> = [];
 
   private isNavigating = false; // Indicador de estado de navegación
 
@@ -50,6 +52,7 @@ export class PinPage implements OnInit {
     private notificationService: NotificationService,
     public translate: TranslateService,
     private deviceservice: DevicesService,
+    private webhookService: WebhookService,
   ) {
     // Escuchar el estado de la red
     this.networkService.networkStatus$.subscribe((status: string) => {
@@ -165,6 +168,9 @@ export class PinPage implements OnInit {
         this.isInitializing = false;
         this.loading = false;
       }, 2500);
+      
+      // Connect to monitor events for tablet mode
+      //await this.connectToMonitorEvents();
     } else if (String(this.configResponse.aplication) === "2" || String(this.configResponse.aplication) === "3") {
       // Dashboard o modo especial: ir directo a dashboard
       this.isInitializing = false;
@@ -210,15 +216,21 @@ export class PinPage implements OnInit {
   }
 
 async deleteCurrentMonitor() {
-      try {
-        const userResp = await Preferences.get({ key: 'user' });
-        if (userResp.value) {
-          const userObj = JSON.parse(userResp.value);
-          const monitorId = userObj?.monitor?.id || userObj?.id;
+      try {        
+        const deviceTokenResponse = await Preferences.get({ key: 'deviceRegistrationData' });
+    
+        if (deviceTokenResponse.value) {
+          const monitorObj = JSON.parse(deviceTokenResponse.value);
+          const monitorId = monitorObj.id;
           const token = await this.logger.getTokenAdmin();
           if (monitorId && token) {
-            await this.deviceservice.deleteMonitor(monitorId, token);
-            console.log('Monitor eliminado del servidor con exito:', monitorId);
+           const tokenResponse = await this.deviceservice.deleteMonitorlog(monitorId, token);
+             if (tokenResponse.status === 404) {
+                this.loading = false;
+                Preferences.clear();
+                this.router.navigate(['/login'], { replaceUrl: true });
+                return;
+              }
           }
         }
       } catch (err) {
@@ -288,6 +300,27 @@ async deleteCurrentMonitor() {
     this.isNavigating = true;
     try {
       //await this.refreshAdminToken();
+      const event = localStorage.getItem('event')
+      const IdDevice = event ? JSON.parse(event)?.id : null;
+      const tempToken = localStorage.getItem('tempToken') || '';
+      console.log('tempToken: ', tempToken);
+      const tokenResponse = await this.deviceservice.requestDeviceToken(IdDevice, {
+          temp_token: tempToken,
+          user_pin: this.pin,
+          client_id: environment.oauthObj.clientId,
+          client_secret: environment.oauthObj.clientSecret,
+        });
+
+      if (tokenResponse.status === 404) {
+          this.loading = false;
+          this.notificationService.showError(this.translate.instant('pin.incorrectMonitor'), 6000);
+          Preferences.clear();
+          this.router.navigate(['/login'], { replaceUrl: true });
+          return;
+        }
+
+        console.log('token response', tokenResponse);
+        
         console.log('Token no obtenido, solicitando nuevo...');
         this.requestTokenBasedOnPin();
         this.appComponent.resetSession();
@@ -302,6 +335,8 @@ async deleteCurrentMonitor() {
    requestTokenBasedOnPin() {
     try {
       this.requestsService.loginWithPin(this.pin).then(async response => {
+        console.log('response login con pin', response);
+        
 
         if (response.status === 200) {
           const user = response?.data;
@@ -325,6 +360,11 @@ async deleteCurrentMonitor() {
           this.loading = false;
           this.notificationService.showError(this.translate.instant('pin.incorrectPin'), 6000);
           this.loadingController.dismiss();
+        } else if (response.status === 404) {
+          this.loading = false;
+          this.notificationService.showError(this.translate.instant('pin.incorrectMonitor'), 6000);
+          Preferences.clear();
+          this.router.navigate(['/login'], { replaceUrl: true });
         }
       },error => {
         console.log(error);
@@ -416,7 +456,16 @@ async deleteCurrentMonitor() {
 
         console.log('Device token response:', tokenResponse);
 
+        if (tokenResponse.status === 404) {
+          this.loading = false;
+          this.notificationService.showError(this.translate.instant('pin.incorrectMonitor'), 6000);
+          Preferences.clear();
+          this.router.navigate(['/login'], { replaceUrl: true });
+        }
+
         const payload = (tokenResponse?.data ?? tokenResponse);
+        console.log('payload que carga todo esto...: ', payload);
+        
         await this.applyTokenResponseConfiguration(payload);
       } catch (error: any) {
           console.log(error);
@@ -439,24 +488,21 @@ async deleteCurrentMonitor() {
         return;
       }
 
-      // Si tenemos info de la sucursal y sala en el usuario, la usamos. Si no, usamos la minimalista de room/monitor.
       let branch = payload?.user?.branch || monitor?.branch || {
         id: room.branch_id,
         name: `Branch ${room.branch_id}`,
         image_url: 'assets/logos/logotipo_placeholder.png'
       };
 
-      // Limpieza de URL de localhost a la del ambiente configurado
       if (branch?.image_url && branch.image_url.includes('localhost')) {
           branch.image_url = branch.image_url.replace('http://localhost', environment.url);
       }
 
-      const waitingRoom = payload?.user?.waitingRoom || {
-        id: room.id,
-        name: room.name,
-        slug: room.slug,
-        branch_Id: room.branch_id,
-        branch_id: room.branch_id,
+      const waitingRoom = {
+        id: monitor.room.id,
+        name: monitor.room.name,
+        slug: monitor.room.slug,
+        branch_Id: monitor.room.branch_id,
         program: 'status_board'
       };
 
@@ -475,8 +521,6 @@ async deleteCurrentMonitor() {
         language: monitor.lang || 'es'
       };
 
-      // Guardamos la info completa de 'payload' como el objeto 'user' general para respetar las convenciones de la app,
-      // e inyectamos el monitor en caso de ser necesario.
       const userToSave = payload?.user ? {
         ...payload,
         monitor: monitor
@@ -501,7 +545,6 @@ async deleteCurrentMonitor() {
       localStorage.setItem('user', JSON.stringify(userToSave));
       this.localdataService.user = userToSave;
 
-      // Removemos el flag de activación ya que fue exitosa
       localStorage.removeItem('is_activation_flow');
 
       this.requestsService.setToken(accessToken);
@@ -515,7 +558,5 @@ async deleteCurrentMonitor() {
       const destination = appMode === '2' || appMode === '3' ? '/dashboard' : '/home';
       await this.router.navigate([destination], { replaceUrl: true });
     }
-
-
 
 }

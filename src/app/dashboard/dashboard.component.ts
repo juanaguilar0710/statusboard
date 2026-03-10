@@ -25,6 +25,7 @@ import Swal from 'sweetalert2'
 
 import { TextToSpeech } from '@capacitor-community/text-to-speech';
 import { TranslateService } from '../services/translate.service';
+import { Device } from '@capacitor/device';
 
 @Component({
   selector: 'app-dashboard',
@@ -1047,6 +1048,51 @@ private async handlePatientEvent(type: 'updated' | 'created' | 'deleted', e: any
       }
       this.processQueue();
     });
+
+    // Eventos de monitores
+    channelListeners.listen('.monitor.deleted', async (e: any) => {
+      console.log('[Dashboard] 🔴 monitor.deleted recibido:', e);
+      const monitorPayload = e?.monitor || e;
+      const isMatch = await this.checkIsCurrentDevice(monitorPayload);
+      if (isMatch) {
+        console.log('[Dashboard] ⚠️ Este dispositivo fue eliminado. Limpiando datos...');
+        await Preferences.clear();
+        localStorage.clear();
+        this.LocaldataService.deletePreviousPatients();
+        await Toast.show({
+          text: 'Dispositivo eliminado por el administrador',
+          duration: 'long',
+          position: 'top'
+        });
+        await this.router.navigate(['/login'], { replaceUrl: true });
+        setTimeout(() => window.location.reload(), 100);
+      }
+    });
+
+    channelListeners.listen('.monitor.updated', async (e: any) => {
+      console.log('[Dashboard] 🟢 monitor.updated recibido:', e);
+      const monitorPayload = e?.monitor || e;
+      const isMatch = await this.checkIsCurrentDevice(monitorPayload);
+      if (isMatch) {
+        console.log('[Dashboard] ℹ️ Configuración actualizada. Recargando...');
+        const configResponse = await Preferences.get({ key: 'config' });
+        if (configResponse.value) {
+          const currentConfig = JSON.parse(configResponse.value);
+          if (monitorPayload.name) currentConfig.stationName = monitorPayload.name;
+          if (monitorPayload.view_mode !== undefined) currentConfig.aplication = monitorPayload.view_mode.toString();
+          if (monitorPayload.visible_statuses) currentConfig.statuses = monitorPayload.visible_statuses;
+          if (monitorPayload.lang) currentConfig.lang = monitorPayload.lang;
+          if (monitorPayload.privacy_mode !== undefined) currentConfig.privacy_mode = monitorPayload.privacy_mode;
+          if (monitorPayload.branch) currentConfig.branch = monitorPayload.branch;
+          if (monitorPayload.room) currentConfig.waitingRoom = monitorPayload.room;
+          await Preferences.set({ key: 'config', value: JSON.stringify(currentConfig) });
+          localStorage.setItem('config', JSON.stringify(currentConfig));
+        }
+        this.getTodaysPatients = false;
+        this.getOperatingRooms = false;
+        await this.ngOnInit();
+      }
+    });
   }
 
   private async enqueueSpeechEventSafe(event: any): Promise<boolean> {
@@ -1511,24 +1557,27 @@ private isPusherConnected(): boolean {
     const height = window.screen.height;
     this.resolution = `Width ${width} x height ${height}`;
   }
-
   async deleteCurrentMonitor() {
-    try {
-      const configStr = localStorage.getItem('config');
-      if (configStr) {
-        const pcfg = JSON.parse(configStr);
-        if (pcfg && pcfg.monitor_id) {
-          const token = this.requestsService.getToken();
-          if (token) {
-            await this.devicesService.deleteMonitor(pcfg.monitor_id, token);
-            console.log('Monitor deleted successfully on logout');
+      try {        
+        const deviceTokenResponse = await Preferences.get({ key: 'deviceRegistrationData' });
+    
+        if (deviceTokenResponse.value) {
+          const monitorObj = JSON.parse(deviceTokenResponse.value);
+          const monitorId = monitorObj.id;
+          const token = await this.logger.getTokenAdmin();
+          if (monitorId && token) {
+           const tokenResponse = await this.devicesService.deleteMonitorlog(monitorId, token);
+             if (tokenResponse.status === 404) {
+                Preferences.clear();
+                this.router.navigate(['/login'], { replaceUrl: true });
+                return;
+              }
           }
         }
+      } catch (err) {
+        console.error('Error eliminando el monitor del backend:', err);
       }
-    } catch (e) {
-      console.error('Error deleting monitor during logout', e);
     }
-  }
 
   async presentAlert() {
     const alert = await this.alertController.create({
@@ -1882,12 +1931,61 @@ private isPusherConnected(): boolean {
     }
   }
 
+  private async checkIsCurrentDevice(event: any): Promise<boolean> {
+    let isMatch = false;
+
+    try {
+      // 1. Verificar por device_id
+      const storedRegistration = await Preferences.get({ key: 'deviceRegistrationData' });
+      let currentDeviceId = '';
+      if (storedRegistration.value) {
+        const data = JSON.parse(storedRegistration.value);
+        currentDeviceId = data.device_id || data.uuid;
+      }
+      if (!currentDeviceId) {
+        const deviceIdInfo = await Device.getId();
+        currentDeviceId = deviceIdInfo.identifier;
+      }
+
+      if (event?.device_id === currentDeviceId || event?.device?.device_id === currentDeviceId) {
+        console.log('[Dashboard] ✓ Match por device_id:', currentDeviceId);
+        isMatch = true;
+      }
+
+      // 2. Verificar por monitor_id desde config
+      if (!isMatch) {
+        const configResponse = await Preferences.get({ key: 'config' });
+        if (configResponse.value) {
+          const configData = JSON.parse(configResponse.value);
+          const configMonitorId = configData?.monitor_id || configData?.monitorId;
+          if (configMonitorId && (event?.id === configMonitorId || event?.monitor?.id === configMonitorId || event?.monitor_id === configMonitorId)) {
+            console.log('[Dashboard] ✓ Match por monitor_id:', configMonitorId);
+            isMatch = true;
+          }
+        }
+      }
+
+      // 3. Verificar por monitor_id desde user
+      if (!isMatch) {
+        const userResponse = await Preferences.get({ key: 'user' });
+        if (userResponse.value) {
+          const userData = JSON.parse(userResponse.value);
+          const monitorId = userData?.monitor?.id || userData?.id;
+          if (monitorId && (event?.id === monitorId || event?.monitor?.id === monitorId || event?.monitor_id === monitorId)) {
+            console.log('[Dashboard] ✓ Match por user.monitor_id:', monitorId);
+            isMatch = true;
+          }
+        }
+      }
+
+      console.log('[Dashboard] checkIsCurrentDevice result:', isMatch);
+      return isMatch;
+    } catch (error) {
+      console.error('[Dashboard] ❌ Error en checkIsCurrentDevice:', error);
+      return false;
+    }
+  }
+
 }
-
-
-
-
-
-
 
 

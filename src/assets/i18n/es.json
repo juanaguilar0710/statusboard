@@ -118,6 +118,7 @@
     "closeApp": "Cerrar Aplicación",
     "deviceResolution": "Resolución del Dispositivo",
     "incorrectPin": "El PIN que ingresó es incorrecto. Por favor inicie sesión nuevamente.",
+    "incorrectMonitor": "El monitor actual no existe.",
     "internalError": "Error interno.",
     "online": "EN LÍNEA",
     "offline": "SIN CONEXIÓN"
