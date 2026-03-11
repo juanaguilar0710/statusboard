@@ -1,5 +1,5 @@
 export const environment = {
-  version: "2.0.1.16",
+  version: "2.0.1.18",
   production: false,
   resetPin: '1111',
   maxInactivityTime: 60,
@@ -227,7 +227,7 @@ export const environment = {
   //url: 'https://api.dtouchmedia.dev', //dev
   oauth: '/oauth',
   token: '/token',
-    oauthObj:{
+  oauthObj:{
     clientId: 'a01efb9a-822e-410a-bb89-3e20f5f606aa', //prod
     //clientId: '9f49cec9-7d3b-4ae1-a211-c0b19225e42c',//dev
     clientSecret: 'RYGwzJo2Io4Q3nfbykeH9xEpCv8nV4qzcyXrDzMx', //prod

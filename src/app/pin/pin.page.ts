@@ -165,10 +165,19 @@ export class PinPage implements OnInit{//, OnDestroy {
         this.image_url = this.requestsService.config?.branch?.image_url ?? 'assets/logos/logotipo_placeholder.png';
         this.branch_name = this.requestsService.config?.branch?.name ?? "";
         this.waitingRoom_name = this.requestsService.config?.waitingRoom?.name ?? "";
+
+        // Verificar screensaver al iniciar
+        if (this.configResponse?.is_enabled === false) {
+          console.log('[Pin] 🔒 Monitor deshabilitado al iniciar, mostrando screensaver');
+          this.appComponent.showScreensaver();
+        } else {
+          this.appComponent.hideScreensaver();
+        }
+
         this.isInitializing = false;
         this.loading = false;
       }, 2500);
-      
+
       // Connect to monitor events for tablet mode
       //await this.connectToMonitorEvents();
     } else if (String(this.configResponse.aplication) === "2" || String(this.configResponse.aplication) === "3") {
@@ -216,15 +225,15 @@ export class PinPage implements OnInit{//, OnDestroy {
   }
 
 async deleteCurrentMonitor() {
-      try {        
+      try {
         const deviceTokenResponse = await Preferences.get({ key: 'deviceRegistrationData' });
-    
+
         if (deviceTokenResponse.value) {
           const monitorObj = JSON.parse(deviceTokenResponse.value);
           const monitorId = monitorObj.id;
           const token = await this.logger.getTokenAdmin();
           if (monitorId && token) {
-           const tokenResponse = await this.deviceservice.deleteMonitorlog(monitorId, token);
+           const tokenResponse = await this.deviceservice.deleteMonitor(monitorId, token);
              if (tokenResponse.status === 404) {
                 this.loading = false;
                 Preferences.clear();
@@ -254,14 +263,14 @@ async deleteCurrentMonitor() {
               this.loading = false;
             }
           },
-          {
-            text: this.translate.instant('pin.configuration'),
-            handler: () => {
-              // const options: RemoveOptions = { key: 'config' };
-              // Preferences.remove(options);
-              this.router.navigate(['/configuration'], { replaceUrl: true });
-            }
-          },
+          // {
+          //   text: this.translate.instant('pin.configuration'),
+          //   handler: () => {
+          //     // const options: RemoveOptions = { key: 'config' };
+          //     // Preferences.remove(options);
+          //     this.router.navigate(['/configuration'], { replaceUrl: true });
+          //   }
+          // },
           {
           text: this.translate.instant('pin.showResolution'),
           handler: () => {
@@ -269,15 +278,15 @@ async deleteCurrentMonitor() {
             return false; // Evita que la alerta se cierre al tocar este botón
           }
           },
-          {
-            text: this.translate.instant('pin.closeApp'),
-            handler: async () => {
-              await this.deleteCurrentMonitor();
-              await Preferences.clear();
-            this.router.navigate(['/login'], { replaceUrl: true });
-            App.exitApp(); // Cierra la aplicación
-          }
-        }
+        //   {
+        //     text: this.translate.instant('pin.closeApp'),
+        //     handler: async () => {
+        //       await this.deleteCurrentMonitor();
+        //       await Preferences.clear();
+        //     this.router.navigate(['/login'], { replaceUrl: true });
+        //     App.exitApp(); // Cierra la aplicación
+        //   }
+        // }
       ]
     });
     await alert.present();
@@ -311,6 +320,9 @@ async deleteCurrentMonitor() {
           client_secret: environment.oauthObj.clientSecret,
         });
 
+        console.log(tokenResponse);
+
+
       if (tokenResponse.status === 404) {
           this.loading = false;
           this.notificationService.showError(this.translate.instant('pin.incorrectMonitor'), 6000);
@@ -319,8 +331,6 @@ async deleteCurrentMonitor() {
           return;
         }
 
-        console.log('token response', tokenResponse);
-        
         console.log('Token no obtenido, solicitando nuevo...');
         this.requestTokenBasedOnPin();
         this.appComponent.resetSession();
@@ -336,7 +346,7 @@ async deleteCurrentMonitor() {
     try {
       this.requestsService.loginWithPin(this.pin).then(async response => {
         console.log('response login con pin', response);
-        
+
 
         if (response.status === 200) {
           const user = response?.data;
@@ -463,9 +473,14 @@ async deleteCurrentMonitor() {
           this.router.navigate(['/login'], { replaceUrl: true });
         }
 
+        if (tokenResponse.status === 401) {
+          this.loading = false;
+          this.notificationService.showError(tokenResponse.data.message ? tokenResponse.data.message : this.translate.instant('pin.incorrectMonitor'), 6000);
+        }
+
         const payload = (tokenResponse?.data ?? tokenResponse);
         console.log('payload que carga todo esto...: ', payload);
-        
+
         await this.applyTokenResponseConfiguration(payload);
       } catch (error: any) {
           console.log(error);
@@ -512,6 +527,7 @@ async deleteCurrentMonitor() {
       const config = {
         branch,
         waitingRoom,
+        is_enabled: monitor.is_enabled ?? true,
         stationName: monitor.name,
         stationType: appMode === '1' ? 'OR Controller' : 'OR Dashboard',
         aplication: appMode,

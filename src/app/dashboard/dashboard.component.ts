@@ -26,6 +26,7 @@ import Swal from 'sweetalert2'
 import { TextToSpeech } from '@capacitor-community/text-to-speech';
 import { TranslateService } from '../services/translate.service';
 import { Device } from '@capacitor/device';
+import { AppComponent } from '../app.component';
 
 @Component({
   selector: 'app-dashboard',
@@ -107,7 +108,8 @@ import { Device } from '@capacitor/device';
               private logger: LoggerService,
               private cdr: ChangeDetectorRef,
               private audioService: AudioService,
-              public translate: TranslateService
+              public translate: TranslateService,
+              private appComponent: AppComponent
   ) {
     setTimeout(() => {
       this.timeUpdateIntervalId = setInterval(async () => {
@@ -188,7 +190,7 @@ import { Device } from '@capacitor/device';
     } else {
       if (this.deviceWasOffline) {
         console.log("ONLINE");
-        this.ngOnInit();
+        this.reloadDashboardData();
         this.deviceWasOffline = false;
       }
     }
@@ -213,7 +215,7 @@ import { Device } from '@capacitor/device';
             component: 'Dashboard',
             status: 'success',
           },'success');
-          this.ngOnInit();
+          this.reloadDashboardData();
           this.deviceWasOffline = false;
         }
       }
@@ -223,10 +225,8 @@ import { Device } from '@capacitor/device';
   async ngOnInit() {
     if (!this.monitorUpdatedSub) {
       this.monitorUpdatedSub = this.requestsService.monitorUpdated$.subscribe(() => {
-        console.log('[Dashboard] Recibida actualizaci�n desde monitorUpdated$. Recargando datos...');
-        this.getTodaysPatients = false;
-        this.getOperatingRooms = false;
-        this.ngOnInit();
+        console.log('[Dashboard] Recibida actualización desde monitorUpdated$. Recargando datos...');
+        this.reloadDashboardData();
       });
     }
     this.isLoading = true;
@@ -255,7 +255,16 @@ import { Device } from '@capacitor/device';
                   this.config.statuses = mData.visible_statuses;
                   if (mData.lang) this.config.lang = mData.lang;
                   if (mData.privacy_mode !== undefined) this.config.privacy_mode = mData.privacy_mode;
+                  if (mData.is_enabled !== undefined) this.config.is_enabled = mData.is_enabled;
                   if (mData.branch) this.config.branch = mData.branch;
+
+                  // Verificar screensaver al iniciar
+                  if (this.config.is_enabled === false) {
+                    console.log('[Dashboard] 🔒 Monitor deshabilitado al iniciar, mostrando screensaver');
+                    this.appComponent.showScreensaver();
+                  } else {
+                    this.appComponent.hideScreensaver();
+                  }
                   if (mData.room) this.config.waitingRoom = mData.room;
 
                   await Preferences.set({ key: 'config', value: JSON.stringify(this.config) });
@@ -285,6 +294,18 @@ import { Device } from '@capacitor/device';
       this.totales = resp;
 
      })
+  }
+
+  // Método separado para recargar solo los datos sin reinicializar todo el componente
+  private async reloadDashboardData() {
+    console.log('[Dashboard] Recargando datos del dashboard...');
+    try {
+      this.getTodaysPatients = false;
+      this.getOperatingRooms = false;
+      await this.getOperatingRoomsFromStorageOrLoadFromServer();
+    } catch (error) {
+      console.error('[Dashboard] Error al recargar datos:', error);
+    }
   }
 
   ngAfterViewChecked() {
@@ -347,6 +368,12 @@ import { Device } from '@capacitor/device';
     this.viewChecked = false;
     try {
       await this.getOperatingRoomsFromStorageOrLoadFromServer();
+      // Limpiar intervalos anteriores antes de crear nuevos
+      this.stopCarousel();
+      if (this.intervalIdForPages) {
+        clearInterval(this.intervalIdForPages);
+        this.intervalIdForPages = null;
+      }
       this.startCarousel();
       this.startCountdown();
       this.dataLoaded = true;
@@ -398,8 +425,9 @@ import { Device } from '@capacitor/device';
               this.logger.addLog('Refresco de token exitoso', {}, 'success')
             }
             if (resp?.status === 500) {
-              console.log(resp);
-              window.location.reload();
+              console.error('Error 500 al refrescar token');
+              this.logger.addLog('Error 500 refrescando token', resp, 'error');
+              // No recargar, dejar que el usuario intente manualmente
             }
             if (resp?.status === 401) {
               console.log(resp);
@@ -423,27 +451,30 @@ import { Device } from '@capacitor/device';
     this.getOperatingRooms = true;
     try {
         await this.logger.addLog('Iniciando petición getOperatingRooms', {}, 'info');
-        await this.requestsService.getOperatingRoomsDevices().subscribe(async (response: any) => {
+        // Remover await en subscribe - no se deben mezclar
+        this.requestsService.getOperatingRoomsDevices().subscribe(async (response: any) => {
           if(response.status == 500 || response.status == 403){
             if(response.status == 403 || response.data.error.code == 1000){
               console.log('aqui');
               await this.logger.addLog('Fallo getOperatingRooms', {response}, 'error');
               await this.refreshToken(true);
-              setTimeout(async () => {
-                this.getOperatingRooms = false;
-                await this.getOperatingRoomsFromStorageOrLoadFromServer();
-              }, 1000);
+              // No llamar recursivamente, dejar que el flujo normal continúe
+              console.warn('Token refrescado, se recargará en el siguiente ciclo');
+              this.getOperatingRooms = false;
           }
           }else{
             this.operatingRooms = response.data.data;
             this.LocaldataService.setOperatingRooms(this.operatingRooms);
             await this.logger.addLog('Exitoso getOperatingRooms', {response}, 'success');
             await this.getTodaysPatientsFromServer();
+            this.getOperatingRooms = false;
           }
         },error => {
           console.log('error getOperatingRooms',error);
+          this.getOperatingRooms = false;
         });
-      } finally {
+      } catch(err) {
+        console.error('Error inesperado en getOperatingRoomsFromStorageOrLoadFromServer:', err);
         this.getOperatingRooms = false;
       }
   }
@@ -451,14 +482,20 @@ import { Device } from '@capacitor/device';
   private getTodaysPatients = false;
   listPatients: any[] = [];
   async getTodaysPatientsFromServer(event?: any, yesterday: boolean = false) {
-      if (this.getTodaysPatients) return;
+      if (this.getTodaysPatients) {
+        console.log('getTodaysPatientsFromServer ya en ejecución, evitando duplicado');
+        return;
+      }
       this.getTodaysPatients = true;
-      try {
       this.updating = true;
-      this.requestsService.getTodaysPatientsDashboard(yesterday).then(async (response: any) => {
+
+      try {
+        const response: any = await this.requestsService.getTodaysPatientsDashboard(yesterday);
+
         if (event) {
           event.target.complete();
         }
+
         if (response.status === 200) {
           const newPatients = response.data;
           const updatedPatients:any = [];
@@ -478,26 +515,28 @@ import { Device } from '@capacitor/device';
           this.LocaldataService.setPatients(filteredPatients);
           this.viewYesterdaysPatients = yesterday;
           updatedPatients.forEach((patient:any) => this.addUpdatedPatient(patient));
-          await this.ngAfterView();
-
+          // Solo conectar Pusher si no está ya conectado
+          if (!this.laravelEcho) {
+            await this.ngAfterView();
+          }
         }
-        this.updating = false;
-      }).catch(async (error) => {
+      } catch (error:any) {
         if (event) {
           event.target.complete();
         }
+        console.error('Error en getTodaysPatientsFromServer:', error);
         if (error.status === 404) {
           Toast.show({
-            text: error.message,
+            text: error.message || 'Error al cargar pacientes',
             duration: 'long'
           });
           await this.logger.addLog('Error en peticion',error,'error');
-          window.location.reload()
+          // No recargar la página, solo mostrar error
         }
-      });
-    } finally {
-      this.getTodaysPatients = false;
-    }
+      } finally {
+        this.updating = false;
+        this.getTodaysPatients = false;
+      }
   }
   startCarousel() {
     this.updatePaginationDetails();
@@ -720,11 +759,21 @@ import { Device } from '@capacitor/device';
         status: 'error',
         error: this.sanitizeError(error)
       },'error');
-      this.ngOnInit();
+      // No llamar ngOnInit(), solo reportar el error
+      console.error('Error al inicializar Pusher, pero continuando sin real-time');
     }
   }
 
   private conectionPusher(){
+    // Desconectar instancia anterior si existe
+    // if (this.laravelEcho) {
+    //   try {
+    //     this.laravelEcho.disconnect();
+    //   } catch (e) {
+    //     console.warn('Error al desconectar Echo anterior:', e);
+    //   }
+    // }
+
     (<any>window).Pusher = Pusher;
         this.laravelEcho = new Echo({
           broadcaster: 'pusher',
@@ -750,7 +799,8 @@ import { Device } from '@capacitor/device';
                     status: 'error',
                     error: this.sanitizeError(error)
                   },'error');
-                  this.ngOnInit();
+                  // No recargar todo, solo reportar error
+                  console.error('Error en autorización de canal Pusher');
                   callback(true, error);
                 });
               }
@@ -1083,10 +1133,21 @@ private async handlePatientEvent(type: 'updated' | 'created' | 'deleted', e: any
           if (monitorPayload.visible_statuses) currentConfig.statuses = monitorPayload.visible_statuses;
           if (monitorPayload.lang) currentConfig.lang = monitorPayload.lang;
           if (monitorPayload.privacy_mode !== undefined) currentConfig.privacy_mode = monitorPayload.privacy_mode;
+          if (monitorPayload.is_enabled !== undefined) currentConfig.is_enabled = monitorPayload.is_enabled;
           if (monitorPayload.branch) currentConfig.branch = monitorPayload.branch;
           if (monitorPayload.room) currentConfig.waitingRoom = monitorPayload.room;
           await Preferences.set({ key: 'config', value: JSON.stringify(currentConfig) });
           localStorage.setItem('config', JSON.stringify(currentConfig));
+
+          // Manejar screensaver según is_enabled
+          if (currentConfig.is_enabled === false) {
+            console.log('[Dashboard] 🔒 Monitor deshabilitado, mostrando screensaver');
+            this.appComponent.showScreensaver();
+            return;
+          } else {
+            console.log('[Dashboard] 🔓 Monitor habilitado, ocultando screensaver');
+            this.appComponent.hideScreensaver();
+          }
         }
         this.getTodaysPatients = false;
         this.getOperatingRooms = false;
@@ -1301,8 +1362,10 @@ private async handlePatientEvent(type: 'updated' | 'created' | 'deleted', e: any
     pusherInstance.connection.bind('error', async (err: any) => {
       console.error('Pusher error:', err);
       await this.logger.addLog('Pusher error', {err},'error');
+      // No recargar la página, solo registrar el error
+      // y dejar que el mecanismo de retry se encargue
       if(this.networkStatus === "ONLINE"){
-        window.location.reload();
+        console.warn('Error de Pusher estando online, verificando conexión...');
       }
     });
   }
@@ -1437,32 +1500,9 @@ private isPusherConnected(): boolean {
     this.lastsync = new Date();
   }
   ngOnDestroy() {
-    if (this.timeUpdateIntervalId) {
-      clearInterval(this.timeUpdateIntervalId);
-    }
-    if (this.pageRoomsIntervalId) {
-      clearInterval(this.pageRoomsIntervalId);
-    }
-    if (this.pusherMonitorIntervalId) {
-      clearInterval(this.pusherMonitorIntervalId);
-    }
-    if (this.monitorUpdatedSub) {
-      this.monitorUpdatedSub.unsubscribe();
-    }
-    this.stopCarousel();  // Detener el carousel cuando el componente se destruya
-    if (this.intervalIdForPages) {
-      clearInterval(this.intervalIdForPages);
-      this.intervalIdForPages = null;
-    }
-
-    if (this.intervalId) {
-      clearInterval(this.intervalId);
-      this.intervalId = null;
-    }
-
-    if (this.laravelEcho) {
-      this.laravelEcho.disconnect();
-    }
+    console.log('[Dashboard] ngOnDestroy llamado');
+    // Usar el mismo método de limpieza para consistencia
+    this.cleanupBeforeLogout();
   }
 
   getCompletedRoomPatientsCount(roomName: string): number {
@@ -1558,26 +1598,79 @@ private isPusherConnected(): boolean {
     this.resolution = `Width ${width} x height ${height}`;
   }
   async deleteCurrentMonitor() {
-      try {        
+      try {
         const deviceTokenResponse = await Preferences.get({ key: 'deviceRegistrationData' });
-    
+
         if (deviceTokenResponse.value) {
           const monitorObj = JSON.parse(deviceTokenResponse.value);
           const monitorId = monitorObj.id;
           const token = await this.logger.getTokenAdmin();
           if (monitorId && token) {
-           const tokenResponse = await this.devicesService.deleteMonitorlog(monitorId, token);
-             if (tokenResponse.status === 404) {
-                Preferences.clear();
-                this.router.navigate(['/login'], { replaceUrl: true });
-                return;
-              }
+            const tokenResponse = await this.devicesService.deleteMonitorlog(monitorId, token);
+            if (tokenResponse.status === 404) {
+              console.log('[Dashboard] Monitor no encontrado en el backend (404)');
+            } else if (tokenResponse.status === 200) {
+              console.log('[Dashboard] Monitor eliminado del backend exitosamente');
+            }
           }
         }
       } catch (err) {
         console.error('Error eliminando el monitor del backend:', err);
       }
     }
+
+  // Método para limpiar recursos antes del logout
+  private cleanupBeforeLogout() {
+    console.log('[Dashboard] Limpiando recursos antes del logout...');
+
+    // 1. Desconectar Pusher/Echo
+    if (this.laravelEcho) {
+      try {
+        console.log('[Dashboard] Desconectando Echo...');
+        this.laravelEcho.disconnect();
+        this.laravelEcho = undefined;
+      } catch (e) {
+        console.warn('Error al desconectar Echo:', e);
+      }
+    }
+
+    // 2. Limpiar todos los intervalos
+    if (this.timeUpdateIntervalId) {
+      clearInterval(this.timeUpdateIntervalId);
+      this.timeUpdateIntervalId = null;
+    }
+    if (this.pageRoomsIntervalId) {
+      clearInterval(this.pageRoomsIntervalId);
+      this.pageRoomsIntervalId = null;
+    }
+    if (this.pusherMonitorIntervalId) {
+      clearInterval(this.pusherMonitorIntervalId);
+      this.pusherMonitorIntervalId = null;
+    }
+    if (this.intervalId) {
+      clearInterval(this.intervalId);
+      this.intervalId = null;
+    }
+    if (this.intervalIdForPages) {
+      clearInterval(this.intervalIdForPages);
+      this.intervalIdForPages = null;
+    }
+
+    // 3. Desuscribirse de observables
+    if (this.monitorUpdatedSub) {
+      this.monitorUpdatedSub.unsubscribe();
+      this.monitorUpdatedSub = undefined;
+    }
+
+    // 4. Limpiar datos locales
+    this.patients = [];
+    this.patientsCopy = [];
+    this.listPatients = [];
+    this.operatingRooms = [];
+    this.roomsWithPatients = [];
+
+    console.log('[Dashboard] Limpieza completada');
+  }
 
   async presentAlert() {
     const alert = await this.alertController.create({
@@ -1586,40 +1679,52 @@ private isPusherConnected(): boolean {
       buttons: [
       {
           text: 'Login',
-          handler: () => {
-            this.deleteCurrentMonitor().then(() => {
-              Preferences.clear();
-              this.logger.clearAdminAuthData();
-              this.router.navigate(['/login'], { replaceUrl: true });
-            });
-          }
-        },
-        {
-          text: 'Configuration',
-          handler: () => {
-            localStorage.setItem('tempConfig',JSON.stringify(this.config))
-            console.log('config: ',this.config);
+          handler: async () => {
+            try {
+              // Limpiar recursos antes de navegar
+              this.cleanupBeforeLogout();
 
-            // const options: RemoveOptions = { key: 'config' };
-            // Preferences.remove(options);
-            this.router.navigate(['/configuration'], { replaceUrl: true });
+              // Eliminar monitor del backend
+              await this.deleteCurrentMonitor();
+
+              // Limpiar storage y navegar
+              await Preferences.clear();
+              this.logger.clearAdminAuthData();
+              await this.router.navigate(['/login'], { replaceUrl: true });
+            } catch (error) {
+              console.error('Error en logout:', error);
+              // Aún así navegar en caso de error
+              await Preferences.clear();
+              await this.router.navigate(['/login'], { replaceUrl: true });
+            }
           }
         },
+        // {
+        //   text: 'Configuration',
+        //   handler: () => {
+        //     localStorage.setItem('tempConfig',JSON.stringify(this.config))
+        //     console.log('config: ',this.config);
+
+        //     // const options: RemoveOptions = { key: 'config' };
+        //     // Preferences.remove(options);
+        //     this.router.navigate(['/configuration'], { replaceUrl: true });
+        //   }
+        // },
         {
         text: 'Show Resolution',
         handler: () => {
           this.showResolutionAlert(); // Mostrará la resolución en una nueva alerta
           return false; // Evita que la alerta se cierre al tocar este botón
         }
-        },
-        {
-          text: 'Close App',
-          handler: () => {
-            Preferences.clear();
-            this.router.navigate(['/login'], { replaceUrl: true });
-            App.exitApp(); // Cierra la aplicación
-          }
         }
+        // {
+        //   text: 'Close App',
+        //   handler: () => {
+        //     // Preferences.clear();
+        //     // this.router.navigate(['/login'], { replaceUrl: true });
+        //     App.exitApp(); // Cierra la aplicación
+        //   }
+        // }
       ]
     });
     await alert.present();

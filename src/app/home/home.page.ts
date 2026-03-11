@@ -114,7 +114,16 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
       this.username = JSON.parse(localStorage.getItem('user')!);
       this.configuration = await this.LocaldataService.getConfiguration();
       console.log('Configuration:', this.configuration);
-      
+
+      // Verificar screensaver al iniciar
+      if (this.configuration?.is_enabled === false) {
+        console.log('[Home] 🔒 Monitor deshabilitado al iniciar, mostrando screensaver');
+        this.appComponent.showScreensaver();
+        return;
+      } else {
+        this.appComponent.hideScreensaver();
+      }
+
       if(this.configuration.aplication == '2'){
         this.router.navigate(['/dashboard'], { replaceUrl: true });
       }
@@ -221,15 +230,43 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
 
    const channelForMonitor = `presence-rooms.${this.requestsService.config.waitingRoom.id}.monitors`;
 
-    const unsubscribeMonitorUpdated= await this.webhookService.subscribePublic(channelForMonitor, '.monitor.updated', (e: any) => {
+    const unsubscribeMonitorUpdated= await this.webhookService.subscribePublic(channelForMonitor, '.monitor.updated', async (e: any) => {
       if (this.networkStatus === "ONLINE" && !this.viewYesterdaysPatients) {
-          console.log('evento monitor updated', e);          
+          console.log('[Home] 🟢 monitor.updated recibido:', e);
+          const monitorPayload = e?.monitor || e;
+          const isMatch = await this.checkIsCurrentDevice(monitorPayload);
+          if (isMatch) {
+            console.log('[Home] 🔄 Actualizando configuración del monitor...');
+            // Actualizar configuración local
+            const currentConfig = this.configuration;
+            if (monitorPayload.name) currentConfig.stationName = monitorPayload.name;
+            if (monitorPayload.view_mode) currentConfig.aplication = monitorPayload.view_mode.toString();
+            if (monitorPayload.visible_statuses) currentConfig.statuses = monitorPayload.visible_statuses;
+            if (monitorPayload.lang) currentConfig.lang = monitorPayload.lang;
+            if (monitorPayload.privacy_mode !== undefined) currentConfig.privacy_mode = monitorPayload.privacy_mode;
+            if (monitorPayload.is_enabled !== undefined) currentConfig.is_enabled = monitorPayload.is_enabled;
+            if (monitorPayload.branch) currentConfig.branch = monitorPayload.branch;
+            // Guardar cambios
+            this.configuration = currentConfig;
+            this.requestsService.config = currentConfig;
+            await Preferences.set({ key: 'config', value: JSON.stringify(currentConfig) });
+            console.log('[Home] ✅ Configuración actualizada:', currentConfig);
+
+            // Manejar screensaver según is_enabled
+            if (currentConfig.is_enabled === false) {
+              console.log('[Home] 🔒 Monitor deshabilitado, mostrando screensaver');
+              this.appComponent.showScreensaver();
+            } else {
+              console.log('[Home] 🔓 Monitor habilitado, ocultando screensaver');
+              this.appComponent.hideScreensaver();
+            }
+          }
       }
     });
 
     const unsubscribeMonitorDeleted = await this.webhookService.subscribePublic(channelForMonitor, '.monitor.deleted', async (e: any) => {
       if (this.networkStatus === "ONLINE" && !this.viewYesterdaysPatients) {
-          console.log('evento monitor deleted', e);    
+          console.log('evento monitor deleted', e);
           console.log('[Dashboard] 🔴 monitor.deleted recibido:', e);
           const monitorPayload = e?.monitor || e;
           const isMatch = await this.checkIsCurrentDevice(monitorPayload);
@@ -245,7 +282,7 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
             });
             await this.router.navigate(['/login'], { replaceUrl: true });
             setTimeout(() => window.location.reload(), 100);
-          }      
+          }
       }
     });
 

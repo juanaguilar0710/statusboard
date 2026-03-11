@@ -66,7 +66,7 @@ export class DevicesService {
 
     async deleteMonitor(id: string | number, token: string): Promise<HttpResponse> {
         const options = {
-            url: `${environment.url}${environment.api}/monitors/${id}`,
+            url: `${environment.url}/monitors/${id}`,
             headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
@@ -79,7 +79,7 @@ export class DevicesService {
 
     async deleteMonitorlog(id: string | number, token: string): Promise<HttpResponse> {
         const options = {
-            url: `${environment.url}/monitors/${id}`,
+            url: `${urlMonitor}/api/logout`,
             headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
@@ -87,7 +87,7 @@ export class DevicesService {
             }
         };
 
-        return CapacitorHttp.delete(options);
+        return CapacitorHttp.post(options);
     }
 
     async getMonitorData(token: string): Promise<HttpResponse> {
