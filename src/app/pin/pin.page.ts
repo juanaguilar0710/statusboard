@@ -493,6 +493,7 @@ async deleteCurrentMonitor() {
 
     private async applyTokenResponseConfiguration(payload: any): Promise<void> {
       const accessToken = payload?.access_token;
+      const monitorToken = payload?.monitor_token?.access_token;
       const monitor = payload?.monitor;
       const room = monitor?.room;
 
@@ -555,10 +556,11 @@ async deleteCurrentMonitor() {
         Preferences.set({ key: 'branch', value: JSON.stringify(branch) }),
         Preferences.set({ key: 'waiting_rooms', value: JSON.stringify(waitingRoomsList) }),
         Preferences.set({ key: 'admin', value: JSON.stringify({ token: accessToken, expires_in: payload.expires_in }) }),
-        Preferences.set({ key: 'user', value: JSON.stringify(userToSave) })
+        Preferences.set({ key: 'user', value: JSON.stringify(userToSave) }),
       ]);
 
       localStorage.setItem('user', JSON.stringify(userToSave));
+      localStorage.setItem('monitorToken', monitorToken);
       this.localdataService.user = userToSave;
 
       localStorage.removeItem('is_activation_flow');
@@ -567,6 +569,7 @@ async deleteCurrentMonitor() {
       this.requestsService.setAdminToken(accessToken);
       this.requestsService.setExpiresIn(payload.expires_in);
       this.requestsService.setConfig(config);
+
       await this.logger.setTokenAdmin(accessToken, payload.expires_in ?? 31535999);
 
       this.loading = false;

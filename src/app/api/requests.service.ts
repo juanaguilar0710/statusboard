@@ -53,7 +53,7 @@ export class RequestsService {
 
           const configResponse = await Preferences.get({ key: 'config' });
           console.log('Config Response:', configResponse);
-          
+
           if (configResponse.value) {
             this.setConfig(JSON.parse(configResponse.value));
           }
@@ -791,35 +791,24 @@ export class RequestsService {
     }
 
     authorizeBroadcasting(socketId: string, channelName: string): Observable<any> {
-        const headers = new HttpHeaders({
-            Authorization: `Bearer ${this.token}`,
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          });
-
-
-            let endpointUrl = '';
-            if (String(this.config?.aplication) === '1') {
-                endpointUrl = `${environment.url}/broadcasting/auth`;
-            } else {
-                endpointUrl = `${urlMonitor}/api/broadcasting/auth`;
-            }
-
-
-
-          return from(
-            this.logger.addLog('Autorizando conexión a Pusher', {
-                socketId: socketId,
-                channel: channelName,
-                action: 'Autorización en progreso'
-            }, 'info')
-        ).pipe(
-            switchMap(() => this.http.post<any>(endpointUrl, {
-                socket_id: socketId,
-                channel_name: channelName
-            }, { headers }))
-        );
+      const is_monitor_channel = channelName.includes('monitors');
+      let tokenmonitor = is_monitor_channel ? localStorage.getItem('monitorToken') : this.token;
+      if (String(this.config?.aplication) !== '1') {
+          tokenmonitor = this.token;
       }
+      const headers = new HttpHeaders({
+          Authorization: `Bearer ${tokenmonitor}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        });
+      return this.http.post(!is_monitor_channel ? `${environment.url}/broadcasting/auth` : `${urlMonitor}/api/broadcasting/auth`,
+        {
+          socket_id: socketId,
+          channel_name: channelName
+        }, { headers });
+      }
+
+
 
     async loginOauth(loginData: any) {
       //console.log(window.location.origin);

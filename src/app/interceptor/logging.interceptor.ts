@@ -20,11 +20,11 @@ export class LoggingInterceptor implements HttpInterceptor {
 
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
 
-    
+
     this.authToken = this.authService.getToken();
 
-     let authReq = req;
-    if (this.authToken) {
+    let authReq = req;
+    if (this.authToken && !req.headers.has('Authorization')) {
       authReq = req.clone({
         setHeaders: {
           Authorization: `Bearer ${this.authToken}`

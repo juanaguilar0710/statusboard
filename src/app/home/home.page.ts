@@ -194,6 +194,7 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
 
     const channel = `rooms.${this.requestsService.config.waitingRoom.id}`;
     const channelForChat = `branch.${this.requestsService.config.branch.id}.room.${this.requestsService.config.waitingRoom.id}`;
+    const channelForMonitor = `rooms.${this.requestsService.config.waitingRoom.id}.monitors`;
 
     const unsubscribeCreated = await this.webhookService.subscribePrivate(channel, '.patient.created', async (e: any) => {
       if (this.networkStatus === "ONLINE" && !this.viewYesterdaysPatients) {
@@ -228,9 +229,7 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
       }
     });
 
-   const channelForMonitor = `presence-rooms.${this.requestsService.config.waitingRoom.id}.monitors`;
-
-    const unsubscribeMonitorUpdated= await this.webhookService.subscribePublic(channelForMonitor, '.monitor.updated', async (e: any) => {
+    const unsubscribeMonitorUpdated= await this.webhookService.subscribePresence(channelForMonitor, '.monitor.updated', async (e: any) => {
       if (this.networkStatus === "ONLINE" && !this.viewYesterdaysPatients) {
           console.log('[Home] 🟢 monitor.updated recibido:', e);
           const monitorPayload = e?.monitor || e;
@@ -264,7 +263,7 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
       }
     });
 
-    const unsubscribeMonitorDeleted = await this.webhookService.subscribePublic(channelForMonitor, '.monitor.deleted', async (e: any) => {
+    const unsubscribeMonitorDeleted = await this.webhookService.subscribePresence(channelForMonitor, '.monitor.deleted', async (e: any) => {
       if (this.networkStatus === "ONLINE" && !this.viewYesterdaysPatients) {
           console.log('evento monitor deleted', e);
           console.log('[Dashboard] 🔴 monitor.deleted recibido:', e);
@@ -285,10 +284,6 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
           }
       }
     });
-
-
-
-
 
     this.webhookUnsubscribers.push(
       unsubscribeCreated,
