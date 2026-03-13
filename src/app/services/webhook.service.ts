@@ -39,8 +39,6 @@ export class WebhookService {
     if (!this.DEBUG_WEBHOOK) {
       return;
     }
-
-    console.log(`[WebhookService] ${step}`, details ?? '');
     void this.logger.addLog(`WebhookService.${step}`, details ?? {}, 'info');
   }
 
@@ -264,7 +262,6 @@ export class WebhookService {
         return {
           authorize: (socketId: string, callback: any) => {
             this.debug('authorizer.request', { socketId, channelName: channel?.name });
-            localStorage.setItem('socketId', socketId);
             this.requestsService.authorizeBroadcasting(socketId, channel.name).subscribe(
               (response: any) => {
                 this.debug('authorizer.success', { channelName: channel?.name });

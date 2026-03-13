@@ -301,9 +301,9 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    this.webhookUnsubscribers.forEach((unsubscribe) => unsubscribe());
-    this.webhookUnsubscribers = [];
-    this.webhooksInitialized = false;
+    // this.webhookUnsubscribers.forEach((unsubscribe) => unsubscribe());
+    // this.webhookUnsubscribers = [];
+    // this.webhooksInitialized = false;
   }
 
   getUserNames(role: any): string[] {
