@@ -93,7 +93,7 @@
   "pin": {
     "title": "Enter your PIN",
     "enterPin": "Enter PIN",
-    "login": "Login",
+    "login": "Logout",
     "invalidPin": "Invalid PIN",
     "configuration": "Configuration",
     "loading": "Loading...",

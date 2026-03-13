@@ -1,7 +1,7 @@
 <ion-content [fullscreen]="true">
   <div *ngIf="!this.loading && !isInitializing" class="d-flex align-items-center flex-column justify-content-between" style="height: 100%;">
     <div>
-      <img class="logo" src="assets/logos/StatusBoard_Black.png" alt="logo" (click)="headerClicked()" style="margin-top: 15px;" />
+      <img class="logo" src="assets/logos/StatusBoard_Black.png" alt="logo" style="margin-top: 15px;" />
       <div style="position: absolute; top: 15px; left: 15px; text-align: center;">
         <img *ngIf="this.image_url !== '' " [src]="this.image_url" width="200px" />
         <h5 *ngIf="this.branch_name !== '' " class="info">{{this.branch_name}}</h5>
@@ -91,6 +91,15 @@
     <div style="margin-bottom: 15px;">
       <!-- <img class="logo" src="assets/logos/DTouchmedia_Black.png" alt="logo" /> -->
     </div>
+
+
+    <div style="position: absolute; bottom: 5px; left: 15px; width: 10%;">
+      <ion-button [disabled]="loading" class="w-100 classButton" color="danger" (click)="presentAlert()">Setting</ion-button>
+    </div>
+
+
+
+
     <div style="position: absolute; bottom: 5px; right: 15px;">
       <h6 class="info" style="font-size: 15px !important;">{{ 'pin.version' | translate }} {{version}}</h6>
     </div>

@@ -93,7 +93,7 @@
   "pin": {
     "title": "Ingrese su PIN",
     "enterPin": "Ingrese PIN",
-    "login": "Iniciar Sesión",
+    "login": "Cerrar sesión",
     "invalidPin": "PIN inválido",
     "configuration": "Configuración",
     "loading": "Cargando...",

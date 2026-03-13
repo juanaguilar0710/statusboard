@@ -304,30 +304,30 @@ async deleteCurrentMonitor() {
               this.loading = false;
             }
           },
-          // {
-          //   text: this.translate.instant('pin.configuration'),
-          //   handler: () => {
-          //     // const options: RemoveOptions = { key: 'config' };
-          //     // Preferences.remove(options);
-          //     this.router.navigate(['/configuration'], { replaceUrl: true });
-          //   }
-          // },
           {
           text: this.translate.instant('pin.showResolution'),
           handler: () => {
-            this.showResolutionAlert(); // Mostrará la resolución en una nueva alerta
-            return false; // Evita que la alerta se cierre al tocar este botón
+            this.showResolutionAlert();
+            return false;
           }
           },
-        //   {
-        //     text: this.translate.instant('pin.closeApp'),
-        //     handler: async () => {
-        //       await this.deleteCurrentMonitor();
-        //       await Preferences.clear();
-        //     this.router.navigate(['/login'], { replaceUrl: true });
-        //     App.exitApp(); // Cierra la aplicación
+        // {
+        //   text: this.translate.instant('pin.configuration'),
+        //   handler: () => {
+        //     // const options: RemoveOptions = { key: 'config' };
+        //     // Preferences.remove(options);
+        //     this.router.navigate(['/configuration'], { replaceUrl: true });
         //   }
-        // }
+        // },
+        {
+          text: this.translate.instant('pin.closeApp'),
+            handler: async () => {
+              await this.deleteCurrentMonitor();
+              await Preferences.clear();
+            this.router.navigate(['/login'], { replaceUrl: true });
+            App.exitApp(); // Cierra la aplicación
+          }
+        }
       ]
     });
     await alert.present();
@@ -777,4 +777,5 @@ async deleteCurrentMonitor() {
     this.requestsService.setConfig(config);
     await this.logger.setTokenAdmin(accessToken, payload.expires_in ?? 31535999);
   }
+
 }
