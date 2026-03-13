@@ -107,22 +107,16 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
   }
 
   registerDeviceManually(): void {
-    console.log('manual');
     const deviceId = this.deviceMetadata?.uuid || 'unknown-uuid';
-
     // Si ya sabemos que el monitor está registrado, solo usamos /api/recover
     if (this.useRecoverOnly) {
       this.deviceservice.recoverDevice(deviceId).subscribe(
         (recoverResp: any) => {
-          console.log('recover resp (only)', recoverResp);
           const data = recoverResp?.data ?? recoverResp;
           this.DeviceRegistrationData = data as DeviceRegistrationData;
           void this.persistDeviceRegistrationData(this.DeviceRegistrationData);
-
           this.notificationService.showSuccess('Device recovered successfully!', 5000);
           this.activationCode = this.DeviceRegistrationData.confirmation_code;
-          console.log(this.activationCode);
-
         },
         (recoverError: any) => {
           console.log('recover error (only)', recoverError);
@@ -144,15 +138,10 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
       generatedAt: new Date().toISOString(),
     }).subscribe(
       (resp: any) => {
-        console.log('resp', resp);
-
         if (resp.status === 500 && resp.data?.error?.detail === 'Monitor already registered') {
-          console.log('entro al recover (desde register)');
           this.useRecoverOnly = true;
-
           this.deviceservice.recoverDevice(deviceId).subscribe(
             (recoverResp: any) => {
-              console.log('recover resp', recoverResp);
               const data = recoverResp?.data ?? recoverResp;
               this.DeviceRegistrationData = data as DeviceRegistrationData;
               void this.persistDeviceRegistrationData(this.DeviceRegistrationData);
@@ -187,12 +176,9 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
 
   private async initializeDeviceActivationFlow(): Promise<void> {
     this.deviceMetadata = await this.collectDeviceMetadata();
-    console.log(this.deviceMetadata);
-
     if (!this.deviceMetadata.uuid) {
       this.deviceMetadata.uuid = 'WEB-' + Math.random().toString(36).slice(2, 11);
     }
-
     await this.subscribeToDeviceWebhooks();
     await this.registerAndResetCountdown();
     this.startCodeCountdown();
@@ -222,11 +208,7 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
   }
 
   private handleDeviceWebhookEvent(type: 'confirmed' | 'update' | 'delete', event: any): void {
-    console.log(`logevent ${type}: `, event);
-
     if (type === 'confirmed') {
-      console.log(event);
-
       void this.requestTokenFromConfirmation(event);
     }
 
@@ -255,19 +237,14 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
 
   private async loadStoredDeviceRegistrationData(): Promise<void> {
     try {
-      let cont = 0;
-      console.log('entro aqui', cont++);
-
       const stored = await Preferences.get({ key: this.DEVICE_REGISTRATION_STORAGE_KEY });
       if (!stored.value) {
         return;
       }
-
       this.DeviceRegistrationData = JSON.parse(stored.value) as DeviceRegistrationData;
       this.activationCode = this.DeviceRegistrationData.confirmation_code || this.activationCode;
     } catch (error) {
       console.log('loadStoredDeviceRegistrationData', error);
-
     }
   }
 
@@ -282,29 +259,18 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
       }
 
       const IdDevice = event?.id
-      console.log('Device ID:', IdDevice);
-
       const tempToken = this.DeviceRegistrationData?.temp_token;
-      console.log('Temp Token:', tempToken);
-
       localStorage.setItem('tempToken', tempToken || '');
       localStorage.setItem('event', JSON.stringify(event));
-
       if (!IdDevice || !tempToken) {
         this.logger.addLog('requestTokenFromConfirmation', { IdDevice, hasTempToken: !!tempToken, event }, 'error');
         return;
       }
-
       // Si view_mode === 1, redirigimos a la pantalla de PIN y pausamos la solicitud de token aquí
-      console.log(event?.view_mode === 1 || event?.view_mode === '1');
-
       if (event?.view_mode === 1 || event?.view_mode === '1') {
         this.stopCodeCountdown();
-
         // Guardamos un flag para que la vista de PIN sepa que está en versión "Device Activation"
         localStorage.setItem('is_activation_flow', 'true');
-        console.log('Activation flow flag set in localStorage');
-
         // Check platform and use run inside zone if necessary for Angular Routing in WebHooks callbacks
         this.router.navigate(['/pin'], { replaceUrl: true }).then(navResult => {
             console.log('Navigation to /pin result:', navResult);
@@ -323,9 +289,6 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
         client_id: environment.oauthObj.clientId,
         client_secret: environment.oauthObj.clientSecret,
       });
-
-      console.log('Device token response:', tokenResponse);
-
       const payload = (tokenResponse?.data ?? tokenResponse) as DeviceTokenResponse;
       await this.applyTokenResponseConfiguration(payload);
     } catch (error) {
@@ -351,12 +314,9 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
   }
 
   private async applyTokenResponseConfiguration(payload: DeviceTokenResponse): Promise<void> {
-    console.log('payload al inicio de la aplicacion: ', payload);
-    
     const accessToken = payload?.access_token;
     const monitor = payload?.monitor;
     const room = monitor?.room;
-
     if (!accessToken || !monitor || !room?.id || !room?.branch_id) {
       this.logger.addLog('applyTokenResponseConfiguration', { payload }, 'error');
       return;
@@ -403,9 +363,6 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
         username: monitor.device_id || monitor.name || 'monitor-device'
       }
     };
-
-    console.log('configuracion desde aqui: ', config);
-    
 
     await Promise.all([
       Preferences.set({ key: this.DEVICE_TOKEN_RESPONSE_STORAGE_KEY, value: JSON.stringify(payload) }),
@@ -468,12 +425,6 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
       ]);
 
       const networkIdentifiers = await this.getNetworkIdentifiers();
-
-      console.log(deviceInfo);
-      console.log(deviceId);
-      console.log(batteryInfo);
-      console.log(languageInfo);
-      console.log(appInfo);
 
       return {
         uuid: deviceId.identifier,
