@@ -34,7 +34,8 @@
               <strong>{{ patient.procedure_name }}</strong>
             </ion-col>
             <ion-col size="3" class="textCardPatients text-ellipsis" style="text-align: left !important;" [ngClass]="{ canceled: patient.visit_canceled_at }">
-              <strong>{{ patient.surgeon_name }}</strong>
+              <span class="badge" *ngIf="patient.surgeon_color" [ngStyle]="{ 'background-color': patient.surgeon_color }">{{ patient.surgeon_name }}</span>
+              <strong *ngIf="!patient.surgeon_color">{{ patient.surgeon_name }}</strong>
             </ion-col>
 
             <ion-col size="0.5" class="textCardPatients text-ellipsis" style="text-align: left !important;" [ngClass]="{ canceled: patient.visit_canceled_at }">
