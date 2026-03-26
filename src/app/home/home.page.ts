@@ -113,6 +113,7 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
       this.user = await this.LocaldataService.getUser();
       this.username = JSON.parse(localStorage.getItem('user')!);
       this.configuration = await this.LocaldataService.getConfiguration();
+      this.configuration = await this.syncMonitorConfiguration(this.configuration);
       console.log('Configuration:', this.configuration);
 
       // Verificar screensaver al iniciar
@@ -148,6 +149,50 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
         });
       });
       this.letters = this.getFirstLetterFromNames();
+  }
+
+  private async syncMonitorConfiguration(currentConfig: any): Promise<any> {
+    if (!currentConfig?.token) return currentConfig;
+
+    const monitorToken = localStorage.getItem('monitorToken');
+
+    try {
+      const monitorResp = await this.devicesService.getMonitorData(monitorToken!);
+      const monitorData = monitorResp?.data?.data;
+      if (monitorResp?.status !== 200 || !monitorData) {
+        return currentConfig;
+      }
+
+      const mergedConfig = { ...currentConfig };
+      mergedConfig.monitor_id = monitorData.id;
+      mergedConfig.device_id = monitorData.device_id;
+      mergedConfig.stationName = monitorData.name ?? mergedConfig.stationName;
+      mergedConfig.aplication = monitorData.view_mode ? monitorData.view_mode.toString() : mergedConfig.aplication;
+      mergedConfig.statuses = monitorData.visible_statuses ?? mergedConfig.statuses;
+      if (monitorData.lang) mergedConfig.lang = monitorData.lang;
+      if (monitorData.privacy_mode !== undefined) mergedConfig.privacy_mode = monitorData.privacy_mode;
+      if (monitorData.is_enabled !== undefined) mergedConfig.is_enabled = monitorData.is_enabled;
+      if (monitorData.branch) mergedConfig.branch = monitorData.branch;
+      if (monitorData.room) {
+        mergedConfig.waitingRoom = {
+          ...mergedConfig.waitingRoom,
+          id: monitorData.room.id,
+          name: monitorData.room.name,
+          slug: monitorData.room.slug,
+          branch_Id: monitorData.room.branch_id,
+          branch_id: monitorData.room.branch_id,
+        };
+      }
+
+      this.requestsService.config = mergedConfig;
+      await Preferences.set({ key: 'config', value: JSON.stringify(mergedConfig) });
+      localStorage.setItem('config', JSON.stringify(mergedConfig));
+
+      return mergedConfig;
+    } catch (error) {
+      console.error('[Home] Error syncing monitor configuration', error);
+      return currentConfig;
+    }
   }
 
   private updatePatientList(eventType: string, patient: any) {
@@ -531,6 +576,12 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
 
   private async checkIsCurrentDevice(event: any): Promise<boolean> {
     let isMatch = false;
+    const normalize = (value: any): string => {
+      if (value === null || value === undefined) return '';
+      return String(value).trim().toLowerCase();
+    };
+    const eventPayload = event?.monitor || event || {};
+    let configData: any = null;
 
     try {
       // 1. Verificar por device_id
@@ -545,21 +596,29 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
         currentDeviceId = deviceIdInfo.identifier;
       }
 
-      if (event?.device_id === currentDeviceId || event?.device?.device_id === currentDeviceId) {
-        console.log('[Dashboard] ✓ Match por device_id:', currentDeviceId);
+      const configResponse = await Preferences.get({ key: 'config' });
+      if (configResponse.value) {
+        configData = JSON.parse(configResponse.value);
+      }
+      if (!currentDeviceId) {
+        currentDeviceId = configData?.device_id || this.configuration?.device_id;
+      }
+
+      const eventDeviceId = normalize(eventPayload?.device_id || eventPayload?.device?.device_id);
+      const normalizedCurrentDeviceId = normalize(currentDeviceId);
+
+      if (eventDeviceId && normalizedCurrentDeviceId && eventDeviceId === normalizedCurrentDeviceId) {
+        console.log('[Home] ✓ Match por device_id:', currentDeviceId);
         isMatch = true;
       }
 
       // 2. Verificar por monitor_id desde config
       if (!isMatch) {
-        const configResponse = await Preferences.get({ key: 'config' });
-        if (configResponse.value) {
-          const configData = JSON.parse(configResponse.value);
-          const configMonitorId = configData?.monitor_id || configData?.monitorId;
-          if (configMonitorId && (event?.id === configMonitorId || event?.monitor?.id === configMonitorId || event?.monitor_id === configMonitorId)) {
-            console.log('[Dashboard] ✓ Match por monitor_id:', configMonitorId);
-            isMatch = true;
-          }
+        const configMonitorId = normalize(configData?.monitor_id || configData?.monitorId || this.configuration?.monitor_id || this.configuration?.monitorId);
+        const eventMonitorId = normalize(eventPayload?.id || eventPayload?.monitor_id);
+        if (configMonitorId && eventMonitorId && configMonitorId === eventMonitorId) {
+          console.log('[Home] ✓ Match por monitor_id:', configMonitorId);
+          isMatch = true;
         }
       }
 
@@ -568,18 +627,39 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
         const userResponse = await Preferences.get({ key: 'user' });
         if (userResponse.value) {
           const userData = JSON.parse(userResponse.value);
-          const monitorId = userData?.monitor?.id || userData?.id;
-          if (monitorId && (event?.id === monitorId || event?.monitor?.id === monitorId || event?.monitor_id === monitorId)) {
-            console.log('[Dashboard] ✓ Match por user.monitor_id:', monitorId);
+          const monitorId = normalize(userData?.monitor?.id || userData?.id);
+          const eventMonitorId = normalize(eventPayload?.id || eventPayload?.monitor_id);
+          if (monitorId && eventMonitorId && monitorId === eventMonitorId) {
+            console.log('[Home] ✓ Match por user.monitor_id:', monitorId);
             isMatch = true;
           }
         }
       }
 
-      console.log('[Dashboard] checkIsCurrentDevice result:', isMatch);
+      // 4. Fallback por contexto del monitor (sala + nombre)
+      if (!isMatch) {
+        const currentStationName = normalize(configData?.stationName || this.configuration?.stationName);
+        const currentWaitingRoomId = normalize(configData?.waitingRoom?.id || this.configuration?.waitingRoom?.id);
+        const currentBranchId = normalize(configData?.branch?.id || this.configuration?.branch?.id);
+
+        const eventStationName = normalize(eventPayload?.name);
+        const eventWaitingRoomId = normalize(eventPayload?.room?.id || eventPayload?.room_id);
+        const eventBranchId = normalize(eventPayload?.branch?.id || eventPayload?.branch_id || eventPayload?.room?.branch_id);
+
+        const hasStationMatch = currentStationName && eventStationName && currentStationName === eventStationName;
+        const hasRoomMatch = currentWaitingRoomId && eventWaitingRoomId && currentWaitingRoomId === eventWaitingRoomId;
+        const hasBranchMatch = !currentBranchId || !eventBranchId || currentBranchId === eventBranchId;
+
+        if (hasStationMatch && hasRoomMatch && hasBranchMatch) {
+          console.log('[Home] ✓ Match por fallback sala + estación');
+          isMatch = true;
+        }
+      }
+
+      console.log('[Home] checkIsCurrentDevice result:', isMatch);
       return isMatch;
-    } catch (error) {
-      console.error('[Dashboard] ❌ Error en checkIsCurrentDevice:', error);
+    } catch (error: any) {
+      console.error('[Home] ❌ Error en checkIsCurrentDevice:', error);
       return false;
     }
   }

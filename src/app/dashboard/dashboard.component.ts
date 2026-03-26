@@ -2038,6 +2038,12 @@ private isPusherConnected(): boolean {
 
   private async checkIsCurrentDevice(event: any): Promise<boolean> {
     let isMatch = false;
+    const normalize = (value: any): string => {
+      if (value === null || value === undefined) return '';
+      return String(value).trim().toLowerCase();
+    };
+    const eventPayload = event?.monitor || event || {};
+    let configData: any = null;
 
     try {
       // 1. Verificar por device_id
@@ -2052,21 +2058,29 @@ private isPusherConnected(): boolean {
         currentDeviceId = deviceIdInfo.identifier;
       }
 
-      if (event?.device_id === currentDeviceId || event?.device?.device_id === currentDeviceId) {
+      const configResponse = await Preferences.get({ key: 'config' });
+      if (configResponse.value) {
+        configData = JSON.parse(configResponse.value);
+      }
+      if (!currentDeviceId) {
+        currentDeviceId = configData?.device_id || this.config?.device_id;
+      }
+
+      const eventDeviceId = normalize(eventPayload?.device_id || eventPayload?.device?.device_id);
+      const normalizedCurrentDeviceId = normalize(currentDeviceId);
+
+      if (eventDeviceId && normalizedCurrentDeviceId && eventDeviceId === normalizedCurrentDeviceId) {
         console.log('[Dashboard] ✓ Match por device_id:', currentDeviceId);
         isMatch = true;
       }
 
       // 2. Verificar por monitor_id desde config
       if (!isMatch) {
-        const configResponse = await Preferences.get({ key: 'config' });
-        if (configResponse.value) {
-          const configData = JSON.parse(configResponse.value);
-          const configMonitorId = configData?.monitor_id || configData?.monitorId;
-          if (configMonitorId && (event?.id === configMonitorId || event?.monitor?.id === configMonitorId || event?.monitor_id === configMonitorId)) {
-            console.log('[Dashboard] ✓ Match por monitor_id:', configMonitorId);
-            isMatch = true;
-          }
+        const configMonitorId = normalize(configData?.monitor_id || configData?.monitorId || this.config?.monitor_id || this.config?.monitorId);
+        const eventMonitorId = normalize(eventPayload?.id || eventPayload?.monitor_id);
+        if (configMonitorId && eventMonitorId && configMonitorId === eventMonitorId) {
+          console.log('[Dashboard] ✓ Match por monitor_id:', configMonitorId);
+          isMatch = true;
         }
       }
 
@@ -2075,8 +2089,9 @@ private isPusherConnected(): boolean {
         const userResponse = await Preferences.get({ key: 'user' });
         if (userResponse.value) {
           const userData = JSON.parse(userResponse.value);
-          const monitorId = userData?.monitor?.id || userData?.id;
-          if (monitorId && (event?.id === monitorId || event?.monitor?.id === monitorId || event?.monitor_id === monitorId)) {
+          const monitorId = normalize(userData?.monitor?.id || userData?.id);
+          const eventMonitorId = normalize(eventPayload?.id || eventPayload?.monitor_id);
+          if (monitorId && eventMonitorId && monitorId === eventMonitorId) {
             console.log('[Dashboard] ✓ Match por user.monitor_id:', monitorId);
             isMatch = true;
           }

@@ -655,6 +655,12 @@ async deleteCurrentMonitor() {
 
   private async checkIsCurrentDevice(event: any): Promise<boolean> {
     let isMatch = false;
+    const normalize = (value: any): string => {
+      if (value === null || value === undefined) return '';
+      return String(value).trim().toLowerCase();
+    };
+    const eventPayload = event?.monitor || event || {};
+    let configData: any = null;
 
     try {
       // 1. Verificar por device_id
@@ -669,21 +675,29 @@ async deleteCurrentMonitor() {
         currentDeviceId = deviceIdInfo.identifier;
       }
 
-      if (event?.device_id === currentDeviceId || event?.device?.device_id === currentDeviceId) {
+      const configResponse = await Preferences.get({ key: 'config' });
+      if (configResponse.value) {
+        configData = JSON.parse(configResponse.value);
+      }
+      if (!currentDeviceId) {
+        currentDeviceId = configData?.device_id;
+      }
+
+      const eventDeviceId = normalize(eventPayload?.device_id || eventPayload?.device?.device_id);
+      const normalizedCurrentDeviceId = normalize(currentDeviceId);
+
+      if (eventDeviceId && normalizedCurrentDeviceId && eventDeviceId === normalizedCurrentDeviceId) {
         console.log('[Pin] ✓ Match por device_id:', currentDeviceId);
         isMatch = true;
       }
 
       // 2. Verificar por monitor_id desde config
       if (!isMatch) {
-        const configResponse = await Preferences.get({ key: 'config' });
-        if (configResponse.value) {
-          const configData = JSON.parse(configResponse.value);
-          const configMonitorId = configData?.monitor_id || configData?.monitorId;
-          if (configMonitorId && (event?.id === configMonitorId || event?.monitor?.id === configMonitorId || event?.monitor_id === configMonitorId)) {
-            console.log('[Pin] ✓ Match por monitor_id:', configMonitorId);
-            isMatch = true;
-          }
+        const configMonitorId = normalize(configData?.monitor_id || configData?.monitorId);
+        const eventMonitorId = normalize(eventPayload?.id || eventPayload?.monitor_id);
+        if (configMonitorId && eventMonitorId && configMonitorId === eventMonitorId) {
+          console.log('[Pin] ✓ Match por monitor_id:', configMonitorId);
+          isMatch = true;
         }
       }
 
@@ -692,8 +706,9 @@ async deleteCurrentMonitor() {
         const userResponse = await Preferences.get({ key: 'user' });
         if (userResponse.value) {
           const userData = JSON.parse(userResponse.value);
-          const monitorId = userData?.monitor?.id || userData?.id;
-          if (monitorId && (event?.id === monitorId || event?.monitor?.id === monitorId || event?.monitor_id === monitorId)) {
+          const monitorId = normalize(userData?.monitor?.id || userData?.id);
+          const eventMonitorId = normalize(eventPayload?.id || eventPayload?.monitor_id);
+          if (monitorId && eventMonitorId && monitorId === eventMonitorId) {
             console.log('[Pin] ✓ Match por user.monitor_id:', monitorId);
             isMatch = true;
           }
@@ -742,11 +757,15 @@ async deleteCurrentMonitor() {
     const config = {
       branch,
       waitingRoom,
+      monitor_id: monitor.id,
+      device_id: monitor.device_id,
       stationName: monitor.name,
       stationType: appMode === '1' ? 'OR Controller' : 'OR Dashboard',
       aplication: appMode,
       statuses: Array.isArray(monitor.visible_statuses) ? monitor.visible_statuses : [],
       privacy_mode: !!monitor.privacy_mode,
+      is_enabled: monitor.is_enabled !== undefined ? monitor.is_enabled : true,
+      lang: monitor.lang || 'es',
       token: accessToken,
       language: monitor.lang || 'es'
     };
