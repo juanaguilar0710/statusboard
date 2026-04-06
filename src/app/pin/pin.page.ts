@@ -349,7 +349,6 @@ async deleteCurrentMonitor() {
     if (this.isNavigating) return;
     this.isNavigating = true;
     try {
-      //await this.refreshAdminToken();
       const event = localStorage.getItem('event')
       const IdDevice = event ? JSON.parse(event)?.id : null;
       const tempToken = localStorage.getItem('tempToken') || '';
@@ -368,76 +367,33 @@ async deleteCurrentMonitor() {
           return;
         }
 
-        this.requestTokenBasedOnPin();
-        this.appComponent.resetSession();
-        this.isNavigating = false;
-    } catch (error) {
-      console.error('Error durante el proceso de login:', error);
-      this.requestTokenBasedOnPin();
+      if (tokenResponse.status === 401) {
+        this.loading = false;
+        this.notificationService.showError(tokenResponse.data?.message || this.translate.instant('pin.incorrectPin'), 6000);
+        this.handleInput("clear");
+        return;
+      }
+
+      const payload = tokenResponse?.data ?? tokenResponse;
+      await this.applyTokenResponseConfiguration(payload);
       this.appComponent.resetSession();
-    }
-  }
-
-   requestTokenBasedOnPin() {
-    try {
-      this.requestsService.loginWithPin(this.pin).then(async response => {
-        if (response.status === 200) {
-          const user = response?.data;
-          localStorage.setItem('user',JSON.stringify(user));
-          this.localdataService.user = user;
-          Preferences.set({
-            key: 'user',
-            value: JSON.stringify(user)
-          });
-          this.loading = false;
-          this.requestsService.logout$.next(false);
-          this.router.navigate(['/home'], { replaceUrl: true }).then(() => {
-          }).catch(error => {
-            this.loading = false;
-            console.error('Error en la navegación:', error);
-          });
-
-        } else if (response.status === 401) {
-          this.loading = false;
-          this.notificationService.showError(this.translate.instant('pin.incorrectPin'), 6000);
-          this.loadingController.dismiss();
-        } else if (response.status === 404) {
-          this.loading = false;
-          this.notificationService.showError(this.translate.instant('pin.incorrectMonitor'), 6000);
-          Preferences.clear();
-          this.router.navigate(['/login'], { replaceUrl: true });
-        }
-      },error => {
-        console.log(error);
-          this.loading = false;
-          this.loadingController.dismiss();
-          if(error.status == 401){
-            this.notificationService.showError(this.translate.instant('pin.incorrectPin'), 6000);
-          }else{
-            this.notificationService.showError(this.translate.instant('pin.internalError') + ' ' + error, 4000);
-            Preferences.clear();
-            this.router.navigate(['/login'], { replaceUrl: true });
-          }
-          this.handleInput("clear");
-      });
-
     } catch (error: any) {
+      console.error('Error durante el proceso de login:', error);
       this.handleInput("clear");
-
-      if (this.loading) {
-        try {
-          this.loading = false;
-        } catch (error) {
-          console.error('Error al intentar cerrar el loading:', error);
-        }
+      this.loading = false;
+      try {
+        await this.loadingController.dismiss();
+      } catch (dismissError) {
+        console.error('Error al intentar cerrar el loading:', dismissError);
       }
 
       if (error?.status === 401) {
-         Toast.show({
-          text: 'Pin Incorrecto o No Registrado',
-          duration: 'long'
-        });
+        this.notificationService.showError(this.translate.instant('pin.incorrectPin'), 6000);
+      } else {
+        this.notificationService.showError(this.translate.instant('pin.internalError') + ' ' + (error?.error?.detail || error?.message || error), 4000);
       }
+    } finally {
+      this.isNavigating = false;
     }
   }
 
@@ -474,11 +430,14 @@ async deleteCurrentMonitor() {
         this.notificationService.showError(this.translate.instant('pin.incorrectMonitor'), 6000);
         Preferences.clear();
         this.router.navigate(['/login'], { replaceUrl: true });
+        return;
       }
 
       if (tokenResponse.status === 401) {
         this.loading = false;
         this.notificationService.showError(tokenResponse.data.message ? tokenResponse.data.message : this.translate.instant('pin.incorrectMonitor'), 6000);
+        this.handleInput("clear");
+        return;
       }
       const payload = (tokenResponse?.data ?? tokenResponse);
       await this.applyTokenResponseConfiguration(payload);
@@ -493,7 +452,7 @@ async deleteCurrentMonitor() {
 
   private async applyTokenResponseConfiguration(payload: any): Promise<void> {
     const accessToken = payload?.access_token;
-    const monitorToken = payload?.monitor_token?.access_token;
+    const refreshToken = payload?.refresh_token;
     const monitor = payload?.monitor;
     const room = monitor?.room;
 
@@ -519,6 +478,7 @@ async deleteCurrentMonitor() {
       name: monitor.room.name,
       slug: monitor.room.slug,
       branch_Id: monitor.room.branch_id,
+      branch_id: monitor.room.branch_id,
       program: 'status_board'
     };
 
@@ -528,19 +488,23 @@ async deleteCurrentMonitor() {
     const config = {
       branch,
       waitingRoom,
+      monitor_id: monitor.id,
+      device_id: monitor.device_id,
       is_enabled: monitor.is_enabled ?? true,
       stationName: monitor.name,
       stationType: appMode === '1' ? 'OR Controller' : 'OR Dashboard',
       aplication: appMode,
       statuses: Array.isArray(monitor.visible_statuses) ? monitor.visible_statuses : [],
       privacy_mode: !!monitor.privacy_mode,
+      lang: monitor.lang || 'es',
       token: accessToken,
       language: monitor.lang || 'es'
     };
 
     const userToSave = payload?.user ? {
-      ...payload,
-      monitor: monitor
+      ...payload.user,
+      monitor,
+      user: payload.user
     } : {
       id: monitor.id,
       name: monitor.name,
@@ -560,7 +524,6 @@ async deleteCurrentMonitor() {
     ]);
 
     localStorage.setItem('user', JSON.stringify(userToSave));
-    //localStorage.setItem('monitorToken', monitorToken);
     this.localdataService.user = userToSave;
 
     localStorage.removeItem('is_activation_flow');
@@ -568,7 +531,11 @@ async deleteCurrentMonitor() {
     this.requestsService.setToken(accessToken);
     this.requestsService.setAdminToken(accessToken);
     this.requestsService.setExpiresIn(payload.expires_in);
+    if (refreshToken) {
+      this.requestsService.setRefreshToken(refreshToken);
+    }
     this.requestsService.setConfig(config);
+    this.requestsService.logout$.next(false);
 
     await this.logger.setTokenAdmin(accessToken, payload.expires_in ?? 31535999);
 

@@ -9,7 +9,8 @@ import { LoggerService } from 'src/app/api/logger.service';
 import { WebhookService } from 'src/app/services/webhook.service';
 import { environment } from 'src/environments/environment';
 import { DevicesService } from 'src/app/api/devices.service';
-import { Router } from '@angular/router';
+import { NavigationEnd, Router } from '@angular/router';
+import { Subscription } from 'rxjs';
 
 export interface DeviceRegistrationData {
   id: string;
@@ -75,6 +76,7 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
   private hasInitialized = false;
   private tokenRequestInProgress = false;
   private useRecoverOnly: boolean = false;
+  private routeSubscription?: Subscription;
   DeviceRegistrationData: DeviceRegistrationData | null = null;
 
   constructor(
@@ -91,6 +93,7 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
       return;
     }
     this.hasInitialized = true;
+    this.trackRouteState();
     await this.loadStoredDeviceRegistrationData();
     await this.initializeDeviceActivationFlow();
   }
@@ -104,9 +107,15 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
     // Cleanup webhooks solamente si tenemos unsubscribers registrados
     this.webhookUnsubscribers.forEach((unsubscribe) => unsubscribe());
     this.webhookUnsubscribers = [];
+
+    this.routeSubscription?.unsubscribe();
   }
 
   registerDeviceManually(): void {
+    if (!this.isCodeScreenActive()) {
+      return;
+    }
+
     const deviceId = this.deviceMetadata?.uuid || 'unknown-uuid';
     // Si ya sabemos que el monitor está registrado, solo usamos /api/recover
     if (this.useRecoverOnly) {
@@ -175,6 +184,11 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
   }
 
   private async initializeDeviceActivationFlow(): Promise<void> {
+    if (!this.isCodeScreenActive()) {
+      this.stopCodeCountdown();
+      return;
+    }
+
     this.deviceMetadata = await this.collectDeviceMetadata();
     if (!this.deviceMetadata.uuid) {
       this.deviceMetadata.uuid = 'WEB-' + Math.random().toString(36).slice(2, 11);
@@ -390,11 +404,41 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
     await this.router.navigate([destination], { replaceUrl: true });
   }
 
+  private trackRouteState(): void {
+    this.routeSubscription = this.router.events.subscribe((event) => {
+      if (!(event instanceof NavigationEnd)) {
+        return;
+      }
+
+      if (!this.isCodeScreenActive()) {
+        this.stopCodeCountdown();
+        return;
+      }
+
+      if (!this.countdownInterval && !this.tokenRequestInProgress) {
+        this.startCodeCountdown();
+      }
+    });
+  }
+
+  private isCodeScreenActive(): boolean {
+    return this.router.url.startsWith('/login');
+  }
+
 
   private startCodeCountdown(): void {
+    if (!this.isCodeScreenActive()) {
+      return;
+    }
+
     this.stopCodeCountdown();
 
     this.countdownInterval = setInterval(async() => {
+      if (!this.isCodeScreenActive()) {
+        this.stopCodeCountdown();
+        return;
+      }
+
       this.remainingSeconds -= 1;
       if (this.remainingSeconds <= 0) {
         await this.registerAndResetCountdown();
@@ -410,6 +454,11 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
   }
 
   private async registerAndResetCountdown(): Promise<void> {
+    if (!this.isCodeScreenActive()) {
+      this.stopCodeCountdown();
+      return;
+    }
+
     this.remainingSeconds = 300;
     this.registerDeviceManually();
   }
