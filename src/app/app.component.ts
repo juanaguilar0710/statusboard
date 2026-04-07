@@ -1,4 +1,4 @@
-import { Component, HostListener, OnInit, NgZone } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, HostListener, OnInit, ViewChild } from '@angular/core';
 import { NavigationEnd, Router } from '@angular/router';
 import { Preferences } from '@capacitor/preferences';
 import { RequestsService } from './api/requests.service';
@@ -19,7 +19,9 @@ import * as LiveUpdates from '@capacitor/live-updates';
   templateUrl: 'app.component.html',
   styleUrls: ['app.component.scss'],
 })
-export class AppComponent implements OnInit {
+export class AppComponent implements OnInit, AfterViewInit {
+
+  @ViewChild('screensaverVideo') private screensaverVideo?: ElementRef<HTMLVideoElement>;
 
   timeoutHandle: any;
   enableScreensaver = true;
@@ -51,6 +53,7 @@ export class AppComponent implements OnInit {
   liveUpdateDownloaded = false;
   liveUpdateLastCheck: Date | null = null;
   liveUpdateLastResult = '';
+  private screensaverPlayRetryTimeout: any;
 
   constructor(
     private router: Router,
@@ -60,8 +63,7 @@ export class AppComponent implements OnInit {
     private localdataService: LocaldataService,
     private notificationService: NotificationService,
     private modalController: ModalController,
-    private platform: Platform,
-    private ngZone: NgZone
+    private platform: Platform
   ) {
     this.init();
 
@@ -96,6 +98,10 @@ export class AppComponent implements OnInit {
       this.resetInactivityTimer();
       this.initializeLiveUpdates();
     });
+  }
+
+  ngAfterViewInit() {
+    this.configureScreensaverVideo();
   }
 
   // ========== LIVE UPDATES: descarga y recarga inmediata ==========
@@ -208,10 +214,12 @@ export class AppComponent implements OnInit {
 
   showScreensaver() {
     document.getElementById('screensaver')?.classList.add('active');
+    void this.playScreensaverVideo();
   }
 
   hideScreensaver() {
     document.getElementById('screensaver')?.classList.remove('active');
+    this.pauseScreensaverVideo();
   }
 
   @HostListener('document:mousemove') onUserActivity() { this.resetInactivityTimer(); }
@@ -272,8 +280,76 @@ export class AppComponent implements OnInit {
   }
 
   ngOnDestroy() {
+    clearTimeout(this.screensaverPlayRetryTimeout);
+    this.pauseScreensaverVideo();
     this.stopInactivityTracking();
     App.removeAllListeners();
+  }
+
+  private configureScreensaverVideo(): void {
+    const video = this.screensaverVideo?.nativeElement;
+    if (!video) {
+      return;
+    }
+
+    video.muted = true;
+    video.defaultMuted = true;
+    video.loop = true;
+    video.autoplay = true;
+    video.playsInline = true;
+    video.setAttribute('muted', 'true');
+    video.setAttribute('autoplay', 'true');
+    video.setAttribute('playsinline', 'true');
+    video.setAttribute('webkit-playsinline', 'true');
+
+    const markReady = () => video.classList.add('is-playing');
+    const markPaused = () => video.classList.remove('is-playing');
+
+    video.addEventListener('playing', markReady);
+    video.addEventListener('loadeddata', markReady);
+    video.addEventListener('pause', markPaused);
+    video.addEventListener('ended', markPaused);
+  }
+
+  private async playScreensaverVideo(): Promise<void> {
+    const video = this.screensaverVideo?.nativeElement;
+    if (!video) {
+      return;
+    }
+
+    clearTimeout(this.screensaverPlayRetryTimeout);
+    video.classList.remove('is-playing');
+    video.muted = true;
+    video.defaultMuted = true;
+
+    try {
+      if (video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) {
+        video.load();
+      }
+
+      video.currentTime = 0;
+      await video.play();
+      video.classList.add('is-playing');
+    } catch (error) {
+      console.error('Error reproduciendo screensaver:', error);
+      this.screensaverPlayRetryTimeout = setTimeout(() => {
+        void video.play().then(() => video.classList.add('is-playing')).catch((retryError) => {
+          console.error('Reintento de screensaver fallido:', retryError);
+        });
+      }, 250);
+    }
+  }
+
+  private pauseScreensaverVideo(): void {
+    const video = this.screensaverVideo?.nativeElement;
+    if (!video) {
+      return;
+    }
+
+    clearTimeout(this.screensaverPlayRetryTimeout);
+    video.pause();
+    video.classList.remove('is-playing');
+    video.currentTime = 0;
   }
 
   private startInactivityTracking(): void {

@@ -28,8 +28,19 @@
 </div> -->
 
 <div id="screensaver" class="screensaver-container">
-  <video class="screensaver-video" autoplay loop muted>
-    <source src="./../assets/screenSave/ScreenSaver-DTouchMedia.mp4" type="video/mp4">
+  <video
+    #screensaverVideo
+    class="screensaver-video"
+    autoplay
+    loop
+    muted
+    playsinline
+    webkit-playsinline="true"
+    preload="auto"
+    disablePictureInPicture
+    controlsList="nodownload noplaybackrate noremoteplayback nofullscreen"
+  >
+    <source src="assets/screenSave/ScreenSaver-DTouchMedia.mp4" type="video/mp4">
     Your browser does not support the video tag.
   </video>
 </div>
