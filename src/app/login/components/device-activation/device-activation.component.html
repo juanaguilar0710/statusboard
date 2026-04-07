@@ -19,6 +19,18 @@
       <span>Registering device...</span>
     </div>
 
-    <span class="version-tag">v{{ version }}</span>
+    <div class="activation-footer">
+      <button
+        type="button"
+        class="update-button"
+        (click)="checkForUpdatesManually()"
+        [disabled]="isCheckingForUpdates"
+        aria-label="Check for updates"
+      >
+        <ion-icon [name]="isCheckingForUpdates ? 'hourglass-outline' : 'cloud-download-outline'"></ion-icon>
+      </button>
+
+      <span class="version-tag">v{{ version }}</span>
+    </div>
   </div>
 </div>

@@ -100,8 +100,17 @@
 
 
 
-    <div style="position: absolute; bottom: 5px; right: 15px;">
-      <h6 class="info" style="font-size: 15px !important;">{{ 'pin.version' | translate }} {{version}}</h6>
+    <div class="pin-footer-actions">
+      <button
+        type="button"
+        class="pin-update-button"
+        (click)="checkForUpdatesManually()"
+        [disabled]="loading || isCheckingForUpdates"
+        aria-label="Check for updates"
+      >
+        <ion-icon [name]="isCheckingForUpdates ? 'hourglass-outline' : 'cloud-download-outline'"></ion-icon>
+      </button>
+      <h6 class="info pin-version-label">{{ 'pin.version' | translate }} {{version}}</h6>
     </div>
   </div>
 

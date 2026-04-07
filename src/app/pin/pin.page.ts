@@ -3,6 +3,8 @@ import { RequestsService } from '../api/requests.service';
 import { Router } from '@angular/router';
 import { Preferences, RemoveOptions } from '@capacitor/preferences';
 import { Toast } from '@capacitor/toast';
+import { Capacitor } from '@capacitor/core';
+import { sync } from '@capacitor/live-updates';
 import { AlertController, LoadingController } from '@ionic/angular';
 import { environment } from 'src/environments/environment';
 import { NetworkService } from '../api/network.service';
@@ -63,6 +65,7 @@ export class PinPage implements OnInit{//, OnDestroy {
   pin: string = "";
   clicks = 0;
   version: string = environment.version;
+  isCheckingForUpdates: boolean = false;
   @Output() change: EventEmitter<string> = new EventEmitter<string>();
   networkStatus: string = "ONLINE";
   lastsync: string = new Date().toLocaleString();
@@ -133,6 +136,40 @@ export class PinPage implements OnInit{//, OnDestroy {
       buttons: ['OK']
     });
     await alert.present();
+  }
+
+  async checkForUpdatesManually(): Promise<void> {
+    if (this.isCheckingForUpdates) {
+      return;
+    }
+
+    if (!Capacitor.isNativePlatform()) {
+      this.notificationService.showInfo('Manual update check is only available on the installed app.', 5000);
+      return;
+    }
+
+    this.isCheckingForUpdates = true;
+
+    try {
+      await Toast.show({ text: 'Checking for updates…', duration: 'short' });
+
+      const result: any = await sync();
+
+      if (result && typeof result === 'object' && typeof result.activeApplicationPathChanged === 'boolean') {
+        if (!result.activeApplicationPathChanged) {
+          await Toast.show({ text: 'No updates available.', duration: 'short' });
+        } else {
+          await Toast.show({ text: 'Update downloaded and will be applied now.', duration: 'long' });
+        }
+      } else if (result && typeof result === 'object' && typeof result.message === 'string') {
+        await Toast.show({ text: `Update error: ${result.message}`, duration: 'long' });
+      }
+    } catch (error: any) {
+      this.logger.addLog('pin.checkForUpdatesManually', { error }, 'error');
+      await Toast.show({ text: 'Update check failed.', duration: 'long' });
+    } finally {
+      this.isCheckingForUpdates = false;
+    }
   }
 
   handleInput(pin: string) {

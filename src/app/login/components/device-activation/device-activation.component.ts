@@ -3,6 +3,8 @@ import { App } from '@capacitor/app';
 import { Device } from '@capacitor/device';
 import { Capacitor } from '@capacitor/core';
 import { Preferences } from '@capacitor/preferences';
+import { Toast } from '@capacitor/toast';
+import { sync } from '@capacitor/live-updates';
 import { RequestsService } from 'src/app/api/requests.service';
 import { NotificationService } from 'src/app/api/notification.service';
 import { LoggerService } from 'src/app/api/logger.service';
@@ -69,6 +71,7 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
   activationCode: string = '------';
   remainingSeconds: number = 300;
   isRegistering: boolean = false;
+  isCheckingForUpdates: boolean = false;
 
   private countdownInterval: any;
   private webhookUnsubscribers: Array<() => void> = [];
@@ -181,6 +184,40 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
     const minutes = Math.floor(this.remainingSeconds / 60).toString().padStart(2, '0');
     const seconds = (this.remainingSeconds % 60).toString().padStart(2, '0');
     return `${minutes}:${seconds}`;
+  }
+
+  async checkForUpdatesManually(): Promise<void> {
+    if (this.isCheckingForUpdates) {
+      return;
+    }
+
+    if (!Capacitor.isNativePlatform()) {
+      this.notificationService.showInfo('Manual update check is only available on the installed app.', 5000);
+      return;
+    }
+
+    this.isCheckingForUpdates = true;
+
+    try {
+      await Toast.show({ text: 'Checking for updates…', duration: 'short' });
+
+      const result: any = await sync();
+
+      if (result && typeof result === 'object' && typeof result.activeApplicationPathChanged === 'boolean') {
+        if (!result.activeApplicationPathChanged) {
+          await Toast.show({ text: 'No updates available.', duration: 'short' });
+        } else {
+          await Toast.show({ text: 'Update downloaded and will be applied now.', duration: 'long' });
+        }
+      } else if (result && typeof result === 'object' && typeof result.message === 'string') {
+        await Toast.show({ text: `Update error: ${result.message}`, duration: 'long' });
+      }
+    } catch (error: any) {
+      this.logger.addLog('checkForUpdatesManually', { error }, 'error');
+      await Toast.show({ text: 'Update check failed.', duration: 'long' });
+    } finally {
+      this.isCheckingForUpdates = false;
+    }
   }
 
   private async initializeDeviceActivationFlow(): Promise<void> {

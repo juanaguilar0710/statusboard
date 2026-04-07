@@ -92,6 +92,42 @@ ion-col {
       font-size: 1.25rem;
     }
 
+.pin-footer-actions {
+  position: absolute;
+  right: 15px;
+  bottom: 5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pin-update-button {
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 999px;
+  background: #d8d8d8;
+  color: #4f555b;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.pin-update-button ion-icon {
+  font-size: 1.1rem;
+}
+
+.pin-update-button:disabled {
+  opacity: 0.65;
+}
+
+.pin-version-label {
+  font-size: 15px !important;
+  margin: 0;
+}
+
 
 
 
