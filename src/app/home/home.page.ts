@@ -547,31 +547,11 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
     return `${hour}:${minutes} ${ampm}`;
   }
 
-  async deleteCurrentMonitor() {
-    try {
-      const configStr = localStorage.getItem('config');
-      if (configStr) {
-        const pcfg = JSON.parse(configStr);
-        if (pcfg && pcfg.monitor_id) {
-          const token = this.requestsService.getToken();
-          if (token) {
-            await this.devicesService.deleteMonitor(pcfg.monitor_id, token);
-            console.log('Monitor deleted successfully on logout');
-          }
-        }
-      }
-    } catch (e) {
-      console.error('Error deleting monitor during logout', e);
-    }
-  }
-
   async logout() {
-    await this.deleteCurrentMonitor();
-    this.notificationService.showInfo(this.translate.instant('home.logoutSuccess'), 5000);
     this.requestsService.startTimer$.next(false);
-    Preferences.remove({ key: 'user' });
     this.modallogout?.dismiss(null, 'confirm');
     this.router.navigate(['/pin'], { replaceUrl: true });
+    this.appComponent.resetSession();
   }
 
   private async checkIsCurrentDevice(event: any): Promise<boolean> {
