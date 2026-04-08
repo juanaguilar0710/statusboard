@@ -3,9 +3,9 @@
     <ion-card class="ionCard">
       <ion-card-header
         class="ionCardHeader"
-        [ngStyle]="{ 'background-color': room.patients?.[0]?.operating_room ? room.patients[0].operating_room.color : '#b5d7f0' }"
+        [ngStyle]="{ 'background-color': room.color || room.patients?.[0]?.operating_room?.color || '#b5d7f0' }"
       >
-        <ion-card-title>
+        <ion-card-title [dynamicTextColor]="room.color || room.patients?.[0]?.operating_room?.color || '#b5d7f0'">
           <ion-row>
             <ion-col size="4" size-md="4" size-lg="4" class="tittleCardText">{{ room.name }}</ion-col>
             <ion-col size="3" size-md="3" size-lg="3" class="tittleCardTextPages">

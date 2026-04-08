@@ -471,6 +471,7 @@ import { AppComponent } from '../app.component';
           }
         },error => {
           console.log('error getOperatingRooms',error);
+          this.logger.addLog('Error inesperado getOperatingRooms', { error }, 'error');
           this.getOperatingRooms = false;
         });
       } catch(err) {
@@ -574,12 +575,17 @@ import { AppComponent } from '../app.component';
             const patientsInRoom = this.filterPatientsByRoom(room.name);
             const existingRoom = this.roomsWithPatients.find(r => r.name === room.name);
             if (existingRoom) {
+            existingRoom.id = room.id;
+            existingRoom.color = room.color;
+            existingRoom.roles = room.roles;
                 existingRoom.patients = patientsInRoom;
                 existingRoom.totalpage= Math.ceil(patientsInRoom.length / this.pageSize);
             } else if (patientsInRoom.length > 0) {
                 this.roomsWithPatients.push({
                     name: room.name,
                     id: room.id,
+              color: room.color,
+              roles: room.roles,
                     totalpage: Math.ceil(patientsInRoom.length / this.pageSize),
                     actualPage: 1,
                     patients: patientsInRoom,
@@ -1000,6 +1006,63 @@ private async handlePatientEvent(type: 'updated' | 'created' | 'deleted', e: any
   }
 }
 
+private getOperatingRoomFromSocketPayload(payload: any): any | null {
+  return payload?.operatingRoom || payload?.operating_room || payload || null;
+}
+
+private async applyOperatingRoomSocketUpdate(type: 'created' | 'updated', payload: any): Promise<boolean> {
+  const operatingRoom = this.getOperatingRoomFromSocketPayload(payload);
+
+  if (!operatingRoom?.id) {
+    return false;
+  }
+
+  const currentOperatingRooms = Array.isArray(this.operatingRooms) ? [...this.operatingRooms] : [];
+  const existingIndex = currentOperatingRooms.findIndex((room: any) => room.id === operatingRoom.id);
+
+  if (type === 'created') {
+    if (existingIndex === -1) {
+      currentOperatingRooms.push(operatingRoom);
+    } else {
+      currentOperatingRooms[existingIndex] = {
+        ...currentOperatingRooms[existingIndex],
+        ...operatingRoom,
+      };
+    }
+  }
+
+  if (type === 'updated') {
+    if (existingIndex > -1) {
+      currentOperatingRooms[existingIndex] = {
+        ...currentOperatingRooms[existingIndex],
+        ...operatingRoom,
+      };
+    } else {
+      currentOperatingRooms.push(operatingRoom);
+    }
+  }
+
+  this.operatingRooms = currentOperatingRooms;
+  this.getRandomColor(this.operatingRooms);
+  this.LocaldataService.setOperatingRooms(this.operatingRooms);
+
+  return true;
+}
+
+private async handleOperatingRoomEvent(type: 'created' | 'updated', e: any): Promise<void> {
+  if (this.networkStatus !== "ONLINE") return;
+  try {
+    await this.logger.addLog(`Websocket.operating-room.${type}`, e, 'info');
+    const wasAppliedLocally = await this.applyOperatingRoomSocketUpdate(type, e);
+    if (!wasAppliedLocally) {
+      this.getOperatingRooms = false;
+      await this.getOperatingRoomsFromStorageOrLoadFromServer();
+    }
+  } catch (err) {
+    console.error('Error en handleOperatingRoomEvent:', err);
+  }
+}
+
   private listenToPatientEvents(channel: string): void {
     this.laravelEcho?.leave(channel);
     const channelListeners = this.laravelEcho?.join(channel);
@@ -1088,6 +1151,12 @@ private async handlePatientEvent(type: 'updated' | 'created' | 'deleted', e: any
       }
 
       this.listPatients = this.deduplicatePatientsById(this.listPatients);
+    });
+    channelListeners.listen('.operating-room.created', (e: any) => {
+      this.handleOperatingRoomEvent('created', e);
+    });
+    channelListeners.listen('.operating-room.updated', (e: any) => {
+      this.handleOperatingRoomEvent('updated', e);
     });
     channelListeners.listen('.play.speech', async (e: any) => {
       console.log("🎤 Evento recibido:", e);

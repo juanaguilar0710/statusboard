@@ -19,6 +19,8 @@ import { sync } from '@capacitor/live-updates';
 })
 export class LoginPage implements OnInit {
 
+  private readonly DEVICE_REGISTRATION_STORAGE_KEY = 'deviceRegistrationData';
+
   @ViewChild('twoFactorCode', { read: ElementRef }) twoFactorCode!: ElementRef<HTMLIonInputElement>;
 
   showPassword: boolean = false;
@@ -44,9 +46,15 @@ export class LoginPage implements OnInit {
     private router: Router) { }
 
   async ngOnInit() {
+    const resetDeviceRegistration = !!(this.router.getCurrentNavigation()?.extras.state?.['resetDeviceRegistration'] || window.history.state?.resetDeviceRegistration);
+
     // Guardar el idioma antes de limpiar las preferencias
-    const languageResponse = await Preferences.get({ key: 'language' });
+    const [languageResponse, deviceRegistrationResponse] = await Promise.all([
+      Preferences.get({ key: 'language' }),
+      Preferences.get({ key: this.DEVICE_REGISTRATION_STORAGE_KEY })
+    ]);
     const savedLanguage = languageResponse.value;
+    const savedDeviceRegistration = resetDeviceRegistration ? null : deviceRegistrationResponse.value;
 
     Preferences.clear();
     localStorage.clear();
@@ -56,6 +64,10 @@ export class LoginPage implements OnInit {
       await Preferences.set({ key: 'language', value: savedLanguage });
     } else {
       await Preferences.set({ key: 'language', value: 'en' });
+    }
+
+    if (savedDeviceRegistration) {
+      await Preferences.set({ key: this.DEVICE_REGISTRATION_STORAGE_KEY, value: savedDeviceRegistration });
     }
 
     // Comprobación puntual de Live Update con toasts (auto-aplicado por el plugin)

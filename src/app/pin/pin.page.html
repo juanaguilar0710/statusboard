@@ -93,7 +93,7 @@
     </div>
 
 
-    <div style="position: absolute; bottom: 5px; left: 15px; width: 10%;">
+    <div *ngIf="this.branch_name !== 'Activación de Dispositivo'" style="position: absolute; bottom: 5px; left: 15px; width: 10%;">
       <ion-button [disabled]="loading" class="w-100 classButton" color="danger" (click)="presentAlert()">Setting</ion-button>
     </div>
 
@@ -111,6 +111,7 @@
         <ion-icon [name]="isCheckingForUpdates ? 'hourglass-outline' : 'cloud-download-outline'"></ion-icon>
       </button>
       <h6 class="info pin-version-label">{{ 'pin.version' | translate }} {{version}}</h6>
+      <h6 class="info pin-version-label">{{this.deviceInfo.device_id}}</h6>
     </div>
   </div>
 

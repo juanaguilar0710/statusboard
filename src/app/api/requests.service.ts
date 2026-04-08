@@ -252,6 +252,10 @@ export class RequestsService {
         });
     }
 
+  logoutToken(){
+    return this.http.post(environment.url + '/oauth/logout', {});
+  }
+
 
     getTodaysPatients(yesterday: boolean = false): Observable<any> {
         this.loadingPatients$.next(true);

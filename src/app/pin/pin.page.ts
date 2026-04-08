@@ -74,6 +74,7 @@ export class PinPage implements OnInit{//, OnDestroy {
   waitingRoom_name = "";
   configResponse:any
   private webhookUnsubscribers: Array<() => void> = [];
+  private monitorEventsConnected = false;
 
   private isNavigating = false; // Indicador de estado de navegación
 
@@ -199,7 +200,12 @@ export class PinPage implements OnInit{//, OnDestroy {
     }
   }
 
+  deviceInfo: any = null;
    async ngOnInit() {
+    await Preferences.get({ key: 'deviceRegistrationData' }).then(res => {
+      this.deviceInfo = res.value ? JSON.parse(res.value) : null;
+    });
+
     this.appComponent.stopInactivityTracking();
     this.loading = true;
     this.isInitializing = true;
@@ -229,7 +235,6 @@ export class PinPage implements OnInit{//, OnDestroy {
 
       localStorage.setItem('monitorToken', tokenMonitorResponse.data.access_token);
       await this.applyTokenMonitorResponseConfiguration(tokenMonitorResponse.data);
-      // Connect to monitor events for tablet mode
       await this.connectToMonitorEvents();
       return;
     }
@@ -242,6 +247,7 @@ export class PinPage implements OnInit{//, OnDestroy {
       return;
     }
     this.configResponse = config;
+    await this.connectToMonitorEvents();
     // Redirección según el valor de aplication
     if (String(this.configResponse.aplication) === "1") {
       // Tablet: no redirige, espera PIN y luego va a /home
@@ -314,8 +320,6 @@ async deleteCurrentMonitor() {
            const tokenResponse = await this.deviceservice.deleteMonitor(monitorId, token);
              if (tokenResponse.status === 404) {
                 this.loading = false;
-                Preferences.clear();
-                this.router.navigate(['/login'], { replaceUrl: true });
                 return;
               }
           }
@@ -325,22 +329,34 @@ async deleteCurrentMonitor() {
       }
     }
 
+    private async navigateToLoginForFreshRegistration(): Promise<void> {
+      this.webhookUnsubscribers.forEach((unsubscribe) => unsubscribe());
+      this.webhookUnsubscribers = [];
+      this.monitorEventsConnected = false;
+
+      await Preferences.clear();
+      localStorage.clear();
+      await this.router.navigate(['/login'], {
+        replaceUrl: true,
+        state: { resetDeviceRegistration: true }
+      });
+    }
+
     async presentAlert() {
       // Presentar alerta con opciones para ir a login o configuración
       const alert = await this.alertController.create({
         header: this.translate.instant('pin.adminOptions'),
         message: this.translate.instant('pin.selectOption'),
         buttons: [
-          {
-            text: this.translate.instant('pin.login'),
-            handler: async () => {
-              this.loading = true;
-              await this.deleteCurrentMonitor();
-              await Preferences.clear();
-              this.router.navigate(['/login'], { replaceUrl: true });
-              this.loading = false;
-            }
-          },
+          // {
+          //   text: this.translate.instant('pin.login'),
+          //   handler: async () => {
+          //     this.loading = true;
+          //     await this.deleteCurrentMonitor();
+          //     await this.navigateToLoginForFreshRegistration();
+          //     this.loading = false;
+          //   }
+          // },
           {
           text: this.translate.instant('pin.showResolution'),
           handler: () => {
@@ -360,8 +376,7 @@ async deleteCurrentMonitor() {
           text: this.translate.instant('pin.closeApp'),
             handler: async () => {
               await this.deleteCurrentMonitor();
-              await Preferences.clear();
-            this.router.navigate(['/login'], { replaceUrl: true });
+              await this.navigateToLoginForFreshRegistration();
             App.exitApp(); // Cierra la aplicación
           }
         }
@@ -585,9 +600,14 @@ async deleteCurrentMonitor() {
   ngOnDestroy() {
     this.webhookUnsubscribers.forEach((unsubscribe) => unsubscribe());
     this.webhookUnsubscribers = [];
+    this.monitorEventsConnected = false;
   }
 
   async connectToMonitorEvents() {
+    if (this.monitorEventsConnected) {
+      return;
+    }
+
     if (!this.requestsService.config || !this.requestsService.config.waitingRoom) {
       await this.requestsService.init();
       if (!this.requestsService.config || !this.requestsService.config.waitingRoom) return;
@@ -655,6 +675,7 @@ async deleteCurrentMonitor() {
       unsubscribeMonitorUpdated,
       unsubscribeMonitorDeleted
     );
+    this.monitorEventsConnected = true;
   }
 
   private async checkIsCurrentDevice(event: any): Promise<boolean> {

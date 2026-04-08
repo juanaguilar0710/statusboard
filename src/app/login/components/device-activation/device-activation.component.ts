@@ -58,6 +58,7 @@ interface DeviceTokenResponse {
   styleUrls: ['./device-activation.component.scss']
 })
 export class DeviceActivationComponent implements OnInit, OnDestroy {
+  private static registrationRequestInFlight = false;
 
   private readonly DEVICE_REGISTRATION_STORAGE_KEY = 'deviceRegistrationData';
   private readonly DEVICE_TOKEN_RESPONSE_STORAGE_KEY = 'deviceTokenResponse';
@@ -115,25 +116,27 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
   }
 
   registerDeviceManually(): void {
-    if (!this.isCodeScreenActive()) {
+    if (!this.isCodeScreenActive() || this.isRegistering || DeviceActivationComponent.registrationRequestInFlight) {
       return;
     }
 
+    this.isRegistering = true;
+    DeviceActivationComponent.registrationRequestInFlight = true;
     const deviceId = this.deviceMetadata?.uuid || 'unknown-uuid';
     // Si ya sabemos que el monitor está registrado, solo usamos /api/recover
     if (this.useRecoverOnly) {
       this.deviceservice.recoverDevice(deviceId).subscribe(
         (recoverResp: any) => {
           const data = recoverResp?.data ?? recoverResp;
-          this.DeviceRegistrationData = data as DeviceRegistrationData;
-          void this.persistDeviceRegistrationData(this.DeviceRegistrationData);
+          this.applyRegistrationData(data as DeviceRegistrationData);
           this.notificationService.showSuccess('Device recovered successfully!', 5000);
-          this.activationCode = this.DeviceRegistrationData.confirmation_code;
+          this.finishRegistrationRequest();
         },
         (recoverError: any) => {
           console.log('recover error (only)', recoverError);
           this.logger.addLog('recoverDevice', { recoverError }, 'error');
           this.notificationService.showError('Failed to recover device. Please try again.', 5000);
+          this.finishRegistrationRequest();
         }
       );
       return;
@@ -155,29 +158,33 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
           this.deviceservice.recoverDevice(deviceId).subscribe(
             (recoverResp: any) => {
               const data = recoverResp?.data ?? recoverResp;
-              this.DeviceRegistrationData = data as DeviceRegistrationData;
-              void this.persistDeviceRegistrationData(this.DeviceRegistrationData);
-
+              this.applyRegistrationData(data as DeviceRegistrationData);
               this.notificationService.showSuccess('Device recovered successfully!', 5000);
-              this.activationCode = this.DeviceRegistrationData.confirmation_code;
+              this.finishRegistrationRequest();
             },
             (recoverError: any) => {
               console.log('recover error', recoverError);
               this.logger.addLog('recoverDevice', { recoverError }, 'error');
               this.notificationService.showError('Failed to recover device. Please try again.', 5000);
+              this.finishRegistrationRequest();
             }
           );
         } else {
-          this.DeviceRegistrationData = resp.data as DeviceRegistrationData;
-          void this.persistDeviceRegistrationData(this.DeviceRegistrationData);
+          this.applyRegistrationData(resp.data as DeviceRegistrationData);
           this.notificationService.showSuccess('Device registered successfully!', 5000);
-          this.activationCode = this.DeviceRegistrationData.confirmation_code;
+          this.finishRegistrationRequest();
         }
       },
       (error: any) => {
         console.log('register error', error);
+        this.finishRegistrationRequest();
       }
     );
+  }
+
+  private finishRegistrationRequest(): void {
+    this.isRegistering = false;
+    DeviceActivationComponent.registrationRequestInFlight = false;
   }
 
   get timeRemaining(): string {
@@ -231,6 +238,20 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
       this.deviceMetadata.uuid = 'WEB-' + Math.random().toString(36).slice(2, 11);
     }
     await this.subscribeToDeviceWebhooks();
+
+    if (!this.DeviceRegistrationData) {
+      await this.registerAndResetCountdown();
+      this.startCodeCountdown();
+      return;
+    }
+
+    const remainingSeconds = this.getRemainingSecondsFromRegistration(this.DeviceRegistrationData);
+    if (remainingSeconds > 0) {
+      this.remainingSeconds = remainingSeconds;
+      this.startCodeCountdown();
+      return;
+    }
+
     await this.registerAndResetCountdown();
     this.startCodeCountdown();
   }
@@ -292,8 +313,7 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
       if (!stored.value) {
         return;
       }
-      this.DeviceRegistrationData = JSON.parse(stored.value) as DeviceRegistrationData;
-      this.activationCode = this.DeviceRegistrationData.confirmation_code || this.activationCode;
+      this.applyRegistrationData(JSON.parse(stored.value) as DeviceRegistrationData, false);
     } catch (error) {
       console.log('loadStoredDeviceRegistrationData', error);
     }
@@ -498,6 +518,28 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
 
     this.remainingSeconds = 300;
     this.registerDeviceManually();
+  }
+
+  private applyRegistrationData(data: DeviceRegistrationData, persist: boolean = true): void {
+    this.DeviceRegistrationData = data;
+    this.useRecoverOnly = true;
+    this.activationCode = data.confirmation_code || this.activationCode;
+    this.remainingSeconds = this.getRemainingSecondsFromRegistration(data);
+
+    if (persist) {
+      void this.persistDeviceRegistrationData(data);
+    }
+  }
+
+  private getRemainingSecondsFromRegistration(data: DeviceRegistrationData | null): number {
+    const expiresAt = data?.confirmation_expires_at ? new Date(data.confirmation_expires_at).getTime() : NaN;
+
+    if (!Number.isFinite(expiresAt)) {
+      return 300;
+    }
+
+    const remainingSeconds = Math.ceil((expiresAt - Date.now()) / 1000);
+    return remainingSeconds > 0 ? remainingSeconds : 0;
   }
 
   private async collectDeviceMetadata(): Promise<any> {

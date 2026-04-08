@@ -112,14 +112,20 @@ ion-content {
   .room-name h3 {
     font-size: 24px;
     font-weight: bold;
-    color: #007bff;
+    color: inherit;
     margin-bottom: 6px;
   }
 
   .room-card-details div {
     font-size: 18px;
     margin-bottom: 5px;
+    color: inherit;
     text-align: left; /* Asegura que el texto esté alineado a la izquierda */
+  }
+
+  .room-card-details span,
+  .room-card-details strong {
+    color: inherit;
   }
 
   .room-card-details a {

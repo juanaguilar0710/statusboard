@@ -231,6 +231,63 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
     this.requestsService.lastSync = new Date().toLocaleString();
   }
 
+  private getOperatingRoomFromSocketPayload(payload: any): any | null {
+    return payload?.operatingRoom || payload?.operating_room || payload || null;
+  }
+
+  private async applyOperatingRoomSocketUpdate(eventType: 'created' | 'updated', payload: any): Promise<boolean> {
+    const operatingRoom = this.getOperatingRoomFromSocketPayload(payload);
+
+    if (!operatingRoom?.id) {
+      return false;
+    }
+
+    const currentOperatingRooms = Array.isArray(this.operatingRooms) ? [...this.operatingRooms] : [];
+    const existingIndex = currentOperatingRooms.findIndex((room: any) => room.id === operatingRoom.id);
+
+    if (eventType === 'created') {
+      if (existingIndex === -1) {
+        currentOperatingRooms.push(operatingRoom);
+      } else {
+        currentOperatingRooms[existingIndex] = {
+          ...currentOperatingRooms[existingIndex],
+          ...operatingRoom,
+        };
+      }
+    }
+
+    if (eventType === 'updated') {
+      if (existingIndex > -1) {
+        currentOperatingRooms[existingIndex] = {
+          ...currentOperatingRooms[existingIndex],
+          ...operatingRoom,
+        };
+      } else {
+        currentOperatingRooms.push(operatingRoom);
+      }
+    }
+
+    this.operatingRooms = currentOperatingRooms;
+    this.getRandomColor(this.operatingRooms);
+    await this.LocaldataService.setOperatingRooms(this.operatingRooms);
+
+    return true;
+  }
+
+  private async refreshOperatingRoomsFromSocket(eventType: 'created' | 'updated', payload: any): Promise<void> {
+    if (this.networkStatus !== "ONLINE" || this.viewYesterdaysPatients) {
+      return;
+    }
+
+    console.log(`[Home] 🟦 operating-room.${eventType} recibido:`, payload);
+
+    const wasAppliedLocally = await this.applyOperatingRoomSocketUpdate(eventType, payload);
+
+    if (!wasAppliedLocally) {
+      this.getOperatingRoomsFromStorageOrLoadFromServer();
+    }
+  }
+
   async ngAfterViewInit(): Promise<void> {
     if (this.webhooksInitialized) return;
 
@@ -260,6 +317,14 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
         this.updatePatientList('deleted', e.patient);
         this.getOperatingRoomsFromStorageOrLoadFromServer();
       }
+    });
+
+    const unsubscribeOperatingRoomCreated = await this.webhookService.subscribePrivate(channel, '.operating-room.created', async (e: any) => {
+      await this.refreshOperatingRoomsFromSocket('created', e);
+    });
+
+    const unsubscribeOperatingRoomUpdated = await this.webhookService.subscribePrivate(channel, '.operating-room.updated', async (e: any) => {
+      await this.refreshOperatingRoomsFromSocket('updated', e);
     });
 
     const unsubscribeChat = await this.webhookService.subscribePublic(channelForChat, '.chat.message.created', (e: any) => {
@@ -334,6 +399,8 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
       unsubscribeCreated,
       unsubscribeUpdated,
       unsubscribeDeleted,
+      unsubscribeOperatingRoomCreated,
+      unsubscribeOperatingRoomUpdated,
       unsubscribeChat,
       unsubscribeMonitorUpdated,
       unsubscribeMonitorDeleted
@@ -381,7 +448,13 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
           this.operatingRooms = response.data.data;
           this.getRandomColor(this.operatingRooms);
           this.LocaldataService.setOperatingRooms(this.operatingRooms);
+        }, (error: any) => {
+          this.loadingRooms = false;
+          console.error('[Home] Error loading operating rooms:', error);
         });
+      }).catch((error: any) => {
+        this.loadingRooms = false;
+        console.error('[Home] Error reading stored operating rooms:', error);
       });
     }
 
@@ -550,6 +623,7 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
   async logout() {
     this.requestsService.startTimer$.next(false);
     this.modallogout?.dismiss(null, 'confirm');
+    this.requestsService.logoutToken().subscribe(async (response: any) => {});
     this.router.navigate(['/pin'], { replaceUrl: true });
     this.appComponent.resetSession();
   }
