@@ -378,20 +378,22 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
         return;
       }
 
-      const IdDevice = event?.id
-      const tempToken = this.DeviceRegistrationData?.temp_token;
+      const eventPayload = event?.monitor || event || {};
+      const IdDevice = eventPayload?.id || eventPayload?.monitor_id || null;
+      const tempToken = localStorage.getItem('tempToken') || this.DeviceRegistrationData?.temp_token || '';
       localStorage.setItem('tempToken', tempToken || '');
       localStorage.setItem('event', JSON.stringify(event));
       if (!IdDevice || !tempToken) {
         console.error('[DeviceActivation] requestTokenFromConfirmation missing IdDevice or tempToken', {
           IdDevice,
           hasTempToken: !!tempToken,
+          eventPayload,
           event,
         });
         return;
       }
       // Si view_mode === 1, redirigimos a la pantalla de PIN y pausamos la solicitud de token aquí
-      if (event?.view_mode === 1 || event?.view_mode === '1') {
+      if (eventPayload?.view_mode === 1 || eventPayload?.view_mode === '1') {
         this.stopCodeCountdown();
         // Guardamos un flag para que la vista de PIN sepa que está en versión "Device Activation"
         localStorage.setItem('is_activation_flow', 'true');
@@ -422,8 +424,14 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
   }
 
   private isCurrentDeviceConfirmation(event: any): boolean {
-    const incomingDeviceId = event?.device_id;
-    const currentDeviceId = this.getRecoverDeviceId();
+    const normalize = (value: any): string => {
+      if (value === null || value === undefined) return '';
+      return String(value).trim().toLowerCase();
+    };
+
+    const eventPayload = event?.monitor || event || {};
+    const incomingDeviceId = normalize(eventPayload?.device_id || eventPayload?.device?.device_id);
+    const currentDeviceId = normalize(this.DeviceRegistrationData?.device_id || this.DeviceRegistrationData?.id || this.deviceMetadata?.uuid);
 
     if (!incomingDeviceId || !currentDeviceId || incomingDeviceId !== currentDeviceId) {
       console.log('[DeviceActivation] requestTokenFromConfirmation ignored', {
@@ -731,7 +739,7 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
 
 
     } catch (error) {
-      console.error('[DeviceActivation] collectDeviceMetadata failed', error);
+      // console.error('[DeviceActivation] collectDeviceMetadata failed', error);
       return {
         ipAddress: null,
         macAddress: null,
