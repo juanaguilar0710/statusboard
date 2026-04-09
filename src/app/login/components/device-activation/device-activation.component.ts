@@ -131,9 +131,15 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
     this.isRegistering = true;
     DeviceActivationComponent.registrationRequestInFlight = true;
     const deviceId = this.deviceMetadata?.uuid || 'unknown-uuid';
+    const recoverDeviceId = this.getRecoverDeviceId();
     // Si ya sabemos que el monitor está registrado, solo usamos /api/recover
     if (this.useRecoverOnly) {
-      this.deviceservice.recoverDevice(deviceId).subscribe(
+      console.log('[DeviceActivation] recoverDevice using stored device id', {
+        recoverDeviceId,
+        inMemoryDeviceId: deviceId,
+        storedDeviceId: this.DeviceRegistrationData?.device_id,
+      });
+      this.deviceservice.recoverDevice(recoverDeviceId).subscribe(
         (recoverResp: any) => {
           const data = recoverResp?.data ?? recoverResp;
           this.applyRegistrationData(data as DeviceRegistrationData);
@@ -165,7 +171,12 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
       (resp: any) => {
         if (resp.status === 500 && resp.data?.error?.detail === 'Monitor already registered') {
           this.useRecoverOnly = true;
-          this.deviceservice.recoverDevice(deviceId).subscribe(
+          console.log('[DeviceActivation] register returned already registered, switching to recover with stored device id', {
+            recoverDeviceId,
+            inMemoryDeviceId: deviceId,
+            storedDeviceId: this.DeviceRegistrationData?.device_id,
+          });
+          this.deviceservice.recoverDevice(recoverDeviceId).subscribe(
             (recoverResp: any) => {
               const data = recoverResp?.data ?? recoverResp;
               this.applyRegistrationData(data as DeviceRegistrationData);
@@ -412,7 +423,7 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
 
   private isCurrentDeviceConfirmation(event: any): boolean {
     const incomingDeviceId = event?.device_id;
-    const currentDeviceId = this.deviceMetadata?.uuid || this.DeviceRegistrationData?.device_id;
+    const currentDeviceId = this.getRecoverDeviceId();
 
     if (!incomingDeviceId || !currentDeviceId || incomingDeviceId !== currentDeviceId) {
       console.log('[DeviceActivation] requestTokenFromConfirmation ignored', {
@@ -424,6 +435,10 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
     }
 
     return true;
+  }
+
+  private getRecoverDeviceId(): string {
+    return this.DeviceRegistrationData?.device_id || this.deviceMetadata?.uuid || 'unknown-uuid';
   }
 
   private async applyTokenResponseConfiguration(payload: DeviceTokenResponse): Promise<void> {
