@@ -120,6 +120,11 @@ ion-content {
     font-size: 18px;
     margin-bottom: 5px;
     color: inherit;
+    display: block;
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     text-align: left; /* Asegura que el texto esté alineado a la izquierda */
   }
 
@@ -390,6 +395,11 @@ ion-content {
       .room-card-details div {
         font-size: 12px;
         margin-bottom: 0px;
+        display: block;
+        width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
 
       .today-box h1{
