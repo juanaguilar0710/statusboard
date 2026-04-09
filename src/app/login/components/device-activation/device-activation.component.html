@@ -8,7 +8,18 @@
     </div>
 
     <p class="time-label">Time remaining:</p>
-    <p class="time-value">{{ timeRemaining }}</p>
+    <div class="time-row">
+      <p class="time-value">{{ timeRemaining }}</p>
+      <button
+        type="button"
+        class="refresh-code-button"
+        (click)="refreshActivationCode()"
+        [disabled]="isRegistering"
+        aria-label="Refresh activation code"
+      >
+        <ion-icon [name]="isRegistering ? 'hourglass-outline' : 'refresh-outline'"></ion-icon>
+      </button>
+    </div>
 
     <p class="activation-help">
       To fully control this display, just enter the display code in the portal to activate it.

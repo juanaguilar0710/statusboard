@@ -78,8 +78,10 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
   private webhookUnsubscribers: Array<() => void> = [];
   private deviceMetadata: any = null;
   private hasInitialized = false;
+  private initializationInProgress = false;
   private tokenRequestInProgress = false;
   private useRecoverOnly: boolean = false;
+  private manualRefreshRequested = false;
   private routeSubscription?: Subscription;
   DeviceRegistrationData: DeviceRegistrationData | null = null;
 
@@ -96,10 +98,11 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
     if (this.hasInitialized) {
       return;
     }
+    DeviceActivationComponent.registrationRequestInFlight = false;
     this.hasInitialized = true;
     this.trackRouteState();
     await this.loadStoredDeviceRegistrationData();
-    await this.initializeDeviceActivationFlow();
+    await this.ensureActivationFlowReady();
   }
 
   ngOnDestroy(): void {
@@ -115,9 +118,14 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
     this.routeSubscription?.unsubscribe();
   }
 
-  registerDeviceManually(): void {
+  registerDeviceManually(): boolean {
     if (!this.isCodeScreenActive() || this.isRegistering || DeviceActivationComponent.registrationRequestInFlight) {
-      return;
+      console.warn('[DeviceActivation] registerDeviceManually skipped', {
+        isCodeScreenActive: this.isCodeScreenActive(),
+        isRegistering: this.isRegistering,
+        registrationRequestInFlight: DeviceActivationComponent.registrationRequestInFlight,
+      });
+      return false;
     }
 
     this.isRegistering = true;
@@ -129,17 +137,19 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
         (recoverResp: any) => {
           const data = recoverResp?.data ?? recoverResp;
           this.applyRegistrationData(data as DeviceRegistrationData);
+          this.trackManualRefreshSuccess(data as DeviceRegistrationData);
           this.notificationService.showSuccess('Device recovered successfully!', 5000);
           this.finishRegistrationRequest();
         },
         (recoverError: any) => {
           console.log('recover error (only)', recoverError);
-          this.logger.addLog('recoverDevice', { recoverError }, 'error');
+          console.error('[DeviceActivation] recoverDevice failed', recoverError);
+          void this.trackManualRefreshFailure(recoverError);
           this.notificationService.showError('Failed to recover device. Please try again.', 5000);
           this.finishRegistrationRequest();
         }
       );
-      return;
+      return true;
     }
 
     // Primer intento: /api/register
@@ -159,27 +169,34 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
             (recoverResp: any) => {
               const data = recoverResp?.data ?? recoverResp;
               this.applyRegistrationData(data as DeviceRegistrationData);
+              this.trackManualRefreshSuccess(data as DeviceRegistrationData);
               this.notificationService.showSuccess('Device recovered successfully!', 5000);
               this.finishRegistrationRequest();
             },
             (recoverError: any) => {
               console.log('recover error', recoverError);
-              this.logger.addLog('recoverDevice', { recoverError }, 'error');
+              console.error('[DeviceActivation] recoverDevice failed after already registered response', recoverError);
+              void this.trackManualRefreshFailure(recoverError);
               this.notificationService.showError('Failed to recover device. Please try again.', 5000);
               this.finishRegistrationRequest();
             }
           );
         } else {
           this.applyRegistrationData(resp.data as DeviceRegistrationData);
+          this.trackManualRefreshSuccess(resp.data as DeviceRegistrationData);
           this.notificationService.showSuccess('Device registered successfully!', 5000);
           this.finishRegistrationRequest();
         }
       },
       (error: any) => {
         console.log('register error', error);
+        console.error('[DeviceActivation] registerDeviceManually failed', { error, deviceId });
+        void this.trackManualRefreshFailure(error);
         this.finishRegistrationRequest();
       }
     );
+
+    return true;
   }
 
   private finishRegistrationRequest(): void {
@@ -220,7 +237,7 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
         await Toast.show({ text: `Update error: ${result.message}`, duration: 'long' });
       }
     } catch (error: any) {
-      this.logger.addLog('checkForUpdatesManually', { error }, 'error');
+      console.error('[DeviceActivation] checkForUpdatesManually failed', error);
       await Toast.show({ text: 'Update check failed.', duration: 'long' });
     } finally {
       this.isCheckingForUpdates = false;
@@ -241,19 +258,31 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
 
     if (!this.DeviceRegistrationData) {
       await this.registerAndResetCountdown();
-      this.startCodeCountdown();
       return;
     }
 
     const remainingSeconds = this.getRemainingSecondsFromRegistration(this.DeviceRegistrationData);
-    if (remainingSeconds > 0) {
+    if (remainingSeconds > 0 && this.hasValidRegistrationData(this.DeviceRegistrationData)) {
       this.remainingSeconds = remainingSeconds;
       this.startCodeCountdown();
       return;
     }
 
     await this.registerAndResetCountdown();
-    this.startCodeCountdown();
+  }
+
+  private async ensureActivationFlowReady(): Promise<void> {
+    if (this.initializationInProgress || !this.isCodeScreenActive()) {
+      return;
+    }
+
+    this.initializationInProgress = true;
+
+    try {
+      await this.initializeDeviceActivationFlow();
+    } finally {
+      this.initializationInProgress = false;
+    }
   }
 
   private async subscribeToDeviceWebhooks(): Promise<void> {
@@ -303,7 +332,7 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
         value: JSON.stringify(data)
       });
     } catch (error) {
-      this.logger.addLog('persistDeviceRegistrationData', { error }, 'error');
+      console.error('[DeviceActivation] persistDeviceRegistrationData failed', error);
     }
   }
 
@@ -313,7 +342,16 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
       if (!stored.value) {
         return;
       }
-      this.applyRegistrationData(JSON.parse(stored.value) as DeviceRegistrationData, false);
+      const parsed = JSON.parse(stored.value) as DeviceRegistrationData;
+      if (!this.hasValidRegistrationData(parsed)) {
+        await Preferences.remove({ key: this.DEVICE_REGISTRATION_STORAGE_KEY });
+        console.warn('[DeviceActivation] loadStoredDeviceRegistrationData invalid payload removed', parsed);
+        this.DeviceRegistrationData = null;
+        this.activationCode = '------';
+        this.remainingSeconds = 300;
+        return;
+      }
+      this.applyRegistrationData(parsed, false);
     } catch (error) {
       console.log('loadStoredDeviceRegistrationData', error);
     }
@@ -334,7 +372,11 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
       localStorage.setItem('tempToken', tempToken || '');
       localStorage.setItem('event', JSON.stringify(event));
       if (!IdDevice || !tempToken) {
-        this.logger.addLog('requestTokenFromConfirmation', { IdDevice, hasTempToken: !!tempToken, event }, 'error');
+        console.error('[DeviceActivation] requestTokenFromConfirmation missing IdDevice or tempToken', {
+          IdDevice,
+          hasTempToken: !!tempToken,
+          event,
+        });
         return;
       }
       // Si view_mode === 1, redirigimos a la pantalla de PIN y pausamos la solicitud de token aquí
@@ -364,7 +406,7 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
       await this.applyTokenResponseConfiguration(payload);
     } catch (error) {
       this.tokenRequestInProgress = false;
-      this.logger.addLog('requestTokenFromConfirmation', { error, event }, 'error');
+      console.error('[DeviceActivation] requestTokenFromConfirmation failed', { error, event });
     }
   }
 
@@ -373,11 +415,11 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
     const currentDeviceId = this.deviceMetadata?.uuid || this.DeviceRegistrationData?.device_id;
 
     if (!incomingDeviceId || !currentDeviceId || incomingDeviceId !== currentDeviceId) {
-      this.logger.addLog('requestTokenFromConfirmation.ignored', {
+      console.log('[DeviceActivation] requestTokenFromConfirmation ignored', {
         incomingDeviceId,
         currentDeviceId,
         reason: 'Device mismatch or missing device_id'
-      }, 'info');
+      });
       return false;
     }
 
@@ -389,7 +431,7 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
     const monitor = payload?.monitor;
     const room = monitor?.room;
     if (!accessToken || !monitor || !room?.id || !room?.branch_id) {
-      this.logger.addLog('applyTokenResponseConfiguration', { payload }, 'error');
+      console.error('[DeviceActivation] applyTokenResponseConfiguration invalid payload', payload);
       return;
     }
 
@@ -472,6 +514,11 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
         return;
       }
 
+      if (!this.deviceMetadata || this.activationCode === '------') {
+        void this.ensureActivationFlowReady();
+        return;
+      }
+
       if (!this.countdownInterval && !this.tokenRequestInProgress) {
         this.startCodeCountdown();
       }
@@ -510,25 +557,107 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
     }
   }
 
+  async refreshActivationCode(): Promise<void> {
+    if (!this.isCodeScreenActive() || this.isRegistering || DeviceActivationComponent.registrationRequestInFlight) {
+      console.warn('[DeviceActivation] refreshActivationCode skipped', {
+        isCodeScreenActive: this.isCodeScreenActive(),
+        isRegistering: this.isRegistering,
+        registrationRequestInFlight: DeviceActivationComponent.registrationRequestInFlight,
+      });
+      return;
+    }
+
+    if (!this.deviceMetadata) {
+      await this.ensureActivationFlowReady();
+    }
+
+    if (!this.deviceMetadata) {
+      console.warn('[DeviceActivation] refreshActivationCode skipped', {
+        reason: 'deviceMetadataUnavailable'
+      });
+      await Toast.show({ text: 'Unable to refresh code right now.', duration: 'short' });
+      return;
+    }
+
+    this.manualRefreshRequested = true;
+    console.log('[DeviceActivation] refreshActivationCode started', {
+      currentCode: this.activationCode,
+      remainingSeconds: this.remainingSeconds,
+      useRecoverOnly: this.useRecoverOnly,
+    });
+    await Toast.show({ text: 'Updating code...', duration: 'short' });
+    this.stopCodeCountdown();
+    await this.refreshCodeAndRestartCountdown();
+  }
+
   private async registerAndResetCountdown(): Promise<void> {
     if (!this.isCodeScreenActive()) {
       this.stopCodeCountdown();
       return;
     }
 
+    this.activationCode = '------';
     this.remainingSeconds = 300;
-    this.registerDeviceManually();
+    const started = this.registerDeviceManually();
+
+    if (!started) {
+      this.stopCodeCountdown();
+    }
+  }
+
+  private async refreshCodeAndRestartCountdown(): Promise<void> {
+    await this.registerAndResetCountdown();
+  }
+
+  private trackManualRefreshSuccess(data: DeviceRegistrationData): void {
+    if (!this.manualRefreshRequested) {
+      return;
+    }
+
+    this.manualRefreshRequested = false;
+    console.log('[DeviceActivation] refreshActivationCode succeeded', {
+      confirmation_code: data?.confirmation_code,
+      confirmation_expires_at: data?.confirmation_expires_at,
+      device_id: data?.device_id,
+    });
+  }
+
+  private async trackManualRefreshFailure(error: any): Promise<void> {
+    if (!this.manualRefreshRequested) {
+      return;
+    }
+
+    this.manualRefreshRequested = false;
+    console.error('[DeviceActivation] refreshActivationCode failed', error);
+    await Toast.show({ text: 'Code update failed.', duration: 'long' });
   }
 
   private applyRegistrationData(data: DeviceRegistrationData, persist: boolean = true): void {
+    if (!this.hasValidRegistrationData(data)) {
+      console.warn('[DeviceActivation] applyRegistrationData received invalid data', data);
+      return;
+    }
+
     this.DeviceRegistrationData = data;
     this.useRecoverOnly = true;
-    this.activationCode = data.confirmation_code || this.activationCode;
+    this.activationCode = data.confirmation_code;
     this.remainingSeconds = this.getRemainingSecondsFromRegistration(data);
+
+    if (this.isCodeScreenActive()) {
+      this.startCodeCountdown();
+    }
 
     if (persist) {
       void this.persistDeviceRegistrationData(data);
     }
+  }
+
+  private hasValidRegistrationData(data: DeviceRegistrationData | null): boolean {
+    if (!data) {
+      return false;
+    }
+
+    return !!data.device_id && !!data.temp_token && !!data.confirmation_code && !!data.confirmation_expires_at;
   }
 
   private getRemainingSecondsFromRegistration(data: DeviceRegistrationData | null): number {
@@ -587,7 +716,7 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
 
 
     } catch (error) {
-      this.logger.addLog('collectDeviceMetadata', { error }, 'error');
+      console.error('[DeviceActivation] collectDeviceMetadata failed', error);
       return {
         ipAddress: null,
         macAddress: null,
