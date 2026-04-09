@@ -79,7 +79,9 @@ button {
     border-radius: 5px;
     height: 60vh;
     padding: 0;
-    overflow-y: auto;
+    overflow: visible;
+    position: relative;
+    z-index: 1;
 }
 
 
@@ -281,6 +283,13 @@ h6 {
   flex-direction: column;
   gap: 10px;
   width: 100%;
+  overflow: visible;
+}
+
+.container ion-grid,
+.container form,
+.team-row {
+  overflow: visible;
 }
 
 .team-role,
@@ -356,7 +365,7 @@ h6 {
   border: 1px solid rgba(0, 0, 0, 0.2);
   border-radius: 6px;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
-  z-index: 9999;
+  z-index: 10000;
 }
 
 .autocomplete-loading,
