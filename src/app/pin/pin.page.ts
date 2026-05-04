@@ -19,7 +19,6 @@ import { WebhookService } from '../services/webhook.service';
 import { Device } from '@capacitor/device';
 import Swal from 'sweetalert2';
 
-
 interface DeviceTokenResponse {
   token_type: string;
   expires_in: number;
@@ -501,122 +500,6 @@ async deleteCurrentMonitor() {
     }
   }
 
-  private getStatusCode(error: any): number {
-    const rawStatus = error?.status
-      ?? error?.data?.status
-      ?? error?.response?.status
-      ?? error?.response?.data?.status
-      ?? error?.error?.status
-      ?? error?.error?.response?.status
-      ?? error?.error?.response?.data?.status
-      ?? error?.error?.error?.status;
-
-    const status = Number(rawStatus);
-    return Number.isFinite(status) ? status : 0;
-  }
-
-  private getRecaptchaValidationMessages(error: any): string[] {
-    const groups = [
-      error?.validation?.recaptcha,
-      error?.data?.validation?.recaptcha,
-      error?.response?.data?.validation?.recaptcha,
-      error?.error?.validation?.recaptcha,
-      error?.error?.data?.validation?.recaptcha,
-      error?.error?.response?.data?.validation?.recaptcha,
-      error?.error?.error?.validation?.recaptcha,
-    ];
-
-    const flattened = groups
-      .filter((group: any) => Array.isArray(group))
-      .reduce((acc: any[], group: any[]) => acc.concat(group), []);
-
-    return flattened
-      .filter((msg: any) => typeof msg === 'string' && msg.trim().length > 0)
-      .map((msg: string) => msg.trim());
-  }
-
-  private getErrorDetail(error: any): string {
-    if (!error || typeof error !== 'object') {
-      return '';
-    }
-
-    const validationMessages = this.getRecaptchaValidationMessages(error);
-    if (validationMessages.length > 0) {
-      return validationMessages[0];
-    }
-
-    const detailCandidates = [
-      error?.detail,
-      error?.data?.detail,
-      error?.response?.data?.detail,
-      error?.error?.detail,
-      error?.data?.message,
-      error?.response?.data?.message,
-      error?.error?.error?.detail,
-    ];
-
-    for (const candidate of detailCandidates) {
-      if (typeof candidate === 'string' && candidate.trim().length > 0) {
-        return candidate.trim();
-      }
-    }
-
-    const fallbackMessageCandidates = [
-      error?.message,
-      error?.error?.message,
-      error?.error?.data?.message,
-      error?.error?.response?.data?.message,
-      error?.error?.error?.message,
-    ];
-
-    for (const candidate of fallbackMessageCandidates) {
-      if (typeof candidate === 'string' && candidate.trim().length > 0) {
-        return candidate.trim();
-      }
-    }
-
-    return '';
-  }
-
-  private isRecaptchaAppClientMismatch(error: any): boolean {
-    const detail = this.getErrorDetail(error).toLowerCase();
-    const status = this.getStatusCode(error);
-
-    const validationMessages = this.getRecaptchaValidationMessages(error)
-      .map((msg: string) => msg.toLowerCase());
-
-    const hasRecaptchaValidation = validationMessages.length > 0;
-    const signalText = [
-      detail,
-      validationMessages.join(' | '),
-      String(error?.response?.data?.detail || '').toLowerCase(),
-      String(error?.data?.detail || '').toLowerCase(),
-      String(error?.error?.detail || '').toLowerCase(),
-      String(error?.error?.response?.data?.detail || '').toLowerCase(),
-    ].join(' | ');
-
-    const hasSuspiciousActivity = signalText.includes('suspicious activity detected. please try again later.');
-    const hasKnownRecaptchaCode = signalText.includes('[app_client_mismatch:')
-      || signalText.includes('[verify_failed:')
-      || signalText.includes('invalid-keys')
-      || signalText.includes('recaptcha');
-    const looksLikeHttpError = status >= 400 || status === 0;
-
-    return looksLikeHttpError && (hasRecaptchaValidation || hasSuspiciousActivity || hasKnownRecaptchaCode);
-  }
-
-  private escapeHtml(value: string): string {
-    const raw = String(value || '');
-    return raw
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/\"/g, '&quot;')
-      .replace(/'/g, '&#39;');
-  }
-
-
-
   async login() {
     if (this.isNavigating) return;
     this.isNavigating = true;
@@ -624,14 +507,23 @@ async deleteCurrentMonitor() {
       const event = localStorage.getItem('event')
       const IdDevice = event ? JSON.parse(event)?.id : null;
       const tempToken = localStorage.getItem('tempToken') || '';
-      const recaptchaToken = await this.getRecaptchaToken('monitor_pin_login');
-      const tokenResponse = await this.deviceservice.requestDeviceToken(IdDevice, {
+      const shouldSendRecaptcha = this.pin.length === 6;
+      const recaptchaToken = shouldSendRecaptcha
+        ? await this.getRecaptchaToken('monitor_pin_login')
+        : '';
+
+      const tokenRequestPayload: any = {
         temp_token: tempToken,
         user_pin: this.pin,
         client_id: environment.oauthObj.clientId,
         client_secret: environment.oauthObj.clientSecret,
-        [this.RECAPTCHA_FIELD_NAME]: recaptchaToken,
-      });
+      };
+
+      if (shouldSendRecaptcha && recaptchaToken) {
+        tokenRequestPayload[this.RECAPTCHA_FIELD_NAME] = recaptchaToken;
+      }
+
+      const tokenResponse = await this.deviceservice.requestDeviceToken(IdDevice, tokenRequestPayload);
 
       if (tokenResponse.status === 404) {
           this.loading = false;
@@ -692,15 +584,23 @@ async deleteCurrentMonitor() {
       const event = localStorage.getItem('event')
       const IdDevice = event ? JSON.parse(event)?.id : null;
       const tempToken = localStorage.getItem('tempToken') || '';
-      const recaptchaToken = await this.getRecaptchaToken('monitor_pin_login');
+      const shouldSendRecaptcha = this.pin.length === 6;
+      const recaptchaToken = shouldSendRecaptcha
+        ? await this.getRecaptchaToken('monitor_pin_login')
+        : '';
 
-      const tokenResponse = await this.deviceservice.requestDeviceToken(IdDevice, {
+      const tokenRequestPayload: any = {
         temp_token: tempToken,
         user_pin: this.pin,
         client_id: environment.oauthObj.clientId,
         client_secret: environment.oauthObj.clientSecret,
-        [this.RECAPTCHA_FIELD_NAME]: recaptchaToken,
-      });
+      };
+
+      if (shouldSendRecaptcha && recaptchaToken) {
+        tokenRequestPayload[this.RECAPTCHA_FIELD_NAME] = recaptchaToken;
+      }
+
+      const tokenResponse = await this.deviceservice.requestDeviceToken(IdDevice, tokenRequestPayload);
 
       if (tokenResponse.status === 404) {
         this.loading = false;

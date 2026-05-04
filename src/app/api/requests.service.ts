@@ -47,19 +47,19 @@ export class RequestsService {
         try {
           const adminResponse = await Preferences.get({ key: 'admin' });
 
-          if (adminResponse.value) {
-            this.setAdminToken(this.token);
-          }
+                    if (adminResponse.value) {
+                        this.setAdminToken(this.token);
+                    }
 
           const configResponse = await Preferences.get({ key: 'config' });
 
           if (configResponse.value) {
-            this.setConfig(JSON.parse(configResponse.value));
+                        this.setConfig(JSON.parse(configResponse.value));
           }
 
           const userResponse = await Preferences.get({ key: 'user' });
-          if (userResponse.value) {
-            this.setToken(this.token);
+                    if (userResponse.value) {
+                        this.setToken(this.token);
           }
 
           const lastSyncResponse = await Preferences.get({ key: 'lastSync' });
@@ -795,15 +795,17 @@ export class RequestsService {
 
     authorizeBroadcasting(socketId: string, channelName: string): Observable<any> {
       const is_monitor_channel = channelName.includes('monitors');
-      let tokenmonitor = is_monitor_channel ? localStorage.getItem('monitorToken') : this.token;
+            let tokenmonitor = is_monitor_channel ? localStorage.getItem('monitorToken') : this.token;
       if (String(this.config?.aplication) !== '1') {
-          tokenmonitor = this.token;
+                    tokenmonitor = this.token;
       }
-      const headers = new HttpHeaders({
-          Authorization: `Bearer ${tokenmonitor}`,
+
+            const headers = new HttpHeaders({
+                    Authorization: `Bearer ${tokenmonitor}`,
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         });
+
       return this.http.post(!is_monitor_channel ? `${environment.url}/broadcasting/auth` : `${urlMonitor}/api/broadcasting/auth`,
         {
           socket_id: socketId,
