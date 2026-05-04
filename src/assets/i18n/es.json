@@ -115,7 +115,7 @@
     "adminOptions": "Opciones de Administrador",
     "selectOption": "Seleccione una opción para continuar",
     "showResolution": "Mostrar Resolución",
-    "closeApp": "Cerrar Aplicación",
+    "closeApp": "Reiniciar Aplicación",
     "deviceResolution": "Resolución del Dispositivo",
     "incorrectPin": "El PIN que ingresó es incorrecto. Por favor inicie sesión nuevamente.",
     "incorrectMonitor": "El monitor actual no existe.",

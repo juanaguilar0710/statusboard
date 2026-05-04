@@ -115,7 +115,7 @@
     "adminOptions": "Admin Options",
     "selectOption": "Select an option to proceed",
     "showResolution": "Show Resolution",
-    "closeApp": "Close App",
+    "closeApp": "Reset App",
     "deviceResolution": "Device Resolution",
     "incorrectPin": "The PIN you entered is incorrect. Please sign in again.",
     "incorrectMonitor": "The current monitor does not exist.",

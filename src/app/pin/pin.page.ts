@@ -17,6 +17,7 @@ import { TranslateService } from '../services/translate.service';
 import { DevicesService } from '../api/devices.service';
 import { WebhookService } from '../services/webhook.service';
 import { Device } from '@capacitor/device';
+import Swal from 'sweetalert2';
 
 
 interface DeviceTokenResponse {
@@ -58,6 +59,9 @@ export class PinPage implements OnInit{//, OnDestroy {
 
   private readonly DEVICE_REGISTRATION_STORAGE_KEY = 'deviceRegistrationData';
   private readonly DEVICE_TOKEN_RESPONSE_STORAGE_KEY = 'deviceTokenResponse';
+  private readonly RECAPTCHA_FIELD_NAME = 'g-recaptcha-response';
+  private readonly RECAPTCHA_SCRIPT_ID = 'google-recaptcha-v3';
+  private recaptchaScriptLoadPromise: Promise<void> | null = null;
 
   @Input() pagetitle: String = "Enter Pin";
   loading: boolean = true;
@@ -139,6 +143,26 @@ export class PinPage implements OnInit{//, OnDestroy {
     await alert.present();
   }
 
+  private async showLogAlert(action: string, details: any = {}): Promise<void> {
+    const detailMessage = details?.error?.detail
+      || details?.error?.message
+      || details?.detail
+      || details?.message
+      || '';
+
+    const message = detailMessage
+      ? `${action}<br><br>${detailMessage}`
+      : action;
+
+    const alert = await this.alertController.create({
+      header: 'Error',
+      message,
+      buttons: ['OK']
+    });
+
+    await alert.present();
+  }
+
   async checkForUpdatesManually(): Promise<void> {
     if (this.isCheckingForUpdates) {
       return;
@@ -166,7 +190,7 @@ export class PinPage implements OnInit{//, OnDestroy {
         await Toast.show({ text: `Update error: ${result.message}`, duration: 'long' });
       }
     } catch (error: any) {
-      this.logger.addLog('pin.checkForUpdatesManually', { error }, 'error');
+      await this.showLogAlert('pin.checkForUpdatesManually', { error });
       await Toast.show({ text: 'Update check failed.', duration: 'long' });
     } finally {
       this.isCheckingForUpdates = false;
@@ -397,6 +421,202 @@ async deleteCurrentMonitor() {
         await resolutionAlert.present();
       }
 
+  private getRecaptchaSiteKey(): string {
+    return String(environment?.recaptcha?.siteKey || '').trim();
+  }
+
+  private async ensureRecaptchaScriptLoaded(): Promise<void> {
+    const siteKey = this.getRecaptchaSiteKey();
+    if (!siteKey || typeof window === 'undefined' || typeof document === 'undefined') {
+      return;
+    }
+
+    const hasRecaptchaGlobal = (window as any).grecaptcha
+      && typeof (window as any).grecaptcha.execute === 'function'
+      && typeof (window as any).grecaptcha.ready === 'function';
+
+    if (hasRecaptchaGlobal) {
+      return;
+    }
+
+    if (!this.recaptchaScriptLoadPromise) {
+      this.recaptchaScriptLoadPromise = new Promise<void>((resolve, reject) => {
+        let scriptElement = document.getElementById(this.RECAPTCHA_SCRIPT_ID) as HTMLScriptElement | null;
+        if (!scriptElement) {
+          scriptElement = document.createElement('script');
+          scriptElement.id = this.RECAPTCHA_SCRIPT_ID;
+          scriptElement.src = `https://www.google.com/recaptcha/api.js?render=${encodeURIComponent(siteKey)}`;
+          scriptElement.async = true;
+          scriptElement.defer = true;
+          document.head.appendChild(scriptElement);
+        }
+
+        const startTime = Date.now();
+        const timeoutMs = 12000;
+        const interval = window.setInterval(() => {
+          const grecaptcha = (window as any).grecaptcha;
+          if (grecaptcha && typeof grecaptcha.execute === 'function' && typeof grecaptcha.ready === 'function') {
+            window.clearInterval(interval);
+            resolve();
+            return;
+          }
+
+          if (Date.now() - startTime > timeoutMs) {
+            window.clearInterval(interval);
+            reject(new Error('reCAPTCHA script load timeout'));
+          }
+        }, 100);
+
+        scriptElement.addEventListener('error', () => {
+          window.clearInterval(interval);
+          reject(new Error('reCAPTCHA script failed to load'));
+        }, { once: true });
+      });
+    }
+
+    return this.recaptchaScriptLoadPromise;
+  }
+
+  private async getRecaptchaToken(action: string): Promise<string> {
+    const siteKey = this.getRecaptchaSiteKey();
+    if (!siteKey) {
+      return '';
+    }
+
+    try {
+      await this.ensureRecaptchaScriptLoaded();
+
+      const grecaptcha = (window as any).grecaptcha;
+      if (!grecaptcha || typeof grecaptcha.ready !== 'function' || typeof grecaptcha.execute !== 'function') {
+        return '';
+      }
+
+      await new Promise<void>((resolve) => grecaptcha.ready(() => resolve()));
+      const token = await grecaptcha.execute(siteKey, { action });
+
+      return typeof token === 'string' ? token : '';
+    } catch (error) {
+      await this.showLogAlert('pin.getRecaptchaToken', { error, action });
+      return '';
+    }
+  }
+
+  private getStatusCode(error: any): number {
+    const rawStatus = error?.status
+      ?? error?.data?.status
+      ?? error?.response?.status
+      ?? error?.response?.data?.status
+      ?? error?.error?.status
+      ?? error?.error?.response?.status
+      ?? error?.error?.response?.data?.status
+      ?? error?.error?.error?.status;
+
+    const status = Number(rawStatus);
+    return Number.isFinite(status) ? status : 0;
+  }
+
+  private getRecaptchaValidationMessages(error: any): string[] {
+    const groups = [
+      error?.validation?.recaptcha,
+      error?.data?.validation?.recaptcha,
+      error?.response?.data?.validation?.recaptcha,
+      error?.error?.validation?.recaptcha,
+      error?.error?.data?.validation?.recaptcha,
+      error?.error?.response?.data?.validation?.recaptcha,
+      error?.error?.error?.validation?.recaptcha,
+    ];
+
+    const flattened = groups
+      .filter((group: any) => Array.isArray(group))
+      .reduce((acc: any[], group: any[]) => acc.concat(group), []);
+
+    return flattened
+      .filter((msg: any) => typeof msg === 'string' && msg.trim().length > 0)
+      .map((msg: string) => msg.trim());
+  }
+
+  private getErrorDetail(error: any): string {
+    if (!error || typeof error !== 'object') {
+      return '';
+    }
+
+    const validationMessages = this.getRecaptchaValidationMessages(error);
+    if (validationMessages.length > 0) {
+      return validationMessages[0];
+    }
+
+    const detailCandidates = [
+      error?.detail,
+      error?.data?.detail,
+      error?.response?.data?.detail,
+      error?.error?.detail,
+      error?.data?.message,
+      error?.response?.data?.message,
+      error?.error?.error?.detail,
+    ];
+
+    for (const candidate of detailCandidates) {
+      if (typeof candidate === 'string' && candidate.trim().length > 0) {
+        return candidate.trim();
+      }
+    }
+
+    const fallbackMessageCandidates = [
+      error?.message,
+      error?.error?.message,
+      error?.error?.data?.message,
+      error?.error?.response?.data?.message,
+      error?.error?.error?.message,
+    ];
+
+    for (const candidate of fallbackMessageCandidates) {
+      if (typeof candidate === 'string' && candidate.trim().length > 0) {
+        return candidate.trim();
+      }
+    }
+
+    return '';
+  }
+
+  private isRecaptchaAppClientMismatch(error: any): boolean {
+    const detail = this.getErrorDetail(error).toLowerCase();
+    const status = this.getStatusCode(error);
+
+    const validationMessages = this.getRecaptchaValidationMessages(error)
+      .map((msg: string) => msg.toLowerCase());
+
+    const hasRecaptchaValidation = validationMessages.length > 0;
+    const signalText = [
+      detail,
+      validationMessages.join(' | '),
+      String(error?.response?.data?.detail || '').toLowerCase(),
+      String(error?.data?.detail || '').toLowerCase(),
+      String(error?.error?.detail || '').toLowerCase(),
+      String(error?.error?.response?.data?.detail || '').toLowerCase(),
+    ].join(' | ');
+
+    const hasSuspiciousActivity = signalText.includes('suspicious activity detected. please try again later.');
+    const hasKnownRecaptchaCode = signalText.includes('[app_client_mismatch:')
+      || signalText.includes('[verify_failed:')
+      || signalText.includes('invalid-keys')
+      || signalText.includes('recaptcha');
+    const looksLikeHttpError = status >= 400 || status === 0;
+
+    return looksLikeHttpError && (hasRecaptchaValidation || hasSuspiciousActivity || hasKnownRecaptchaCode);
+  }
+
+  private escapeHtml(value: string): string {
+    const raw = String(value || '');
+    return raw
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/\"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+
+
   async login() {
     if (this.isNavigating) return;
     this.isNavigating = true;
@@ -404,11 +624,13 @@ async deleteCurrentMonitor() {
       const event = localStorage.getItem('event')
       const IdDevice = event ? JSON.parse(event)?.id : null;
       const tempToken = localStorage.getItem('tempToken') || '';
+      const recaptchaToken = await this.getRecaptchaToken('monitor_pin_login');
       const tokenResponse = await this.deviceservice.requestDeviceToken(IdDevice, {
         temp_token: tempToken,
         user_pin: this.pin,
         client_id: environment.oauthObj.clientId,
         client_secret: environment.oauthObj.clientSecret,
+        [this.RECAPTCHA_FIELD_NAME]: recaptchaToken,
       });
 
       if (tokenResponse.status === 404) {
@@ -431,6 +653,7 @@ async deleteCurrentMonitor() {
       this.appComponent.resetSession();
     } catch (error: any) {
       console.error('Error durante el proceso de login:', error);
+
       this.handleInput("clear");
       this.loading = false;
       try {
@@ -469,12 +692,14 @@ async deleteCurrentMonitor() {
       const event = localStorage.getItem('event')
       const IdDevice = event ? JSON.parse(event)?.id : null;
       const tempToken = localStorage.getItem('tempToken') || '';
+      const recaptchaToken = await this.getRecaptchaToken('monitor_pin_login');
 
       const tokenResponse = await this.deviceservice.requestDeviceToken(IdDevice, {
         temp_token: tempToken,
         user_pin: this.pin,
         client_id: environment.oauthObj.clientId,
         client_secret: environment.oauthObj.clientSecret,
+        [this.RECAPTCHA_FIELD_NAME]: recaptchaToken,
       });
 
       if (tokenResponse.status === 404) {
@@ -491,6 +716,15 @@ async deleteCurrentMonitor() {
         this.handleInput("clear");
         return;
       }
+
+      if (tokenResponse.status === 500) {
+        this.loading = false;
+        this.notificationService.showError(tokenResponse.data.error.detail ? tokenResponse.data.error.detail : this.translate.instant('pin.incorrectMonitor'), 6000);
+        this.handleInput("clear");
+        return;
+      }
+
+
       const payload = (tokenResponse?.data ?? tokenResponse);
       await this.applyTokenResponseConfiguration(payload);
     } catch (error: any) {
@@ -509,7 +743,7 @@ async deleteCurrentMonitor() {
     const room = monitor?.room;
 
     if (!accessToken || !monitor || !room?.id || !room?.branch_id) {
-      this.logger.addLog('applyTokenResponseConfiguration', { payload }, 'error');
+      await this.showLogAlert('applyTokenResponseConfiguration', { payload });
       this.loading = false;
       this.handleInput("clear");
       return;
@@ -754,7 +988,7 @@ async deleteCurrentMonitor() {
     const room = monitor?.room;
 
     if (!accessToken || !monitor || !room?.id || !room?.branch_id) {
-      this.logger.addLog('applyTokenResponseConfiguration', { payload }, 'error');
+      await this.showLogAlert('applyTokenResponseConfiguration', { payload });
       return;
     }
 

@@ -46,7 +46,7 @@ export class DevicesService {
         return from(CapacitorHttp.post(options));
     }
 
-    async requestDeviceToken(IdDevice: string | number, payload: { temp_token: string; client_id: string; client_secret: string; user_pin?: string }): Promise<any> {
+    async requestDeviceToken(IdDevice: string | number, payload: { temp_token: string; client_id: string; client_secret: string; user_pin?: string; 'g-recaptcha-response'?: string }): Promise<any> {
         // Clonamos el payload para no mutar el objeto original
         const payloadToSend = { ...payload };
 
