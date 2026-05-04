@@ -236,7 +236,8 @@ export const environment = {
     grantTypeRefresh: 'refresh_token',
   },
   recaptcha: {
-    siteKey: '6Ldf2rosAAAAAC-_VA95pORtUaigAL4ToZVXqbC_'
+    //siteKey: '6Lc25IUrAAAAAMLDVrv8GN9AaWncSIVmR24k8mCh'//prod
+    siteKey: '6Lc-eVsrAAAAAMFBZySq-J5kyH1mondkQNtSaKVU'//Dev
   },
   auth: '/auth',
   profile: '/profile',
