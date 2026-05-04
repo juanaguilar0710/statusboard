@@ -11,7 +11,7 @@ export const environment = {
   currentPageWhitPatients: 0,
   roomsPerPageWhitPatients: 8,
   pageSizeWhitPatients: 5,
-  timeForCardsWhitPatients: 10000,//adentro de las cards
+  timeForCardsWhitPatients: 10000, //adentro de las cards
   timeRoomsPerPageWhitPatients: 60000,//pagina completa
 
   broadcasting: {
