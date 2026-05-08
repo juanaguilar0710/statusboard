@@ -12,7 +12,7 @@ import { WebhookService } from 'src/app/services/webhook.service';
 import { environment } from 'src/environments/environment';
 import { DevicesService } from 'src/app/api/devices.service';
 import { NavigationEnd, Router } from '@angular/router';
-import { Subscription } from 'rxjs';
+import { Subscription, firstValueFrom } from 'rxjs';
 
 export interface DeviceRegistrationData {
   id: string;
@@ -410,11 +410,11 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
       this.tokenRequestInProgress = true;
       this.stopCodeCountdown();
 
-      const tokenResponse = await this.deviceservice.requestDeviceToken(IdDevice, {
+      const tokenResponse = await firstValueFrom(this.deviceservice.requestDeviceToken(IdDevice, {
         temp_token: tempToken,
         client_id: environment.oauthObj.clientId,
         client_secret: environment.oauthObj.clientSecret,
-      });
+      }));
       const payload = (tokenResponse?.data ?? tokenResponse) as DeviceTokenResponse;
       await this.applyTokenResponseConfiguration(payload);
     } catch (error) {

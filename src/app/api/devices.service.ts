@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { CapacitorHttp, HttpResponse } from '@capacitor/core';
-import { from } from 'rxjs';
+import { Observable, from } from 'rxjs';
 import { environment } from 'src/environments/environment';
 
 const urlMonitor = environment.url.replace('api', 'monitor');
@@ -46,7 +46,7 @@ export class DevicesService {
         return from(CapacitorHttp.post(options));
     }
 
-    async requestDeviceToken(IdDevice: string | number, payload: { temp_token: string; client_id: string; client_secret: string; user_pin?: string; 'g-recaptcha-response'?: string }): Promise<any> {
+    requestDeviceToken(IdDevice: string | number, payload: { temp_token: string; client_id: string; client_secret: string; user_pin?: string; 'g-recaptcha-response'?: string }): Observable<HttpResponse> {
         // Clonamos el payload para no mutar el objeto original
         const payloadToSend = { ...payload };
 
@@ -61,7 +61,7 @@ export class DevicesService {
             data: payloadToSend,
         };
 
-        return CapacitorHttp.post(options);
+        return from(CapacitorHttp.post(options));
     }
 
     async deleteMonitor(id: string | number, token: string): Promise<HttpResponse> {

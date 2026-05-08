@@ -17,6 +17,7 @@ import { TranslateService } from '../services/translate.service';
 import { DevicesService } from '../api/devices.service';
 import { WebhookService } from '../services/webhook.service';
 import { Device } from '@capacitor/device';
+import { firstValueFrom } from 'rxjs';
 import Swal from 'sweetalert2';
 
 interface DeviceTokenResponse {
@@ -250,11 +251,11 @@ export class PinPage implements OnInit{//, OnDestroy {
       const IdDevice = event ? JSON.parse(event)?.id : null;
       const tempToken = localStorage.getItem('tempToken') || '';
 
-      const tokenMonitorResponse = await this.deviceservice.requestDeviceToken(IdDevice, {
+      const tokenMonitorResponse = await firstValueFrom(this.deviceservice.requestDeviceToken(IdDevice, {
           temp_token: tempToken,
           client_id: environment.oauthObj.clientId,
           client_secret: environment.oauthObj.clientSecret,
-        });
+        }));
 
       localStorage.setItem('monitorToken', tokenMonitorResponse.data.access_token);
       await this.applyTokenMonitorResponseConfiguration(tokenMonitorResponse.data);
@@ -523,7 +524,10 @@ async deleteCurrentMonitor() {
         tokenRequestPayload[this.RECAPTCHA_FIELD_NAME] = recaptchaToken;
       }
 
-      const tokenResponse = await this.deviceservice.requestDeviceToken(IdDevice, tokenRequestPayload);
+      const tokenResponse = await firstValueFrom(this.deviceservice.requestDeviceToken(IdDevice, tokenRequestPayload));
+
+      console.log(tokenResponse);
+
 
       if (tokenResponse.status === 404) {
           this.loading = false;
@@ -536,6 +540,13 @@ async deleteCurrentMonitor() {
       if (tokenResponse.status === 401) {
         this.loading = false;
         this.notificationService.showError(tokenResponse.data?.message || this.translate.instant('pin.incorrectPin'), 6000);
+        this.handleInput("clear");
+        return;
+      }
+
+      if (tokenResponse.status === 500) {
+        this.loading = false;
+        this.notificationService.showError(tokenResponse.data.error.detail || this.translate.instant('pin.incorrectPin'), 6000);
         this.handleInput("clear");
         return;
       }
@@ -600,7 +611,8 @@ async deleteCurrentMonitor() {
         tokenRequestPayload[this.RECAPTCHA_FIELD_NAME] = recaptchaToken;
       }
 
-      const tokenResponse = await this.deviceservice.requestDeviceToken(IdDevice, tokenRequestPayload);
+      const tokenResponse = await firstValueFrom(this.deviceservice.requestDeviceToken(IdDevice, tokenRequestPayload));
+      console.log(tokenResponse);
 
       if (tokenResponse.status === 404) {
         this.loading = false;
@@ -617,9 +629,9 @@ async deleteCurrentMonitor() {
         return;
       }
 
-      if (tokenResponse.status === 500) {
+       if (tokenResponse.status === 500) {
         this.loading = false;
-        this.notificationService.showError(tokenResponse.data.error.detail ? tokenResponse.data.error.detail : this.translate.instant('pin.incorrectMonitor'), 6000);
+        this.notificationService.showError(tokenResponse.data.error.detail || this.translate.instant('pin.incorrectPin'), 6000);
         this.handleInput("clear");
         return;
       }

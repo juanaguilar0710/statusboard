@@ -5,11 +5,12 @@ const config: CapacitorConfig = {
   appName: 'status-board',
   webDir: 'www',
   server: {
-    androidScheme: 'https'
+    androidScheme: 'https',
+    cleartext: true
   },
   plugins: {
     CapacitorHttp: {
-      enabled: true,
+      enabled: true
     },
     LiveUpdates: {
       //appId: 'e6702712', //development
