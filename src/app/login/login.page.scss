@@ -4,30 +4,57 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px;
-  background-image: url('/assets/DTouchMediaBanner.png');
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
+  padding: clamp(16px, 2.6vw, 28px);
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 12% 10%, rgba(126, 216, 255, 0.22), transparent 18%),
+    radial-gradient(circle at 88% 20%, rgba(74, 179, 255, 0.14), transparent 20%),
+    linear-gradient(180deg, #08268b 0%, #0b2a93 44%, #0a55bb 100%);
+}
+
+.activation-wrapper::before,
+.activation-wrapper::after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+}
+
+.activation-wrapper::before {
+  inset: 0;
+  background:
+    radial-gradient(circle at 24% 24%, rgba(255, 255, 255, 0.07), transparent 24%),
+    radial-gradient(circle at 79% 17%, rgba(65, 195, 255, 0.12), transparent 14%),
+    radial-gradient(circle at 82% 77%, rgba(18, 164, 255, 0.16), transparent 20%);
+}
+
+.activation-wrapper::after {
+  inset: auto auto -120px -120px;
+  width: 360px;
+  height: 360px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 70%);
+  opacity: 0.35;
 }
 
 .login-content {
-  --background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%);
+  --background: transparent;
   --padding-top: 0;
   --padding-bottom: 0;
   overflow: hidden;
 }
 
 .login-container {
-  height: 100vh;
+  min-height: 100vh;
+  width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: space-evenly;
-  padding: 1rem 1rem 0.5rem;
+  justify-content: center;
   max-width: 100%;
   overflow: hidden;
-  animation: fadeIn 0.4s ease-in;
+  position: relative;
+  z-index: 1;
 }
 
 // Header
