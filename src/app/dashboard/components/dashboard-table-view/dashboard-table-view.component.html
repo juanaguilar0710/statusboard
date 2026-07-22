@@ -1,37 +1,38 @@
-<ion-row>
+<ion-row class="portal-table-row">
   <ion-col size="12">
-    <table style="width: 100%; border-collapse: collapse; text-align: left; table-layout: fixed;">
+    <div class="portal-table-shell">
+    <table class="portal-table">
       <thead>
-        <tr style="background-color: #b5d7f0;">
-          <th style="padding: 8px; width: 5%;">{{ 'dashboard.id' | translate }}</th>
-          <th style="padding: 8px; width: 18%;">{{ 'dashboard.patient' | translate }}</th>
-          <th style="padding: 8px; width: 5%;">{{ 'dashboard.age' | translate }}</th>
-          <th style="padding: 8px; width: 8%;">{{ 'dashboard.oRoom' | translate }}</th>
-          <th style="padding: 8px; width: 15%;">{{ 'dashboard.surgeon' | translate }}</th>
-          <th style="padding: 8px; width: 17%;">{{ 'dashboard.procedure' | translate }}</th>
-          <th style="padding: 8px; width: 7%;">{{ 'dashboard.time' | translate }}</th>
-          <th style="padding: 8px; width: 13%;">{{ 'dashboard.status' | translate }}</th>
-          <th style="padding: 8px; width: 7%;">{{ 'dashboard.room' | translate }}</th>
-          <th style="padding: 20px;"></th>
+        <tr>
+          <th style="width: 5%;">{{ 'dashboard.id' | translate }}</th>
+          <th style="width: 18%;">{{ 'dashboard.patient' | translate }}</th>
+          <th style="width: 5%;">{{ 'dashboard.age' | translate }}</th>
+          <th style="width: 8%;">{{ 'dashboard.oRoom' | translate }}</th>
+          <th style="width: 15%;">{{ 'dashboard.surgeon' | translate }}</th>
+          <th style="width: 17%;">{{ 'dashboard.procedure' | translate }}</th>
+          <th style="width: 7%;">{{ 'dashboard.time' | translate }}</th>
+          <th style="width: 13%;">{{ 'dashboard.status' | translate }}</th>
+          <th style="width: 7%;">{{ 'dashboard.room' | translate }}</th>
+          <th style="width: 5%;"></th>
         </tr>
       </thead>
 
-      <tbody style="background-color: white;">
+      <tbody>
         <ng-container *ngFor="let patient of getPatientsForCurrentPage()">
-          <tr [ngClass]="{ 'highlight-updated': isPatientUpdated(patient.id) }" style="border-bottom: 1px solid #f0f0f0;">
-            <td class="textCardPatients text-ellipsis" style="padding: 8px; width: 5%;">{{ patient.identifier }}</td>
-            <td class="textCardPatients text-ellipsis" style="padding: 8px; width: 20%;">
+          <tr [ngClass]="{ 'highlight-updated': isPatientUpdated(patient.id) }">
+            <td class="textCardPatients text-ellipsis">{{ patient.identifier }}</td>
+            <td class="textCardPatients text-ellipsis">
               <strong>{{ getPatientDisplayName(patient) | uppercase }}</strong>
             </td>
-            <td class="textCardPatients text-ellipsis" style="padding: 8px; width: 10%;">{{ patient.age }}{{ patient.age ? getAgeSuffix() : '' }}</td>
-            <td class="textCardPatients text-ellipsis" style="padding: 8px; width: 10%;">{{ patient.operating_room_name }}</td>
-            <td class="textCardPatients text-ellipsis" style="padding: 8px; width: 20%;">
+            <td class="textCardPatients text-ellipsis">{{ patient.age }}{{ patient.age ? getAgeSuffix() : '' }}</td>
+            <td class="textCardPatients text-ellipsis">{{ patient.operating_room_name }}</td>
+            <td class="textCardPatients text-ellipsis">
               <span class="badge" *ngIf="patient.surgeon_color" [ngStyle]="{ 'background-color': patient.surgeon_color }">{{ patient.surgeon_name }}</span>
               <!-- no se esta aplicando el color -->
               <span *ngIf="!patient.surgeon_color">{{ patient.surgeon_name }}</span>
             </td>
-            <td class="textCardPatients text-ellipsis ellipsis" style="padding: 8px;">{{ patient.procedure_name }}</td>
-            <td class="textCardPatients text-ellipsis" style="padding: 8px; width: 10%;">
+            <td class="textCardPatients text-ellipsis ellipsis">{{ patient.procedure_name }}</td>
+            <td class="textCardPatients text-ellipsis">
               {{
                 patient.procedure_time
                   ? (patient.procedure_time.split(':')[0] % 12 || 12) +
@@ -43,7 +44,6 @@
             </td>
             <td
               class="textCardPatients text-ellipsis"
-              style="padding: 8px; width: 20%;"
               [ngClass]="{
                 surgery: patient.status?.type === 'surgery',
                 holding: patient.status?.type === 'holding',
@@ -52,15 +52,16 @@
               }">
               {{ patient.status_name === 'Cancelado' ? patient.status_name : patient.status?.name }}
             </td>
-            <td class="textCardPatients text-ellipsis" style="padding: 8px; width: 10%;">{{ patient.recovery_room }}</td>
-            <td style="width: 20%;">
-              <div class="icon-container" style="text-align-last: center;" *ngIf="!patient.phone_national_format">
-                <img src="assets/icon/Phone.png" width="45%" />
+            <td class="textCardPatients text-ellipsis">{{ patient.recovery_room }}</td>
+            <td>
+              <div class="icon-container portal-table-icon-cell" *ngIf="!patient.phone_national_format">
+                <img src="assets/icon/Phone.png" class="portal-table-phone" />
               </div>
             </td>
           </tr>
         </ng-container>
       </tbody>
     </table>
+    </div>
   </ion-col>
 </ion-row>
