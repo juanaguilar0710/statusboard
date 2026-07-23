@@ -1,3 +1,28 @@
 ion-item {
     cursor: pointer;
 }
+
+.rooms-shell {
+    border-radius: 12px;
+    border: 1px solid #d5e6ff;
+    background: linear-gradient(180deg, #ffffff 0%, #f7fbff 100%);
+    box-shadow: 0 12px 26px rgba(17, 102, 220, 0.16);
+    overflow: hidden;
+}
+
+.rooms-header {
+    border-bottom: 1px solid #dbe6f7;
+    padding: 10px 8px;
+    background: linear-gradient(90deg, #1e1491 0%, #1366dd 56%, #0094ff 100%);
+    color: #fff;
+}
+
+.visitor {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+.modal-action-col {
+    padding: 0 10px;
+}

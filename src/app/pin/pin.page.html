@@ -1,13 +1,15 @@
-<ion-content [fullscreen]="true">
-  <div *ngIf="!this.loading && !isInitializing" class="d-flex align-items-center flex-column justify-content-between" style="height: 100%;">
-    <div>
-      <img class="logo" src="assets/logos/StatusBoard_Black.png" alt="logo" style="margin-top: 15px;" />
-      <div style="position: absolute; top: 15px; left: 15px; text-align: center;">
+<ion-content [fullscreen]="true" class="turnboard-pin-content">
+  <div *ngIf="!this.loading && !isInitializing" class="d-flex align-items-center flex-column justify-content-between pin-shell">
+    <div class="pin-topbar">
+      <div class="pin-info-center"> 
+        <img class="logo pin-logo" src="assets/logos/StatusBoard_Black.png" alt="logo" />
+      </div>
+      <div class="pin-info-left">
         <img *ngIf="this.image_url !== '' " [src]="this.image_url" width="200px" />
         <h5 *ngIf="this.branch_name !== '' " class="info">{{this.branch_name}}</h5>
         <h5 *ngIf="this.waitingRoom_name !== '' " class="info">{{this.waitingRoom_name}}</h5>
       </div>
-      <div style="position: absolute; top: 15px; right: 15px; text-align: center;">
+      <div class="pin-info-right">
         <div class="my-3">
           <span [ngClass]="{'online' : networkStatus === 'ONLINE', 'offline' : networkStatus === 'OFFLINE'}">
             <b>{{networkStatus === 'ONLINE' ? ('pin.online' | translate) : ('pin.offline' | translate)}}</b>
@@ -17,23 +19,23 @@
         </div>
       </div>
     </div>
-    <div class="whitNumbers">
+    <div class="whitNumbers pin-keypad-card">
 
-      <div class="text-center">
+      <div class="text-center pin-welcome-block">
         <h1><b>{{loading ? ('pin.loading' | translate) : ('pin.welcome' | translate)}}</b></h1>
         <h5>{{loading ? ('pin.tryingLogin' | translate) : ('pin.enterAccessCode' | translate)}}</h5>
       </div>
 
-      <ion-grid>
-        <div class="text-center" *ngIf="!loading">
-          <ion-icon size="large" [name]="pin.length>0 ? 'radio-button-on-outline' : 'radio-button-off-outline'"></ion-icon>
-          <ion-icon size="large" [name]="pin.length>1 ? 'radio-button-on-outline' : 'radio-button-off-outline'"></ion-icon>
-          <ion-icon size="large" [name]="pin.length>2 ? 'radio-button-on-outline' : 'radio-button-off-outline'"></ion-icon>
-          <ion-icon size="large" [name]="pin.length>3 ? 'radio-button-on-outline' : 'radio-button-off-outline'"></ion-icon>
-          <ion-icon size="large" [name]="pin.length>4 ? 'radio-button-on-outline' : 'radio-button-off-outline'"></ion-icon>
-          <ion-icon size="large" [name]="pin.length>5 ? 'radio-button-on-outline' : 'radio-button-off-outline'"></ion-icon>
+      <ion-grid class="pin-state-grid">
+        <div class="text-center pin-state-indicators" *ngIf="!loading">
+          <ion-icon class="pin-state-dot" size="large" [name]="pin.length>0 ? 'radio-button-on-outline' : 'radio-button-off-outline'"></ion-icon>
+          <ion-icon class="pin-state-dot" size="large" [name]="pin.length>1 ? 'radio-button-on-outline' : 'radio-button-off-outline'"></ion-icon>
+          <ion-icon class="pin-state-dot" size="large" [name]="pin.length>2 ? 'radio-button-on-outline' : 'radio-button-off-outline'"></ion-icon>
+          <ion-icon class="pin-state-dot" size="large" [name]="pin.length>3 ? 'radio-button-on-outline' : 'radio-button-off-outline'"></ion-icon>
+          <ion-icon class="pin-state-dot" size="large" [name]="pin.length>4 ? 'radio-button-on-outline' : 'radio-button-off-outline'"></ion-icon>
+          <ion-icon class="pin-state-dot" size="large" [name]="pin.length>5 ? 'radio-button-on-outline' : 'radio-button-off-outline'"></ion-icon>
         </div>
-        <div class="text-center" *ngIf="loading">
+        <div class="text-center pin-loading-indicators" *ngIf="loading">
           <ion-spinner class="dot" color="dark"></ion-spinner>
           <ion-spinner class="dot" color="dark"></ion-spinner>
           <ion-spinner class="dot" color="dark"></ion-spinner>
@@ -42,7 +44,7 @@
           <ion-spinner class="dot" color="dark"></ion-spinner>
         </div>
       </ion-grid>
-      <ion-grid>
+      <ion-grid class="pin-keypad-grid">
         <ion-row>
           <ion-col>
             <ion-button [disabled]="loading" class="number" shape="round" (click)="handleInput('1')">1</ion-button>
@@ -78,7 +80,7 @@
         </ion-row>
         <ion-row>
           <ion-col>
-            <ion-icon name="backspace-outline" size="large" (click)="handleInput('clear')"></ion-icon>
+            <ion-icon class="pin-backspace" name="backspace-outline" size="large" (click)="handleInput('clear')"></ion-icon>
           </ion-col>
           <ion-col>
             <ion-button [disabled]="loading" class="number" shape="round" (click)="handleInput('0')">0</ion-button>
@@ -88,12 +90,12 @@
         </ion-row>
       </ion-grid>
     </div>
-    <div style="margin-bottom: 15px;">
+    <div class="pin-bottom-space">
       <!-- <img class="logo" src="assets/logos/DTouchmedia_Black.png" alt="logo" /> -->
     </div>
 
 
-    <div *ngIf="this.branch_name !== 'Activación de Dispositivo'" style="position: absolute; bottom: 5px; left: 15px; width: 10%;">
+    <div *ngIf="this.branch_name !== 'Activación de Dispositivo'" class="pin-setting-wrap">
       <ion-button [disabled]="loading" class="w-100 classButton" color="danger" (click)="presentAlert()">Setting</ion-button>
     </div>
 
