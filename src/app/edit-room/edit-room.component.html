@@ -43,7 +43,7 @@
               <!-- <div class="mx-2">{{patient.procedure_name ?? 'Procedure'}}</div> -->
             </div>
             <div class="mx-2" (click)="moveToAvailable(i)">
-              <ion-icon style="color: red; font-size: 35px;" name="close-circle-outline"></ion-icon>
+              <ion-icon class="move-remove-icon" name="close-circle-outline"></ion-icon>
             </div>
           </div>
         </div>
@@ -58,7 +58,7 @@
               <!-- <div class="mx-2">{{patient.procedure_name ?? 'Procedure'}}</div> -->
             </div>
             <div (click)="moveToAssigned(i)" class="align-items-center">
-              <ion-icon style="color: green; font-size: 35px;" name="add-circle-outline"></ion-icon>
+              <ion-icon class="move-add-icon" name="add-circle-outline"></ion-icon>
             </div>
           </div>
         </div>
@@ -130,17 +130,17 @@
         <!-- Botones alineados en la parte inferior -->
         <div class="d-flex justify-content-center editroom-actions">
           <ion-button color="danger" [disabled]="loading" class="mx-4 room-action-btn" size="large" (click)="cancel()">
-            <span style="color: #fff;">{{ 'editRoom.cancelButton' | translate }}</span>
+            <span class="btn-label-white">{{ 'editRoom.cancelButton' | translate }}</span>
           </ion-button>
           <ion-button color="success" class="mx-4 room-action-btn" [disabled]="loading" size="large" (click)="update()">
-            <span style="color: #fff;">{{ 'editRoom.updateButton' | translate }}</span>
+            <span class="btn-label-white">{{ 'editRoom.updateButton' | translate }}</span>
           </ion-button>
         </div>
       </ion-col>
     </ion-row>
   </ion-grid>
 
-  <div class="overlay" style="margin-top: 10px;" *ngIf="this.loading">
+  <div class="overlay overlay-top-gap" *ngIf="this.loading">
     <div class="loader">
        <div class="spinner spinner-bubble spinner-bubble-primary me-3"></div>
     </div>

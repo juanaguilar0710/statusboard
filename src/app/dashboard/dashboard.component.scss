@@ -72,6 +72,55 @@ ion-content {
   padding-bottom: 10px;
 }
 
+.dashboard-footer-row {
+  align-items: center;
+  padding-left: 5px;
+  padding-top: 10px;
+}
+
+.dashboard-footer-left {
+  text-align: left;
+}
+
+.dashboard-offline-title {
+  color: #eb4343;
+}
+
+.dashboard-lastsync-time {
+  padding-left: 5px;
+}
+
+.dashboard-legend-item,
+.dashboard-footer-meta {
+  display: flex;
+  align-items: center;
+}
+
+.legend-holding {
+  color: #48a347;
+}
+
+.legend-surgery {
+  color: #eb4343;
+}
+
+.legend-next {
+  color: #3e3dcc;
+}
+
+.dashboard-version-wrap {
+  position: absolute;
+  bottom: 5px;
+  right: 15px;
+  display: flex;
+  align-items: center;
+}
+
+.dashboard-version-label {
+  font-size: 15px !important;
+  color: #0d6efd;
+}
+
   .status-overview {
     text-align: right;
   }

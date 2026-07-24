@@ -234,6 +234,10 @@ ion-input {
   gap: 8px;
 }
 
+.new-patient-title-icon {
+  font-size: 32px;
+}
+
 .new-patient-form {
   height: auto;
   width: min(96%, 980px);
@@ -304,6 +308,14 @@ ion-radio.radio-checked::part(container) {
 
 .classButton[color='success'] {
   --background: linear-gradient(90deg, #0e8050 0%, #16a34a 55%, #22c55e 100%);
+}
+
+.btn-label-white {
+  color: #fff;
+}
+
+.legacy-create-button {
+  color: #fff !important;
 }
 
 .loading-overlay {

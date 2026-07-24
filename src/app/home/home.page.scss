@@ -616,6 +616,10 @@ h1 {
     linear-gradient(180deg, #f8fbff 0%, #f0f6ff 100%);
 }
 
+.home-content-shell {
+  overflow: hidden;
+}
+
 .home-header-grid,
 .home-main-grid {
   position: relative;
@@ -752,6 +756,39 @@ h1 {
   color: var(--tb-danger);
 }
 
+.patient-main-content {
+  min-width: 0;
+}
+
+.details-stack {
+  padding-top: 10px;
+}
+
+.contact-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.icon-action-btn {
+  min-height: 10px;
+}
+
+.patient-status-icon,
+.patient-status-chat-icon {
+  width: 35px;
+  height: 35px;
+}
+
+.no-patients-state {
+  text-align: center;
+  margin-top: 100px;
+}
+
+.modal-action-col {
+  padding: 0 10px;
+}
+
 @media (max-width: 1024px) {
   .home-main-grid > ion-row > ion-col,
   .home-header-grid > ion-row > ion-col {
@@ -825,5 +862,11 @@ h1 {
   .status-panel,
   .workteams-card {
     font-size: 0.95rem;
+  }
+
+  .patient-status-icon,
+  .patient-status-chat-icon {
+    width: 31px;
+    height: 31px;
   }
 }

@@ -1,6 +1,6 @@
 <ion-content [fullscreen]="true" class="turnboard-newpatient-content">
   <div class="text-center banner-header">
-    <ion-icon name="add-outline" style="font-size: 32px;"></ion-icon> {{ 'newPatient.title' | translate }}
+    <ion-icon name="add-outline" class="new-patient-title-icon"></ion-icon> {{ 'newPatient.title' | translate }}
   </div>
   <form [formGroup]="form" class="my-5 new-patient-form">
       <ion-input #fullName [disabled]="loading" tabindex="1" [label]="'newPatient.fullName' | translate" formControlName="fullName" label-placement="floating"
@@ -35,10 +35,10 @@
 
         <div class="flex-fill">
           <!-- <ion-button [disabled]="loading" class="w-100 classButton" color="success" (click)="createPatient()"
-            [disabled]="form.invalid" style="color: white !important;">Create</ion-button> -->
+            [disabled]="form.invalid" class="legacy-create-button">Create</ion-button> -->
 
             <ion-button [disabled]="loading" color="success" class="w-100 classButton" (click)="createPatient()">
-              <span style="color: white;">{{ 'newPatient.create' | translate }}</span>
+              <span class="btn-label-white">{{ 'newPatient.create' | translate }}</span>
             </ion-button>
 
         </div>

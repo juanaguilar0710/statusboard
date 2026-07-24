@@ -70,6 +70,23 @@
 	line-height: 1.2;
 }
 
+.portal-align-left {
+	text-align: left !important;
+}
+
+.portal-align-center {
+	text-align: center !important;
+}
+
+.portal-no-right-margin {
+	margin-right: 0;
+}
+
+.portal-empty-text {
+	text-align: center;
+	margin: 4px 0;
+}
+
 .portal-patient-icon {
 	width: 18px;
 	height: 18px;

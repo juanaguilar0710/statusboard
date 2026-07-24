@@ -29,6 +29,17 @@
 	border-bottom: 1px solid rgba(12, 66, 138, 0.22);
 }
 
+.portal-table th.col-id { width: 5%; }
+.portal-table th.col-patient { width: 18%; }
+.portal-table th.col-age { width: 5%; }
+.portal-table th.col-operating-room { width: 8%; }
+.portal-table th.col-surgeon { width: 15%; }
+.portal-table th.col-procedure { width: 17%; }
+.portal-table th.col-time { width: 7%; }
+.portal-table th.col-status { width: 13%; }
+.portal-table th.col-room { width: 7%; }
+.portal-table th.col-phone { width: 5%; }
+
 .portal-table td {
 	padding: 9px 10px;
 	border-bottom: 1px solid rgba(18, 83, 172, 0.12);

@@ -568,6 +568,27 @@ h6 {
   --background: linear-gradient(90deg, #0e8050 0%, #16a34a 55%, #22c55e 100%);
 }
 
+.move-remove-icon,
+.move-add-icon {
+  font-size: 35px;
+}
+
+.move-remove-icon {
+  color: var(--tb-danger);
+}
+
+.move-add-icon {
+  color: var(--tb-success);
+}
+
+.btn-label-white {
+  color: #fff;
+}
+
+.overlay-top-gap {
+  margin-top: 10px;
+}
+
 @media (max-width: 1200px) {
   .container-scroll,
   .container {
