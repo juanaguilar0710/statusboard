@@ -2,6 +2,125 @@ ion-content {
     --background: #f0f0f0;
   }
 
+:host {
+  --portal-bg-top: #eef5ff;
+  --portal-bg-bottom: #dbe9ff;
+  --portal-surface: #ffffff;
+  --portal-ink: #10233f;
+  --portal-muted: #4f6585;
+  --portal-line: #c9ddff;
+  --portal-primary: #0c66e4;
+  --portal-primary-2: #1f85ff;
+  --portal-primary-3: #7ab5ff;
+  --portal-success: #1f9d5c;
+  --portal-danger: #df4456;
+  --portal-shadow-soft: 0 10px 24px rgba(11, 40, 90, 0.14);
+  --portal-shadow-strong: 0 14px 30px rgba(6, 34, 84, 0.2);
+}
+
+.portal-dashboard-content {
+  --background:
+    radial-gradient(circle at 4% 5%, rgba(151, 196, 255, 0.45) 0%, transparent 20%),
+    radial-gradient(circle at 94% 11%, rgba(142, 188, 255, 0.38) 0%, transparent 24%),
+    linear-gradient(180deg, var(--portal-bg-top) 0%, var(--portal-bg-bottom) 100%);
+}
+
+.portal-dashboard-grid {
+  padding: 8px 10px;
+}
+
+.dashboard-layout-row {
+  overflow-y: auto;
+  height: 92vh;
+  padding-bottom: 1px;
+  scrollbar-gutter: stable;
+}
+
+.dashboard-main-col {
+  padding-left: 0;
+  padding-right: 0;
+  padding-top: 0;
+}
+
+.dashboard-main-grid {
+  padding-left: 0;
+  padding-right: 0;
+  padding-top: 0;
+}
+
+.dashboard-sidebar-col {
+  padding-left: 0;
+  padding-top: 0;
+}
+
+.portal-info-box {
+  height: fit-content;
+  position: relative;
+  border: 1px solid var(--portal-line) !important;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #ffffff 0%, #f7fbff 100%);
+  box-shadow: var(--portal-shadow-soft);
+  padding: 10px 8px;
+}
+
+.portal-header-count {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: var(--portal-shadow-strong);
+}
+
+.portal-status-stack {
+  padding-bottom: 10px;
+}
+
+.dashboard-footer-row {
+  align-items: center;
+  padding-left: 5px;
+  padding-top: 10px;
+}
+
+.dashboard-footer-left {
+  text-align: left;
+}
+
+.dashboard-offline-title {
+  color: #eb4343;
+}
+
+.dashboard-lastsync-time {
+  padding-left: 5px;
+}
+
+.dashboard-legend-item,
+.dashboard-footer-meta {
+  display: flex;
+  align-items: center;
+}
+
+.legend-holding {
+  color: #48a347;
+}
+
+.legend-surgery {
+  color: #eb4343;
+}
+
+.legend-next {
+  color: #3e3dcc;
+}
+
+.dashboard-version-wrap {
+  position: absolute;
+  bottom: 5px;
+  right: 15px;
+  display: flex;
+  align-items: center;
+}
+
+.dashboard-version-label {
+  font-size: 15px !important;
+  color: #0d6efd;
+}
+
   .status-overview {
     text-align: right;
   }
@@ -78,13 +197,16 @@ ion-content {
 
   .status-box {
     margin-bottom: 0px;
+    padding-left: 4px;
+    padding-right: 4px;
   }
 
   .holding-box, .surgery-box, .recovery-box, .completed-box {
-    background-color: white;
-    border: 2px solid #a6d1f0;
-    padding: 0px;
-    border-radius: 8px;
+    background: linear-gradient(180deg, #ffffff 0%, #f2f8ff 100%);
+    border: 1px solid var(--portal-line);
+    padding: 8px 4px;
+    border-radius: 10px;
+    box-shadow: 0 3px 8px rgba(16, 35, 63, 0.08);
   }
 
   .holding-box h2, .surgery-box h2, .recovery-box h2, .completed-box h2 {
@@ -98,15 +220,29 @@ ion-content {
     margin: 0;
     font-weight: bold;
     margin-top: 3px;
+      color: var(--portal-muted);
+      letter-spacing: 0.04em;
   }
 
   .room-card {
-    background-color: white;
-    border: 2px solid #d0e8f2; /* Cambiar el color del borde */
-    border-radius: 8px;
-    padding: 10px;
+      border: 1px solid rgba(11, 48, 105, 0.14);
+      border-radius: 12px;
+    padding: 12px 14px;
     margin: 0px 0px 0px 0px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 8px 18px rgba(8, 34, 84, 0.16);
+  }
+
+  .portal-room-card {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .portal-room-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(120deg, rgba(255, 255, 255, 0.2) 0%, rgba(12, 35, 68, 0.1) 100%);
+    pointer-events: none;
   }
 
   .room-name h3 {
@@ -114,6 +250,7 @@ ion-content {
     font-weight: bold;
     color: inherit;
     margin-bottom: 6px;
+    padding-left: 4px;
   }
 
   .room-card-details div {
@@ -131,6 +268,7 @@ ion-content {
   .room-card-details span,
   .room-card-details strong {
     color: inherit;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.28);
   }
 
   .room-card-details a {
@@ -187,19 +325,24 @@ ion-content {
 
     .ionCard{
       width: 100%;
-      height: 156px;
+      min-height: 156px;
+      height: auto;
       border-radius: 10px 10px 5px 5px;
       margin-bottom: 0px;
       margin-top: 0px;
       margin-left: 0px;
       margin-right: 0px;
+      border: 1px solid rgba(11, 48, 105, 0.12);
+      box-shadow: 0 8px 18px rgba(12, 42, 92, 0.12);
     }
 
     .ionCardHeader{
-      background-color: #b5d7f0;
-      height: 30px;
-      padding-top: 0px;
-      padding-bottom: 0px;
+      min-height: 36px;
+      height: auto;
+      padding-top: 4px;
+      padding-bottom: 4px;
+      padding-left: 10px;
+      padding-right: 10px;
       border-radius: 10px 10px 1px 1px;
     }
 
@@ -207,12 +350,16 @@ ion-content {
       text-align: left;
       font-size: 25px;
       font-weight: bold;
+      padding-left: 4px;
+      line-height: 1.1;
     }
 
     .tittleCardTextPages{
       font-size: 15px;
       text-align: center;
       font-weight: bold;
+      line-height: 1.2;
+      padding-top: 1px;
     }
 
 
@@ -381,7 +528,7 @@ ion-content {
       }
 
       .room-card {
-        padding: 5px;
+        padding: 7px 9px;
       }
 
       .patients-today {
@@ -635,14 +782,23 @@ display: inline-block;
 
 /* Header integrado con fecha, hora y pacientes */
 .headerCount {
-  background: linear-gradient(135deg, #007bff, #007bff);
+  background: linear-gradient(140deg, var(--portal-primary) 0%, var(--portal-primary-2) 52%, #3f96ff 100%);
   color: white;
   padding: 12px 16px;
   border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+  box-shadow: 0 8px 18px rgba(7, 59, 143, 0.36);
   position: relative;
   min-height: 85px;
 
+
+.headerCount::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, rgba(255, 255, 255, 0.14) 0%, transparent 55%);
+  pointer-events: none;
+  border-radius: 12px;
+}
   .content-wrapper {
     display: flex;
     flex-direction: column;
@@ -735,6 +891,41 @@ display: inline-block;
       color: #666;
       opacity: 0.8;
     }
+  }
+}
+
+@media only screen and (max-width: 900px) {
+  .dashboard-layout-row {
+    height: auto;
+    min-height: 92vh;
+    overflow-y: visible;
+  }
+
+  .dashboard-main-col,
+  .dashboard-sidebar-col {
+    width: 100%;
+    max-width: 100%;
+    flex: 0 0 100%;
+  }
+
+  .portal-info-box {
+    margin-top: 8px;
+  }
+
+  .headerCount {
+    padding: 10px 12px;
+  }
+
+  .headerCount .count {
+    font-size: 2.1rem;
+  }
+
+  .room-name h3 {
+    font-size: 20px;
+  }
+
+  .room-card-details div {
+    font-size: 15px;
   }
 }
 

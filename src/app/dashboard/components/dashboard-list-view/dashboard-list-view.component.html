@@ -1,11 +1,11 @@
-<ion-row *ngIf="rooms && rooms.length">
-  <ion-col size="10" size-md="9" size-lg="6" *ngFor="let room of rooms">
+<ion-row class="portal-list-row" *ngIf="rooms && rooms.length">
+  <ion-col size="10" size-md="9" size-lg="6" class="portal-list-col" *ngFor="let room of rooms">
     <ion-card class="ionCard">
       <ion-card-header
-        class="ionCardHeader"
+        class="ionCardHeader portal-list-card-header"
         [ngStyle]="{ 'background-color': room.color || room.patients?.[0]?.operating_room?.color || '#b5d7f0' }"
       >
-        <ion-card-title [dynamicTextColor]="room.color || room.patients?.[0]?.operating_room?.color || '#b5d7f0'">
+        <ion-card-title class="portal-list-card-title" [dynamicTextColor]="room.color || room.patients?.[0]?.operating_room?.color || '#b5d7f0'">
           <ion-row>
             <ion-col size="4" size-md="4" size-lg="4" class="tittleCardText">{{ room.name }}</ion-col>
             <ion-col size="3" size-md="3" size-lg="3" class="tittleCardTextPages">
@@ -16,44 +16,43 @@
         </ion-card-title>
       </ion-card-header>
 
-      <ion-card-content>
+      <ion-card-content class="portal-list-card-content">
         <div *ngFor="let patient of getPatientsGroup(room)">
-          <ion-row style="height: 22px;" class="ion-no-wrap" [ngClass]="{ 'highlight-updated': isPatientUpdated(patient.id) }">
-            <ion-col size="1.2" class="textCardPatients text-ellipsis" style="text-align: left !important;">
+          <ion-row class="ion-no-wrap portal-patient-row" [ngClass]="{ 'highlight-updated': isPatientUpdated(patient.id) }">
+            <ion-col size="1.2" class="textCardPatients text-ellipsis portal-patient-col portal-align-left">
               <strong>{{ patient.recovery_room }}</strong>
             </ion-col>
             <ion-col
               size="3"
-              class="textCardPatients text-ellipsis"
-              style="margin-right: 0px;"
+              class="textCardPatients text-ellipsis portal-patient-col portal-no-right-margin"
               [ngClass]="{ surgery: patient.status?.type === 'surgery', holding: patient.status?.type === 'holding', nextSurgery: patient.status?.type === 'next_to_surgery' }"
             >
               <strong>{{ getPatientDisplayNameWithAge(patient) }}</strong>
             </ion-col>
-            <ion-col size="3.7" class="textCardPatients text-ellipsis" style="text-align: left !important;" [ngClass]="{ canceled: patient.visit_canceled_at }">
+            <ion-col size="3.7" class="textCardPatients text-ellipsis portal-patient-col portal-align-left" [ngClass]="{ canceled: patient.visit_canceled_at }">
               <strong>{{ patient.procedure_name }}</strong>
             </ion-col>
-            <ion-col size="3" class="textCardPatients text-ellipsis" style="text-align: left !important;" [ngClass]="{ canceled: patient.visit_canceled_at }">
+            <ion-col size="3" class="textCardPatients text-ellipsis portal-patient-col portal-align-left" [ngClass]="{ canceled: patient.visit_canceled_at }">
               <span class="badge" *ngIf="patient.surgeon_color" [ngStyle]="{ 'background-color': patient.surgeon_color }">{{ patient.surgeon_name }}</span>
               <strong *ngIf="!patient.surgeon_color">{{ patient.surgeon_name }}</strong>
             </ion-col>
 
-            <ion-col size="0.5" class="textCardPatients text-ellipsis" style="text-align: left !important;" [ngClass]="{ canceled: patient.visit_canceled_at }">
-              <img *ngIf="!patient.phone_national_format" src="assets/icon/Phone.png" style="width: 15px; margin-top: -10px;" />
+            <ion-col size="0.5" class="textCardPatients text-ellipsis portal-patient-col portal-align-left" [ngClass]="{ canceled: patient.visit_canceled_at }">
+              <img *ngIf="!patient.phone_national_format" src="assets/icon/Phone.png" class="portal-patient-icon" />
             </ion-col>
 
-            <ion-col *ngIf="patient.phone_national_format && patient.phone_error" size="auto" class="textCardPatients text-ellipsis" style="text-align: center !important;">
-              <img src="assets/icon/smartphone.png" style="width: 15px; margin-top: -10px;" />
+            <ion-col *ngIf="patient.phone_national_format && patient.phone_error" size="auto" class="textCardPatients text-ellipsis portal-patient-col portal-align-center">
+              <img src="assets/icon/smartphone.png" class="portal-patient-icon" />
             </ion-col>
 
-            <ion-col size="auto" *ngIf="patient.has_note" class="textCardPatients text-ellipsis" style="text-align: center !important;" [ngClass]="{ canceled: patient.visit_canceled_at }">
-              <img src="assets/icon/notepad.png" style="width: 15px; margin-top: -10px;" />
+            <ion-col size="auto" *ngIf="patient.has_note" class="textCardPatients text-ellipsis portal-patient-col portal-align-center" [ngClass]="{ canceled: patient.visit_canceled_at }">
+              <img src="assets/icon/notepad.png" class="portal-patient-icon" />
             </ion-col>
           </ion-row>
         </div>
 
         <div *ngIf="getPatientsGroup(room).length === 0">
-          <p style="text-align: center;">{{ 'dashboard.noPatients' | translate }}</p>
+          <p class="portal-empty-text">{{ 'dashboard.noPatients' | translate }}</p>
         </div>
       </ion-card-content>
     </ion-card>

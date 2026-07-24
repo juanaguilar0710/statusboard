@@ -1,5 +1,5 @@
-<ion-content [fullscreen]="true" slot="fixed" id="update-container">
-  <div style="height: 45px; font-size: 30px;" class="text-center w-100">
+<ion-content [fullscreen]="true" slot="fixed" id="update-container" class="turnboard-editroom-content">
+  <div class="editroom-title text-center w-100">
     {{ 'editRoom.operatingRoom' | translate }}
   </div>
   <div class="banner-header mx-3 px-2" [style]="{'background-color': room.color ?? '#007AFF'}">
@@ -21,9 +21,9 @@
       <ion-col class="font-size">
         {{ 'editRoom.patientAvailable' | translate }}
       </ion-col>
-      <ion-col class="font-size ion-text-right" style="display: flex; justify-content: space-between; align-items: center;">
+      <ion-col class="font-size ion-text-right room-team-header">
         {{ 'editRoom.teamWork' | translate }}
-        <button ion-button (click)="openAssignMemberModal()" style="margin-left: auto;">{{ 'editRoom.addMemberButton' | translate }}</button>
+        <button ion-button class="team-add-inline-btn" (click)="openAssignMemberModal()">{{ 'editRoom.addMemberButton' | translate }}</button>
       </ion-col>
     </ion-row>
   </ion-grid>
@@ -43,7 +43,7 @@
               <!-- <div class="mx-2">{{patient.procedure_name ?? 'Procedure'}}</div> -->
             </div>
             <div class="mx-2" (click)="moveToAvailable(i)">
-              <ion-icon style="color: red; font-size: 35px;" name="close-circle-outline"></ion-icon>
+              <ion-icon class="move-remove-icon" name="close-circle-outline"></ion-icon>
             </div>
           </div>
         </div>
@@ -58,7 +58,7 @@
               <!-- <div class="mx-2">{{patient.procedure_name ?? 'Procedure'}}</div> -->
             </div>
             <div (click)="moveToAssigned(i)" class="align-items-center">
-              <ion-icon style="color: green; font-size: 35px;" name="add-circle-outline"></ion-icon>
+              <ion-icon class="move-add-icon" name="add-circle-outline"></ion-icon>
             </div>
           </div>
         </div>
@@ -66,7 +66,7 @@
 
 
 
-      <ion-col style="display: flex; flex-direction: column; min-width: 20%;">
+      <ion-col class="editroom-team-column">
 
         <div class="container">
           <ion-grid>
@@ -123,24 +123,24 @@
         </div>
 
         <!-- Botón para agregar más roles debajo del listado -->
-        <div class="d-flex justify-content-center" style="margin: 10px 0;">
-          <button ion-button (click)="addRole()" style="background-color: #007AFF; color: white; border-radius: 50%; width: 50px; height: 50px; font-size: 30px; display: flex; align-items: center; justify-content: center; border: none; cursor: pointer;">+</button>
+        <div class="d-flex justify-content-center add-role-wrap">
+          <button ion-button class="add-role-btn" (click)="addRole()">+</button>
         </div>
 
         <!-- Botones alineados en la parte inferior -->
-        <div class="d-flex justify-content-center" style="margin-top: auto;">
-          <ion-button color="danger" [disabled]="loading" class="mx-4" size="large" style="width: 200px; height: 40px;" (click)="cancel()">
-            <span style="color: #fff;">{{ 'editRoom.cancelButton' | translate }}</span>
+        <div class="d-flex justify-content-center editroom-actions">
+          <ion-button color="danger" [disabled]="loading" class="mx-4 room-action-btn" size="large" (click)="cancel()">
+            <span class="btn-label-white">{{ 'editRoom.cancelButton' | translate }}</span>
           </ion-button>
-          <ion-button color="success" class="mx-4" [disabled]="loading" size="large" style="width: 200px; height: 40px;" (click)="update()">
-            <span style="color: #fff;">{{ 'editRoom.updateButton' | translate }}</span>
+          <ion-button color="success" class="mx-4 room-action-btn" [disabled]="loading" size="large" (click)="update()">
+            <span class="btn-label-white">{{ 'editRoom.updateButton' | translate }}</span>
           </ion-button>
         </div>
       </ion-col>
     </ion-row>
   </ion-grid>
 
-  <div class="overlay" style="margin-top: 10px;" *ngIf="this.loading">
+  <div class="overlay overlay-top-gap" *ngIf="this.loading">
     <div class="loader">
        <div class="spinner spinner-bubble spinner-bubble-primary me-3"></div>
     </div>

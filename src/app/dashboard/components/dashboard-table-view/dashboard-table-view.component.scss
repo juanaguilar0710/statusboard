@@ -1,0 +1,71 @@
+
+.portal-table-row {
+	margin-top: 2px;
+}
+
+.portal-table-shell {
+	border-radius: 12px;
+	border: 1px solid rgba(12, 66, 138, 0.16);
+	box-shadow: 0 10px 22px rgba(9, 42, 95, 0.12);
+	overflow: hidden;
+	background: linear-gradient(180deg, #ffffff 0%, #f7fbff 100%);
+}
+
+.portal-table {
+	width: 100%;
+	border-collapse: collapse;
+	text-align: left;
+	table-layout: fixed;
+}
+
+.portal-table thead tr {
+	background: linear-gradient(120deg, #b8d6ff 0%, #c6e0ff 100%);
+}
+
+.portal-table th {
+	padding: 10px 10px;
+	color: #173153;
+	font-weight: 700;
+	border-bottom: 1px solid rgba(12, 66, 138, 0.22);
+}
+
+.portal-table th.col-id { width: 5%; }
+.portal-table th.col-patient { width: 18%; }
+.portal-table th.col-age { width: 5%; }
+.portal-table th.col-operating-room { width: 8%; }
+.portal-table th.col-surgeon { width: 15%; }
+.portal-table th.col-procedure { width: 17%; }
+.portal-table th.col-time { width: 7%; }
+.portal-table th.col-status { width: 13%; }
+.portal-table th.col-room { width: 7%; }
+.portal-table th.col-phone { width: 5%; }
+
+.portal-table td {
+	padding: 9px 10px;
+	border-bottom: 1px solid rgba(18, 83, 172, 0.12);
+}
+
+.portal-table tbody tr:nth-child(even) {
+	background: rgba(238, 246, 255, 0.55);
+}
+
+.portal-table-icon-cell {
+	text-align-last: center;
+}
+
+.portal-table-phone {
+	width: 58%;
+	max-width: 22px;
+	min-width: 15px;
+}
+
+@media only screen and (max-width: 900px) {
+	.portal-table-shell {
+		border-radius: 10px;
+	}
+
+	.portal-table th,
+	.portal-table td {
+		padding: 6px;
+	}
+}

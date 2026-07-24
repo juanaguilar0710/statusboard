@@ -1,4 +1,4 @@
-<div *ngIf="statusList.length > 0" class="row justify-content-center now" style="margin-top: 5px;">
+<div *ngIf="statusList.length > 0" class="row justify-content-center now status-buttons-row">
  
   <div class="col-md-2">
     <button mat-raised-button *ngIf="valid(selectedIndex - 2)" (click)="handle(selectedIndex - 2)" type="button" [ngClass]="getButtonClass(selectedIndex - 2)" class="btn btn-lg btn-block">

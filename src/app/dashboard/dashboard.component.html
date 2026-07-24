@@ -1,4 +1,4 @@
-<ion-content>
+<ion-content class="portal-dashboard-content">
   <!-- Loading Screen -->
   <div class="loading-overlay" *ngIf="isLoading">
     <div class="loading-content">
@@ -8,14 +8,14 @@
     </div>
   </div>
 
-  <ion-grid>
+  <ion-grid class="portal-dashboard-grid">
     <!-- Información general en la parte superior derecha -->
-    <ion-row class="status-overview" style="overflow-y: scroll; height: 92vh; padding-bottom: 1px;">
+    <ion-row class="status-overview dashboard-layout-row">
 
       <!-- <pre>{{this.config | json}}</pre> -->
 
-      <ion-col size="10.5" size-md="10.5" size-lg="10.5" style="padding-left: 0; padding-right: 0; padding-top: 0;">
-        <ion-grid style="padding-left: 0; padding-right: 0; padding-top: 0;" *ngIf="this.config">
+      <ion-col size="10.5" size-md="10.5" size-lg="10.5" class="dashboard-main-col">
+        <ion-grid class="dashboard-main-grid" *ngIf="this.config">
 
 
 
@@ -55,8 +55,8 @@
         </ion-grid>
       </ion-col>
 
-      <ion-col size="1.5" size-md="1.5" size-lg="1.5" style="padding-left: 0; padding-top: 0;">
-        <div class="info-box" style="height: fit-content; border: 2px solid #d0e8f2; position: relative;">
+      <ion-col size="1.5" size-md="1.5" size-lg="1.5" class="dashboard-sidebar-col">
+        <div class="info-box portal-info-box">
 
           <!-- Botón de test de audio flotante -->
           <div class="audio-test-btn" #audio hidden (click)="testAudio()" title="Test Audio">
@@ -105,7 +105,7 @@
 
 
 
-          <div class="headerCount" (click)="headerClicked()">
+          <div class="headerCount portal-header-count" (click)="headerClicked()">
             <div class="row">
               <div class="col-12 date2">{{ currentDate | date: 'd MMMM Y' : 'en' }} {{currentTime}}</div>
             </div>
@@ -136,7 +136,7 @@
 
 
 
-          <div style="padding-bottom: 10px;">
+          <div class="portal-status-stack">
             <ion-row>
               <ion-col size="6" class="status-box">
                 <div class="holding-box">
@@ -172,7 +172,7 @@
         <ion-row *ngIf="this.operatingRooms">
           <ng-container *ngFor="let room of getRoomsForCurrentPage()">
             <ion-col size="12" *ngIf="shouldShowRoom(room)" class="topCard">
-              <div class="room-card" [ngStyle]="{ 'background-color': room.color || '#b5d7f0' }" [dynamicTextColor]="room.color || '#b5d7f0'">
+              <div class="room-card portal-room-card" [ngStyle]="{ 'background-color': room.color || '#b5d7f0' }" [dynamicTextColor]="room.color || '#b5d7f0'">
                 <div class="room-name text-center">
                   <h3>{{ room.name }}</h3>
                 </div>
@@ -197,54 +197,54 @@
   </ion-grid>
 
   <!-- pie de pagina -->
-  <ion-row style="align-items: center; padding-left: 5px; padding-top: 10px;">
+  <ion-row class="dashboard-footer-row">
     <!-- Online text with date -->
-    <ion-col size="3" style="text-align: left;">
+    <ion-col size="3" class="dashboard-footer-left">
       <!-- <span class="onlineTittle">LAST UPDATE:</span> -->
       <span (click)="this.showLogsAlert();" class="onlineTittle" *ngIf="!deviceWasOffline">{{ 'dashboard.lastSync' | translate }}</span>
-      <span (click)="this.showLogsAlert();" class="onlineTittle" style="color: #eb4343;" *ngIf="deviceWasOffline">{{ 'dashboard.offline' | translate }}</span>
-      <span (click)="this.showLogsAlert();" class="textUnderLine" style="padding-left: 5px;">{{ this.lastsync | date:'shortTime' }}</span>
+      <span (click)="this.showLogsAlert();" class="onlineTittle dashboard-offline-title" *ngIf="deviceWasOffline">{{ 'dashboard.offline' | translate }}</span>
+      <span (click)="this.showLogsAlert();" class="textUnderLine dashboard-lastsync-time">{{ this.lastsync | date:'shortTime' }}</span>
     </ion-col>
 
-    <!-- <ion-col size="2" style="text-align: left;">
+    <!-- <ion-col size="2" class="dashboard-footer-left">
       <span class="onlineTittle" *ngIf="!deviceWasOffline">ONLINE</span>
-      <span class="onlineTittle" style="color: #eb4343;" *ngIf="deviceWasOffline">OFFLINE</span>
+      <span class="onlineTittle dashboard-offline-title" *ngIf="deviceWasOffline">OFFLINE</span>
     </ion-col> -->
 
     <!-- In Holding -->
-    <ion-col size="2" style="display: flex; align-items: center;">
-      <ion-icon name="ellipse" style="color: #48a347;" class="underline"></ion-icon>
+    <ion-col size="2" class="dashboard-legend-item">
+      <ion-icon name="ellipse" class="underline legend-holding"></ion-icon>
       <span class="textUnderLine">{{ 'dashboard.inHolding' | translate }}</span>
     </ion-col>
 
     <!-- In Surgery -->
-    <ion-col size="2" style="display: flex; align-items: center;">
-      <ion-icon name="ellipse" style="color: #eb4343;" class="underline"></ion-icon>
+    <ion-col size="2" class="dashboard-legend-item">
+      <ion-icon name="ellipse" class="underline legend-surgery"></ion-icon>
       <span class="textUnderLine">{{ 'dashboard.inSurgery' | translate }}</span>
     </ion-col>
 
     <!-- Next to Surgery -->
-    <ion-col size="2" style="display: flex; align-items: center;">
-      <ion-icon name="ellipse" style="color: #3e3dcc;" class="underline"></ion-icon>
+    <ion-col size="2" class="dashboard-legend-item">
+      <ion-icon name="ellipse" class="underline legend-next"></ion-icon>
       <span class="textUnderLine">{{ 'dashboard.nextToSurgery' | translate }}</span>
     </ion-col>
 
-    <ion-col size="1" style="display: flex; align-items: center;" *ngIf="this.config">
+    <ion-col size="1" class="dashboard-footer-meta" *ngIf="this.config">
       <span *ngIf="this.config.aplication === '2' && this.totalPatientPages > 1" class="textUnderLine">{{ 'dashboard.page' | translate }}: {{this.currentPageWithPatients}}/{{this.totalPagesWithPatients}}</span>
       <span *ngIf="this.config.aplication === '3' && this.totalPatientPages > 1" class="textUnderLine">{{ 'dashboard.page' | translate }}: {{ currentPagePatients + 1 }}/{{ totalPatientPages === 0 ? 1 : totalPatientPages }}</span>
     </ion-col>
 
 
-    <ion-col size="1" style="display: flex; align-items: center;" *ngIf="this.totalPatientPages > 1">
-    <!-- <ion-col size="1" style="display: flex; align-items: center;" *ngIf="this.totalPagesWithPatients > 1 || totalPatientPages > 1"> -->
-      <!-- <ion-col size="1" style="display: flex; align-items: center;"> -->
+    <ion-col size="1" class="dashboard-footer-meta" *ngIf="this.totalPatientPages > 1">
+    <!-- <ion-col size="1" class="dashboard-footer-meta" *ngIf="this.totalPagesWithPatients > 1 || totalPatientPages > 1"> -->
+      <!-- <ion-col size="1" class="dashboard-footer-meta"> -->
       <span class="textUnderLine">{{ 'dashboard.timer' | translate }}: {{this.countdown}}</span>
     </ion-col>
 
   </ion-row>
 
-    <div style="position: absolute; bottom: 5px; right: 15px; display: flex; align-items: center;">
-      <h6 class="info" style="font-size: 15px !important; color: #0d6efd;">{{ 'dashboard.version' | translate }}: {{version}}</h6>
+    <div class="dashboard-version-wrap">
+      <h6 class="info dashboard-version-label">{{ 'dashboard.version' | translate }}: {{version}}</h6>
     </div>
 
 

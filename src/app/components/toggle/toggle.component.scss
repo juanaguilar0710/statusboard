@@ -1,4 +1,10 @@
 @import "../../../theme/variables.scss";
+
+.toggle-clickable-wrap,
+.toggle-clickable-input {
+  cursor: pointer;
+}
+
 /** BEGIN CSS NEEDED FOR SWITCH **/
 .on-off-toggle {
     width: 56px;

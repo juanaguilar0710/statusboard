@@ -1,5 +1,5 @@
-<ion-content [fullscreen]="true" slot="fixed" id="update-container">
-  <div style="height: 45px; font-size: 34px;" class="text-center w-100">
+<ion-content [fullscreen]="true" slot="fixed" id="update-container" class="turnboard-update-content">
+  <div class="update-title text-center w-100">
     {{ 'updatePatient.patientInfo' | translate }}
   </div>
   <div class="banner-header">
@@ -9,13 +9,12 @@
       <div class="age w-25">{{patient.age}} {{ 'updatePatient.years' | translate }}</div>
     </div>
   </div>
-  <!-- <div *ngIf="loading" class="text-center w-100 d-flex justify-content-center align-items-center flex-column"
-    style="height: 100%;">
+  <!-- <div *ngIf="loading" class="text-center w-100 d-flex justify-content-center align-items-center flex-column update-loading-block">
     <h2>Actualizando Información</h2>
     <br />
     <ion-spinner class="dot" color="dark"></ion-spinner>
   </div> -->
-  <form [formGroup]="form">
+  <form [formGroup]="form" class="update-patient-form">
     <div>
       <div>
         <!-- <h4>Patient Status:</h4> -->
@@ -37,7 +36,7 @@
                 <div>
                   <h4>{{ 'updatePatient.makeRequest' | translate }}</h4>
                 </div>
-                <ion-item style="margin-top: -10px; width: 85%;">
+                <ion-item class="request-item">
                   <ion-input
                     [id]="'searchCommentsInput'"
                     maxlength="70"
@@ -51,10 +50,10 @@
             </ion-col>
           </ion-row>
         </div>
-        <ion-button id="add-request" style="font-size: 20px !important;" class="mt-2" fill="outline" expand="block" (click)="openSearchableComponentOnModal('comment')">
-          <ion-icon style="margin-left: -7px;" (click)="openSearchableComponentOnModal('comment')" name="search" slot="end"></ion-icon>
+        <ion-button id="add-request" class="mt-2 request-action-btn" fill="outline" expand="block" (click)="openSearchableComponentOnModal('comment')">
+          <ion-icon class="request-icon" (click)="openSearchableComponentOnModal('comment')" name="search" slot="end"></ion-icon>
         </ion-button>
-        <ion-button class="mt-2" style="font-size: 20px !important;" color="danger" fill="outline" expand="block" (click)="clearRequest()">{{ 'updatePatient.clear' | translate }}</ion-button>
+        <ion-button class="mt-2 request-action-btn" color="danger" fill="outline" expand="block" (click)="clearRequest()">{{ 'updatePatient.clear' | translate }}</ion-button>
       </div>
 
       <div class="my-2">
@@ -73,7 +72,7 @@
                 </div>
               </div>
             </ion-col>
-            <ion-col style="padding-left: 50px;">
+            <ion-col class="right-col-gap">
 
             </ion-col>
           </ion-row>
@@ -91,7 +90,7 @@
                 </div>
               </div>
             </ion-col>
-            <ion-col style="padding-left: 50px;">
+            <ion-col class="right-col-gap">
               <div>
                 <h4 class="visitor">{{ 'updatePatient.familyInfo' | translate }}</h4>
               </div>
@@ -112,7 +111,7 @@
                 </div>
               </div>
             </ion-col>
-            <ion-col style="padding-left: 50px;">
+            <ion-col class="right-col-gap">
               <div class="d-flex">
                 <div class="text-nowrap d-flex justify-content-start align-items-end">
                   <h4>{{ 'updatePatient.name' | translate }}</h4>
@@ -179,7 +178,7 @@
                   (ionChange)="onChangeSMSToggle($event)"
                   [disabled]="this.disabledToggle"
                   [checked]="this.patient.prefers_sms"></ion-toggle>
-                  <label class="pl-2" style="margin-left: 10px;">{{ 'updatePatient.sms' | translate }}</label>
+                  <label class="pl-2 toggle-label">{{ 'updatePatient.sms' | translate }}</label>
                 </ion-item>
               </div>
             </ion-col>
@@ -208,7 +207,7 @@
                 </div>
               </div>
             </ion-col>
-            <ion-col style="padding-left: 50px;">
+            <ion-col class="right-col-gap">
               <div class="d-flex">
                 <div class="text-nowrap d-flex justify-content-start align-items-end">
                   <h4>{{ 'updatePatient.privateNote' | translate }}</h4>
@@ -238,7 +237,7 @@
                 </div>
               </div>
             </ion-col>
-            <ion-col style="padding-left: 50px;">
+            <ion-col class="right-col-gap">
             </ion-col>
           </ion-row>
           <br />
@@ -275,7 +274,7 @@
           <span>{{ 'updatePatient.cancel' | translate }}</span>
         </ion-button>
         <ion-button color="success" class="w-100 mx-4 classButton" size="large" (click)="updatePatient()">
-          <span style="color: white;">{{ 'updatePatient.update' | translate }}</span>
+          <span class="btn-label-white">{{ 'updatePatient.update' | translate }}</span>
         </ion-button>
       </div>
     </ion-col>
@@ -285,7 +284,7 @@
 
 </ion-content>
 
-<ion-modal #modalCancelSurgery trigger="cancel-surgery-modal" class="logout-modal" style="height: 900px;">
+<ion-modal #modalCancelSurgery trigger="cancel-surgery-modal" class="logout-modal update-confirm-modal">
   <ng-template>
     <ion-content class="ion-padding">
       <div class="text-center">
@@ -293,11 +292,11 @@
       </div>
       <br />
       <div class="d-flex justify-content-center align-items-center">
-        <div class="flex-fill text-center" style="padding: 0 10px;">
-          <ion-button class="w-100 classButton" color="danger" style="width: 90% !important; font-size: 1.25rem;" (click)="noCancel()">{{ 'updatePatient.no' | translate }}</ion-button>
+        <div class="flex-fill text-center confirm-col">
+          <ion-button class="w-100 classButton confirm-btn" color="danger" (click)="noCancel()">{{ 'updatePatient.no' | translate }}</ion-button>
         </div>
-        <div class="flex-fill text-center" style="padding: 0 10px;">
-          <ion-button class="w-100 classButton" color="primary" style="width: 90% !important; font-size: 1.25rem" (click)="yesCancel()">{{ 'updatePatient.yes' | translate }}</ion-button>
+        <div class="flex-fill text-center confirm-col">
+          <ion-button class="w-100 classButton confirm-btn" color="primary" (click)="yesCancel()">{{ 'updatePatient.yes' | translate }}</ion-button>
         </div>
       </div>
     </ion-content>

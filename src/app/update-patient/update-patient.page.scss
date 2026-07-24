@@ -330,6 +330,112 @@ ion-input {
 
 /* fin loading */
 
+:host {
+  --up-primary: #0c66e4;
+  --up-primary-2: #1f85ff;
+  --up-primary-3: #0d4bb0;
+  --up-danger: #df4456;
+  --up-surface: #ffffff;
+  --up-line: #cfe0fb;
+  --up-muted: #4f6585;
+}
+
+.turnboard-update-content {
+  --background:
+    radial-gradient(circle at 8% 6%, rgba(151, 196, 255, 0.34) 0%, transparent 20%),
+    radial-gradient(circle at 92% 14%, rgba(142, 188, 255, 0.28) 0%, transparent 24%),
+    linear-gradient(180deg, #eef5ff 0%, #dbe9ff 100%);
+}
+
+.update-title {
+  min-height: 45px;
+  font-size: 34px;
+  font-weight: 700;
+  color: #16345f;
+  letter-spacing: 0.01em;
+}
+
+.update-patient-form {
+  max-width: 84%;
+  margin: 0 auto;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+  border: 1px solid var(--up-line);
+  border-radius: 14px;
+  box-shadow: 0 10px 26px rgba(11, 40, 90, 0.12);
+  padding: 12px 14px 10px;
+}
+
+.banner-header {
+  background: linear-gradient(90deg, var(--up-primary-3) 0%, var(--up-primary) 52%, var(--up-primary-2) 100%);
+  box-shadow: 0 10px 22px rgba(11, 74, 167, 0.22);
+}
+
+.request-item {
+  margin-top: -10px;
+  width: 85%;
+}
+
+.request-action-btn {
+  font-size: 20px !important;
+  min-height: 44px;
+  --border-radius: 10px;
+}
+
+.request-icon {
+  margin-left: -7px;
+}
+
+.right-col-gap {
+  padding-left: 50px;
+}
+
+.toggle-label {
+  margin-left: 10px;
+}
+
+.btn-label-white {
+  color: #fff;
+}
+
+.update-loading-block {
+  height: 100%;
+}
+
+.update-confirm-modal {
+  --height: 900px;
+}
+
+.confirm-col {
+  padding: 0 10px;
+}
+
+.confirm-btn {
+  width: 90% !important;
+  font-size: 1.25rem !important;
+}
+
+@media only screen and (max-width: 1024px) {
+  .update-patient-form {
+    max-width: 96%;
+    padding: 10px;
+  }
+
+  .right-col-gap {
+    padding-left: 10px;
+  }
+
+  .request-item {
+    width: 100%;
+  }
+
+  .request-action-btn {
+    min-height: 40px;
+    font-size: 16px !important;
+  }
+}
+
+
+
 
 
 

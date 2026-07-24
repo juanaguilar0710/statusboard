@@ -1,0 +1,113 @@
+
+.portal-list-row {
+	margin-top: 2px;
+}
+
+.portal-list-col {
+	padding-top: 4px;
+	padding-bottom: 4px;
+}
+
+.portal-list-col .ionCard {
+	height: 190px;
+	min-height: 190px;
+	max-height: 190px;
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+}
+
+.portal-list-card-header {
+	position: relative;
+	overflow: hidden;
+	padding-left: 12px;
+	padding-right: 12px;
+	padding-top: 4px;
+	padding-bottom: 4px;
+}
+
+.portal-list-card-header::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(130deg, rgba(255, 255, 255, 0.18) 0%, rgba(16, 35, 63, 0.12) 100%);
+	pointer-events: none;
+}
+
+.portal-list-card-title {
+	position: relative;
+	z-index: 1;
+}
+
+.portal-list-card-title .tittleCardText {
+	padding-left: 6px;
+	line-height: 1.1;
+}
+
+.portal-list-card-title .tittleCardTextPages {
+	padding-right: 6px;
+}
+
+.portal-list-card-content {
+	background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+	padding-top: 2px;
+	padding-bottom: 6px;
+	flex: 1;
+	overflow: hidden;
+}
+
+.portal-patient-row {
+	min-height: 24px;
+	align-items: center;
+	border-bottom: 1px solid rgba(15, 75, 158, 0.1);
+}
+
+.portal-patient-row:last-child {
+	border-bottom: 0;
+}
+
+.portal-patient-col {
+	line-height: 1.2;
+}
+
+.portal-align-left {
+	text-align: left !important;
+}
+
+.portal-align-center {
+	text-align: center !important;
+}
+
+.portal-no-right-margin {
+	margin-right: 0;
+}
+
+.portal-empty-text {
+	text-align: center;
+	margin: 4px 0;
+}
+
+.portal-patient-icon {
+	width: 18px;
+	height: 18px;
+	margin-top: -6px;
+	filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.3));
+}
+
+@media only screen and (max-width: 900px) {
+	.portal-list-col {
+		width: 100%;
+		max-width: 100%;
+		flex: 0 0 100%;
+	}
+
+	.portal-list-col .ionCard {
+		height: 198px;
+		min-height: 198px;
+		max-height: 198px;
+	}
+
+	.portal-patient-row {
+		min-height: 26px;
+	}
+}

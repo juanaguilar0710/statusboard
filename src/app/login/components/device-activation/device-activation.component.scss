@@ -1,55 +1,97 @@
+:host {
+  --tb-blue-900: #081768;
+  --tb-blue-800: #0f3299;
+  --tb-blue-700: #1560d9;
+  --tb-blue-600: #1a8fff;
+  --tb-text: #3d4658;
+  --tb-muted: #6d7788;
+  --tb-card-bg: rgba(248, 251, 255, 0.98);
+  display: block;
+  width: min(95vw, 860px);
+  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+}
+
 .activation-card {
-  width: min(94vw, 720px);
-  background: #f4f4f4;
-  border-radius: 14px;
-  padding: 24px 24px 18px;
+  width: min(95vw, 780px);
+  background: var(--tb-card-bg);
+  border-radius: 18px;
+  padding: clamp(20px, 3.4vw, 34px) clamp(16px, 3.8vw, 30px) 20px;
   text-align: center;
   position: relative;
   z-index: 1;
-  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.2);
+  border: 2px solid rgba(213, 230, 255, 0.45);
+  box-shadow:
+    0 22px 60px rgba(3, 12, 58, 0.35),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.75);
+  overflow: hidden;
+}
+
+.activation-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 11% 14%, rgba(30, 143, 255, 0.12), transparent 20%),
+    radial-gradient(circle at 92% 8%, rgba(33, 168, 255, 0.13), transparent 24%);
+}
+
+.brand-logo,
+.activation-title,
+.activation-code-box,
+.time-label,
+.time-row,
+.activation-help,
+.registering,
+.activation-footer {
+  position: relative;
+  z-index: 1;
 }
 
 .brand-logo {
-  max-width: 300px;
-  width: 78%;
+  max-width: 320px;
+  width: min(82%, 320px);
   height: auto;
-  margin: 0 auto 16px;
+  margin: 0 auto 14px;
   display: block;
+  filter: drop-shadow(0 4px 16px rgba(8, 22, 70, 0.18));
 }
 
 .activation-title {
-  margin: 2px 0 8px;
-  color: #777;
-  font-size: 1.75rem;
-  font-weight: 500;
+  margin: 4px 0 8px;
+  color: var(--tb-text);
+  font-size: clamp(1.25rem, 3vw, 1.85rem);
+  font-weight: 700;
+  letter-spacing: -0.01em;
 }
 
 .activation-code-box {
-  background: #e6e6e6;
-  border-radius: 12px;
+  background: linear-gradient(180deg, #eef3fb 0%, #eaf0f9 100%);
+  border-radius: 14px;
+  border: 1px solid rgba(119, 133, 164, 0.2);
   padding: 14px;
   margin: 0 auto 14px;
-  width: min(85%, 430px);
+  width: min(88%, 450px);
 }
 
 .activation-code {
-  color: #4b4f54;
-  font-size: clamp(2rem, 8vw, 4.5rem);
+  color: #334155;
+  font-size: clamp(2.1rem, 8vw, 4.6rem);
   font-weight: 800;
-  letter-spacing: 2px;
+  letter-spacing: 3px;
 }
 
 .time-label {
-  margin: 4px 0 2px;
-  font-size: 1.7rem;
-  color: #6a6a6a;
+  margin: 4px 0 0;
+  font-size: clamp(1.05rem, 2.7vw, 1.5rem);
+  color: var(--tb-muted);
   font-weight: 600;
 }
 
 .time-value {
-  margin: 0 0 14px;
-  color: #6a6a6a;
-  font-size: 2.2rem;
+  margin: 0;
+  color: #475569;
+  font-size: clamp(1.5rem, 3.7vw, 2.15rem);
   font-weight: 700;
 }
 
@@ -57,87 +99,89 @@
   display: inline-flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 14px;
+  margin-bottom: 12px;
 }
 
-.time-row .time-value {
-  margin: 0;
-}
-
-.refresh-code-button {
-  width: 42px;
-  height: 42px;
+.refresh-code-button,
+.update-button {
+  width: 40px;
+  height: 40px;
   border: 0;
   border-radius: 999px;
-  background: #d8d8d8;
-  color: #4f555b;
+  background: linear-gradient(90deg, #1e1491 0%, #1366dd 56%, #1c95ff 100%);
+  color: #ffffff;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   padding: 0;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 12px 26px rgba(17, 102, 220, 0.28);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
 }
 
-.refresh-code-button ion-icon {
-  font-size: 1.3rem;
+.refresh-code-button ion-icon,
+.update-button ion-icon {
+  font-size: 1.15rem;
 }
 
-.refresh-code-button:disabled {
-  opacity: 0.65;
+.refresh-code-button:hover:not(:disabled),
+.update-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 16px 34px rgba(17, 102, 220, 0.35);
+}
+
+.refresh-code-button:disabled,
+.update-button:disabled {
+  opacity: 0.6;
 }
 
 .activation-help {
-  margin: 0 auto;
+  margin: 0 auto 22px;
   max-width: 86%;
-  color: #6a6a6a;
-  font-size: 1.7rem;
-  line-height: 1.35;
+  color: var(--tb-muted);
+  font-size: clamp(0.95rem, 2.1vw, 1.25rem);
+  line-height: 1.4;
   font-weight: 500;
-  margin-bottom: 25px;
 }
 
 .registering {
-  margin-top: 14px;
+  margin-top: 8px;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  color: #5f6368;
-  font-size: 1.2rem;
+  color: #475569;
+  font-size: 1rem;
+  font-weight: 600;
 }
 
 .activation-footer {
-  position: absolute;
-  right: 16px;
-  bottom: 10px;
   display: inline-flex;
   align-items: center;
   gap: 10px;
-}
-
-.update-button {
-  width: 36px;
-  height: 36px;
-  border: 0;
-  border-radius: 999px;
-  background: #d8d8d8;
-  color: #4f555b;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
-}
-
-.update-button ion-icon {
-  font-size: 1.2rem;
-}
-
-.update-button:disabled {
-  opacity: 0.65;
+  position: absolute;
+  right: 16px;
+  bottom: 12px;
 }
 
 .version-tag {
-  color: #7f7f7f;
-  font-size: 1.2rem;
-  font-weight: 600;
+  color: #64748b;
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+@media (max-width: 640px) {
+  .activation-card {
+    width: calc(100vw - 20px);
+    border-radius: 16px;
+    padding-bottom: 18px;
+  }
+
+  .activation-help {
+    max-width: 94%;
+  }
+
+  .activation-footer {
+    position: static;
+    justify-content: center;
+    margin-top: 8px;
+  }
 }

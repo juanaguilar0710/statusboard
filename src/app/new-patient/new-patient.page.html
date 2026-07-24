@@ -1,12 +1,12 @@
-<ion-content [fullscreen]="true" style="background-color: white;">
+<ion-content [fullscreen]="true" class="turnboard-newpatient-content">
   <div class="text-center banner-header">
-    <ion-icon name="add-outline" style="font-size: 32px;"></ion-icon> {{ 'newPatient.title' | translate }}
+    <ion-icon name="add-outline" class="new-patient-title-icon"></ion-icon> {{ 'newPatient.title' | translate }}
   </div>
-  <form [formGroup]="form" class="my-5">
+  <form [formGroup]="form" class="my-5 new-patient-form">
       <ion-input #fullName [disabled]="loading" tabindex="1" [label]="'newPatient.fullName' | translate" formControlName="fullName" label-placement="floating"
         fill="outline" [errorText]="'newPatient.fullNameRequired' | translate" [maxlength]="50"></ion-input>
-      <div class="d-flex">
-        <div class="flex-fill" style="margin-right: 20px; max-width: 50%;">
+      <div class="d-flex form-row">
+        <div class="flex-fill age-field-wrap">
           <ion-input [disabled]="loading" tabindex="2" [min]="1" [max]="120" [maxlength]="120" [label]="'newPatient.age' | translate" formControlName="age" label-placement="floating" fill="outline"
             [errorText]="'newPatient.ageRequired' | translate" type="number"></ion-input>
         </div>
@@ -18,8 +18,8 @@
         </div>
       </div>
 
-      <div class="d-flex">
-        <div class="flex-fill" style="padding-right: 10px;">
+      <div class="d-flex form-row">
+        <div class="flex-fill with-right-gap">
           <ion-input tabindex="4" [disabled]="loading" [label]="'newPatient.familyFullName' | translate" formControlName="companion_name" label-placement="floating" fill="outline" [errorText]="'newPatient.familyFullNameRequired' | translate" [maxlength]="50"></ion-input>
         </div>
         <div class="flex-fill">
@@ -28,17 +28,17 @@
       </div>
 
 
-      <div class="d-flex">
-        <div class="flex-fill" style="padding-right: 30px;">
+      <div class="d-flex form-row form-actions-row">
+        <div class="flex-fill with-large-right-gap">
           <ion-button [disabled]="loading" class="w-100 classButton" color="danger" (click)="cancel()">{{ 'newPatient.cancel' | translate }}</ion-button>
         </div>
 
         <div class="flex-fill">
           <!-- <ion-button [disabled]="loading" class="w-100 classButton" color="success" (click)="createPatient()"
-            [disabled]="form.invalid" style="color: white !important;">Create</ion-button> -->
+            [disabled]="form.invalid" class="legacy-create-button">Create</ion-button> -->
 
             <ion-button [disabled]="loading" color="success" class="w-100 classButton" (click)="createPatient()">
-              <span style="color: white;">{{ 'newPatient.create' | translate }}</span>
+              <span class="btn-label-white">{{ 'newPatient.create' | translate }}</span>
             </ion-button>
 
         </div>

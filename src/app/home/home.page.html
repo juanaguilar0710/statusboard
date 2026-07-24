@@ -1,7 +1,7 @@
-<ion-content style="overflow: hidden;">
+<ion-content class="turnboard-home-content home-content-shell">
   <ion-progress-bar *ngIf="updating" type="indeterminate"></ion-progress-bar>
 
-  <ion-grid>
+  <ion-grid class="home-header-grid">
     <ion-row>
       <ion-col size="2" class="logonone">
         <div class="logo">
@@ -26,7 +26,7 @@
       </ion-col>
 
       <ion-col size="3">
-        <div class="text-center mt-4">
+        <div class="status-panel text-center mt-4">
           <h5 class="text-uppercase" *ngIf="this.username">{{this.username.user.username}}</h5>
           <h6 class="text-uppercase">{{configuration?.waitingRoom?.name}}</h6>
           <div class="my-3">
@@ -46,7 +46,7 @@
   <!-- <ion-button (click)="showResolution()">Mostrar Resolución</ion-button>
 <ion-label>{{ resolution }}</ion-label> -->
 
-  <ion-grid>
+  <ion-grid class="home-main-grid">
     <ion-row>
       <ion-col size="9" class="colId">
         <div id="patient-container" *ngFor="let patient of patients; let i = index;" class="patient-container" role="button" (click)="goToUpdatePatient(patient, i)">
@@ -62,14 +62,14 @@
             </ion-col>
 
             <ion-col size="9" class="visitCancel">
-              <div class="w-100 pt-1" *ngIf="!patient.visit_canceled_at" style="min-width: 0;">
-                <h1 class="operating_room_name" style="color: #0d6efd;">{{patient.operating_room_name === 'None' ? ('home.toFollow' | translate) : patient.operating_room_name}}</h1>
+              <div class="w-100 pt-1 patient-main-content" *ngIf="!patient.visit_canceled_at">
+                <h1 class="operating_room_name">{{patient.operating_room_name === 'None' ? ('home.toFollow' | translate) : patient.operating_room_name}}</h1>
                 <ion-grid>
                   <ion-row>
                     <ion-col class="elipsis">
                       <div class="elipsis">
                         <h1>{{patient.status_name}}</h1>
-                        <div style="padding-top: 10px;">
+                        <div class="details-stack">
                           <div class="elipsis">
                             <span class="label">{{ 'home.surgeon' | translate }} </span>
                             <span class="label-value">{{patient.surgeon?.name ?? patient.surgeon_name}}</span>
@@ -87,14 +87,14 @@
                     </ion-col>
                     <ion-col class="elipsis">
                       <div class="elipsis">
-                        <div style="padding-top: 10px;">
+                        <div class="details-stack">
                           <h1>&nbsp;</h1>
                           <div class="elipsis">
                             <span class="label">{{ 'home.familyName' | translate }} </span><span class="label-value">{{patient.companion_name}}</span>
                           </div>
 
 
-                          <div style="display: flex; justify-content: space-between; align-items: center;">
+                          <div class="contact-row">
                             <div>
                               <span class="label">{{ 'home.familyPhone' | translate }} </span>
                               <span class="label-value">{{patient.phone !== null? patient.phone_national_format : patient.phone}}</span>
@@ -102,21 +102,21 @@
 
                             <div>
 
-                            <ion-button *ngIf="!patient.phone" style="min-height: 10px;" fill="clear" size="small">
-                              <img src="assets/icon/Phone.png" style="width: 35px; height: 35px;">
+                            <ion-button *ngIf="!patient.phone" class="icon-action-btn" fill="clear" size="small">
+                              <img src="assets/icon/Phone.png" class="patient-status-icon">
                             </ion-button>
 
-                            <ion-button *ngIf="patient.phone_national_format && patient.phone_error" style="min-height: 10px;" fill="clear" size="small">
-                              <img src="assets/icon/smartphone.png" style="width: 35px; height: 35px;">
+                            <ion-button *ngIf="patient.phone_national_format && patient.phone_error" class="icon-action-btn" fill="clear" size="small">
+                              <img src="assets/icon/smartphone.png" class="patient-status-icon">
                             </ion-button>
 
-                            <ion-button *ngIf="this.username.user.waiting_room && this.username.user.waiting_room.chat_enabled && patient.prefers_sms && patient.chat_has_message" style="min-height: 10px;" fill="clear" size="small" (click)="goToPatientChat(patient)">
-                              <ion-icon style="width: 35px; height: 35px;" slot="icon-only" name="chatbubble-ellipses-outline"></ion-icon>
+                            <ion-button *ngIf="this.username.user.waiting_room && this.username.user.waiting_room.chat_enabled && patient.prefers_sms && patient.chat_has_message" class="icon-action-btn" fill="clear" size="small" (click)="goToPatientChat(patient)">
+                              <ion-icon class="patient-status-chat-icon" slot="icon-only" name="chatbubble-ellipses-outline"></ion-icon>
                               <span *ngIf="patient.chat_unread_count > 0" class="notifiable">{{ patient.chat_unread_count }}</span>
                             </ion-button>
 
-                            <ion-button *ngIf="patient.has_note" style="min-height: 10px;" fill="clear" size="small">
-                              <img src="assets/icon/notepad.png" style="width: 35px; height: 35px;">
+                            <ion-button *ngIf="patient.has_note" class="icon-action-btn" fill="clear" size="small">
+                              <img src="assets/icon/notepad.png" class="patient-status-icon">
                             </ion-button>
 
                             </div>
@@ -147,7 +147,7 @@
               <h1 class="surgeryCancel">{{ 'home.surgeryCancelled' | translate }}</h1>
               </div>
 
-              <div *ngIf="!patients || patients.length === 0" style="text-align: center; margin-top: 100px;">
+              <div *ngIf="!patients || patients.length === 0" class="no-patients-state">
                 <h1>{{ 'home.noPatientsToday' | translate }}</h1>
               </div>
 
@@ -162,7 +162,7 @@
         <button (click)="newPatient()" class="btn btn-primary rounded-3 buttons">{{ 'home.newPatient' | translate }}</button>
 
         <div class="controlRight">
-          <div style="margin: 10px 10px 10px 10px; padding: 5px 5px; background-color: #e8e8e8; border-radius: 10px;" *ngIf="patients && patients.length > 0">
+          <div class="workteams-card" *ngIf="patients && patients.length > 0">
             <div class="text-center m-2">
               <h3>{{ 'home.workTeams' | translate }}</h3>
             </div>
@@ -205,12 +205,12 @@
         </div>
         <br />
         <div class="d-flex">
-          <div class="flex-fill" style="padding: 0 10px;">
-            <button class="btn btn-danger rounded-3" style="width: -webkit-fill-available; height: 70px;margin-top: 10px; font-size: 20px;"(click)="cancel()">{{ 'home.cancel' | translate }}</button>
+          <div class="flex-fill modal-action-col">
+            <button class="btn btn-danger rounded-3 modal-action-btn" (click)="cancel()">{{ 'home.cancel' | translate }}</button>
           </div>
 
-          <div class="flex-fill" style="padding: 0 10px;">
-            <button class="btn btn-primary rounded-3" style="width: -webkit-fill-available; height: 70px;margin-top: 10px; font-size: 20px;" (click)="logout()">{{ 'home.logout' | translate }}</button>
+          <div class="flex-fill modal-action-col">
+            <button class="btn btn-primary rounded-3 modal-action-btn" (click)="logout()">{{ 'home.logout' | translate }}</button>
 
           </div>
         </div>
