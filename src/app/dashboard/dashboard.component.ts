@@ -84,6 +84,8 @@ import { AppComponent } from '../app.component';
   private timeUpdateIntervalId: any;
   private pageRoomsIntervalId: any;
   private pusherMonitorIntervalId: any;
+  private midnightReloadTimeoutId: any;
+  private lastKnownDayKey: string = this.buildDayKey(new Date());
   private monitorUpdatedSub?: Subscription;
   isLoading = true; // Variable para controlar el estado de loading
   totales:any;
@@ -287,6 +289,7 @@ import { AppComponent } from '../app.component';
         console.error('Error al leer Preferences:', error);
       });
      await this.updateTime();
+       this.scheduleMidnightRefresh();
      await this.startlists();
 
      this.requestsService.patientsStats(this.requestsService.config.branch.id, this.requestsService.config.waitingRoom.id).subscribe(resp => {
@@ -348,18 +351,48 @@ import { AppComponent } from '../app.component';
 
   updateTime() {
     const now = new Date();
-    const hours = now.getHours();
-    const minutes = now.getMinutes();
+    const currentDayKey = this.buildDayKey(now);
+    if (currentDayKey !== this.lastKnownDayKey) {
+      this.lastKnownDayKey = currentDayKey;
+      window.location.reload();
+      return;
+    }
+
     this.currentTime = now.toLocaleTimeString('es-ES', {
       hour: 'numeric',
       minute: '2-digit',
       hour12: true,
     }).replace(' ', ' ').toUpperCase();
-    if (hours === 23 && minutes === 59) {
-      setTimeout(() => {
-        window.location.reload();
-      }, 60000);
+  }
+
+  private buildDayKey(date: Date): string {
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    return `${year}-${month}-${day}`;
+  }
+
+  private scheduleMidnightRefresh() {
+    if (this.midnightReloadTimeoutId) {
+      clearTimeout(this.midnightReloadTimeoutId);
+      this.midnightReloadTimeoutId = null;
     }
+
+    const now = new Date();
+    const nextMidnight = new Date(now);
+    nextMidnight.setHours(24, 0, 0, 0);
+
+    const delay = Math.max(nextMidnight.getTime() - now.getTime(), 1000);
+    this.midnightReloadTimeoutId = setTimeout(() => {
+      const currentDayKey = this.buildDayKey(new Date());
+      if (currentDayKey !== this.lastKnownDayKey) {
+        this.lastKnownDayKey = currentDayKey;
+        window.location.reload();
+        return;
+      }
+
+      this.scheduleMidnightRefresh();
+    }, delay);
   }
 
   async startlists(){
@@ -1723,6 +1756,10 @@ private isPusherConnected(): boolean {
     if (this.intervalIdForPages) {
       clearInterval(this.intervalIdForPages);
       this.intervalIdForPages = null;
+    }
+    if (this.midnightReloadTimeoutId) {
+      clearTimeout(this.midnightReloadTimeoutId);
+      this.midnightReloadTimeoutId = null;
     }
 
     // 3. Desuscribirse de observables
