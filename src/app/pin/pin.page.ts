@@ -50,12 +50,13 @@ interface DeviceTokenResponse {
 }
 
 @Component({
+  standalone: false,
   selector: 'app-pin',
   templateUrl: './pin.page.html',
   styleUrls: ['./pin.page.scss'],
 })
 
-export class PinPage implements OnInit{//, OnDestroy {
+export class PinPage implements OnInit, OnDestroy {
 
   private readonly DEVICE_REGISTRATION_STORAGE_KEY = 'deviceRegistrationData';
   private readonly DEVICE_TOKEN_RESPONSE_STORAGE_KEY = 'deviceTokenResponse';

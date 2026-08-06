@@ -13,7 +13,8 @@ import { sync } from '@capacitor/live-updates';
 
 
 @Component({
-  selector: 'app-login',
+  standalone: false,
+selector: 'app-login',
   templateUrl: './login.page.html',
   styleUrls: ['./login.page.scss'],
 })

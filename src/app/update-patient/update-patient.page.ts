@@ -11,7 +11,8 @@ import { NotificationService } from '../api/notification.service';
 import { TranslateService } from '../services/translate.service';
 
 @Component({
-  selector: 'app-update-patient',
+  standalone: false,
+selector: 'app-update-patient',
   templateUrl: './update-patient.page.html',
   styleUrls: ['./update-patient.page.scss'],
 })

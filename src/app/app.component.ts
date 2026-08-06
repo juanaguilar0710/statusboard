@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, HostListener, OnInit, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { NavigationEnd, Router } from '@angular/router';
 import { Preferences } from '@capacitor/preferences';
 import { RequestsService } from './api/requests.service';
@@ -12,14 +12,16 @@ import { ModalController, Platform } from '@ionic/angular';
 import { LoggerService } from './api/logger.service';
 
 import { App } from '@capacitor/app';
+import { Capacitor } from '@capacitor/core';
 import * as LiveUpdates from '@capacitor/live-updates';
 
 @Component({
+  standalone: false,
   selector: 'app-root',
   templateUrl: 'app.component.html',
   styleUrls: ['app.component.scss'],
 })
-export class AppComponent implements OnInit, AfterViewInit {
+export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
   @ViewChild('screensaverVideo') private screensaverVideo?: ElementRef<HTMLVideoElement>;
 
@@ -110,6 +112,12 @@ export class AppComponent implements OnInit, AfterViewInit {
    * Inicializa Live Updates y recarga inmediatamente cuando haya una nueva versión
    */
   private async initializeLiveUpdates(): Promise<void> {
+    if (!Capacitor.isNativePlatform()) {
+      this.liveUpdateStatus = 'Unavailable';
+      this.liveUpdateDetail = 'Native app only';
+      return;
+    }
+
     try {
       this.liveUpdateStatus = 'Initializing';
       this.liveUpdateDetail = 'Setting up listeners';
@@ -281,6 +289,10 @@ export class AppComponent implements OnInit, AfterViewInit {
 
   ngOnDestroy() {
     clearTimeout(this.screensaverPlayRetryTimeout);
+    if (this.liveUpdatePollTimer) {
+      clearInterval(this.liveUpdatePollTimer);
+      this.liveUpdatePollTimer = undefined;
+    }
     this.pauseScreensaverVideo();
     this.stopInactivityTracking();
     App.removeAllListeners();

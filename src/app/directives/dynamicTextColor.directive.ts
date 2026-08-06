@@ -1,9 +1,10 @@
-import { Directive, ElementRef, Input, Renderer2 } from '@angular/core';
+import { Directive, ElementRef, Input, OnChanges, Renderer2 } from '@angular/core';
 
 @Directive({
+  standalone: false,
   selector: '[dynamicTextColor]'
 })
-export class DynamicTextColorDirective {
+export class DynamicTextColorDirective implements OnChanges {
   @Input('dynamicTextColor') backgroundColor: string = "#007AFF";
 
   constructor(private el: ElementRef, private renderer: Renderer2) {}

@@ -22,7 +22,8 @@ import { WebhookService } from '../services/webhook.service';
 import { Device } from '@capacitor/device';
 
 @Component({
-  selector: 'app-home',
+  standalone: false,
+selector: 'app-home',
   templateUrl: 'home.page.html',
   styleUrls: ['home.page.scss'],
 })

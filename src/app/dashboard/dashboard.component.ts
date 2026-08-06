@@ -1,4 +1,4 @@
-import { AfterViewInit, ChangeDetectorRef, Component, OnInit, AfterViewChecked, ElementRef, ViewChild } from '@angular/core';
+import { AfterViewInit, ChangeDetectorRef, Component, OnInit, AfterViewChecked, ElementRef, NgZone, OnDestroy, ViewChild } from '@angular/core';
 import { LocaldataService } from '../api/localdata.service';
 import { DevicesService } from '../api/devices.service';
 import { RequestsService } from '../api/requests.service';
@@ -29,13 +29,14 @@ import { Device } from '@capacitor/device';
 import { AppComponent } from '../app.component';
 
 @Component({
+  standalone: false,
   selector: 'app-dashboard',
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss'],
 })
 
 
-  export class DashboardComponent  implements OnInit, AfterViewChecked {
+  export class DashboardComponent  implements OnInit, AfterViewChecked, OnDestroy {
     @ViewChild('audio') miBoton!: ElementRef<HTMLButtonElement>;
   operatingRooms: any[] = [];
   patients: any[] = [];
@@ -92,6 +93,7 @@ import { AppComponent } from '../app.component';
   private dataLoaded = false; // Flag para controlar si los datos fueron cargados
   private viewChecked = false; // Flag para evitar bucles infinitos en ngAfterViewChecked
   private readonly TOKEN_EXPIRATION_KEY_Admin = 'auth_token_expiration_admin';
+  private isLoggingOut = false;
 
   // 🎤 Sistema de cola de speech
   private readonly SPEECH_QUEUE_KEY = 'speech_queue';
@@ -109,13 +111,14 @@ import { AppComponent } from '../app.component';
               private storage: Storage,
               private logger: LoggerService,
               private cdr: ChangeDetectorRef,
+              private ngZone: NgZone,
               private audioService: AudioService,
               public translate: TranslateService,
               private appComponent: AppComponent
   ) {
     setTimeout(() => {
       this.timeUpdateIntervalId = setInterval(async () => {
-        this.updateTime();
+        this.runUiTimerUpdate(() => this.updateTime());
         if (this.isRefreshing) return;
         const expiresAt = await this.storage.get(this.TOKEN_EXPIRATION_KEY_Admin);
         if (!expiresAt) return;
@@ -133,9 +136,7 @@ import { AppComponent } from '../app.component';
       }, 1000);
 
       this.pageRoomsIntervalId = setInterval(() => {
-        this.changePageRooms();
-        const event = new MouseEvent('mousemove');
-        document.dispatchEvent(event);
+        this.runUiTimerUpdate(() => this.changePageRooms());
       }, environment.timeRoomsPerPage);
         this.checkNetworkStatus();
         this.listenToNetworkChanges();
@@ -575,15 +576,17 @@ import { AppComponent } from '../app.component';
   startCarousel() {
     this.updatePaginationDetails();
     this.intervalId = setInterval(() => {
-      this.getRoomsWithPatients().forEach(room => {
-        const patientsInRoom = this.filterPatientsByRoom(room.name);
-        if (patientsInRoom.length > this.pageSize) {
-          const currentGroup = this.currentGroups[room.name] || 0;
-          this.totalGroups = Math.ceil(patientsInRoom.length / this.pageSize);
-          this.currentGroups[room.name] = (currentGroup + 1) % this.totalGroups;
-        }
+      this.runUiTimerUpdate(() => {
+        this.getRoomsWithPatients().forEach(room => {
+          const patientsInRoom = this.filterPatientsByRoom(room.name);
+          if (patientsInRoom.length > this.pageSize) {
+            const currentGroup = this.currentGroups[room.name] || 0;
+            this.totalGroups = Math.ceil(patientsInRoom.length / this.pageSize);
+            this.currentGroups[room.name] = (currentGroup + 1) % this.totalGroups;
+          }
+        });
+        this.updatePaginationDetails();
       });
-      this.updatePaginationDetails();
     }, environment.timeForCardsWhitPatients);
   }
   updatePaginationDetails() {
@@ -600,7 +603,14 @@ import { AppComponent } from '../app.component';
     clearInterval(this.intervalId);
   }
   getRoomsWithPatients(): any[] {
+    if (this.isLoggingOut) {
+      return [];
+    }
+
     this.roomsWithPatients = this.roomsWithPatients || [];
+    this.operatingRooms = Array.isArray(this.operatingRooms) ? this.operatingRooms : [];
+    this.patients = Array.isArray(this.patients) ? this.patients : [];
+
         // Filtrar salas usando shouldShowRoom para consistencia
         const filteredRooms = this.operatingRooms.filter(room => this.shouldShowRoom(room));
 
@@ -676,15 +686,17 @@ import { AppComponent } from '../app.component';
     }
     this.countdown = environment.timeRoomsPerPageWhitPatients / 1000;
     this.intervalIdForPages = setInterval(() => {
-      if (this.countdown > 1) {
-        this.countdown--;
-      } else {
-        this.changePageRoomsWhitPatients();
-        this.updatePaginationDetails();
-        this.updatePatientPaginationDetails();
-        this.changePatientPage();
-        this.countdown = environment.timeRoomsPerPageWhitPatients / 1000;
-      }
+      this.runUiTimerUpdate(() => {
+        if (this.countdown > 1) {
+          this.countdown--;
+        } else {
+          this.changePageRoomsWhitPatients();
+          this.updatePaginationDetails();
+          this.updatePatientPaginationDetails();
+          this.changePatientPage();
+          this.countdown = environment.timeRoomsPerPageWhitPatients / 1000;
+        }
+      });
     }, 1000);
   }
   changePageRooms() {
@@ -699,6 +711,10 @@ import { AppComponent } from '../app.component';
     }
   }
   changePageRoomsWhitPatients() {
+  if (this.isLoggingOut) {
+    return;
+  }
+
   const roomsWithPatients = this.getRoomsWithPatients();
   if (roomsWithPatients.length === 0) {
     this.totalPagesWhitPatients = 0;
@@ -715,6 +731,18 @@ import { AppComponent } from '../app.component';
   }
   this.totalPagesCurrentPatients = environment.currentPageWhitPatients;
 }
+
+  private runUiTimerUpdate(update: () => void): void {
+    if (this.isLoggingOut) {
+      return;
+    }
+
+    this.ngZone.run(() => {
+      update();
+      this.cdr.markForCheck();
+    });
+  }
+
   getRoomsForCurrentPage() {
     const filteredRooms = this.operatingRooms?.filter(room => this.shouldShowRoom(room)) || [];
     const start = environment.currentPage * environment.roomsPerPage;
@@ -1216,7 +1244,7 @@ private async handleOperatingRoomEvent(type: 'created' | 'updated', e: any): Pro
           duration: 'long',
           position: 'top'
         });
-        await this.router.navigate(['/login'], { replaceUrl: true });
+        await this.navigateToLogin();
         setTimeout(() => window.location.reload(), 100);
       }
     });
@@ -1723,6 +1751,11 @@ private isPusherConnected(): boolean {
 
   // Método para limpiar recursos antes del logout
   private cleanupBeforeLogout() {
+    if (this.isLoggingOut) {
+      return;
+    }
+
+    this.isLoggingOut = true;
     console.log('[Dashboard] Limpiando recursos antes del logout...');
 
     // 1. Desconectar Pusher/Echo
@@ -1778,6 +1811,10 @@ private isPusherConnected(): boolean {
     console.log('[Dashboard] Limpieza completada');
   }
 
+  private async navigateToLogin(): Promise<void> {
+    await this.router.navigateByUrl('/login', { replaceUrl: true });
+  }
+
   async presentAlert() {
     const alert = await this.alertController.create({
       header: 'Admin Options',
@@ -1787,6 +1824,9 @@ private isPusherConnected(): boolean {
           text: 'Login',
           handler: async () => {
             try {
+              await alert.dismiss();
+              await new Promise(resolve => setTimeout(resolve, 0));
+
               // Limpiar recursos antes de navegar
               this.cleanupBeforeLogout();
 
@@ -1796,13 +1836,14 @@ private isPusherConnected(): boolean {
               // Limpiar storage y navegar
               await Preferences.clear();
               this.logger.clearAdminAuthData();
-              await this.router.navigate(['/login'], { replaceUrl: true });
+              await this.navigateToLogin();
             } catch (error) {
               console.error('Error en logout:', error);
               // Aún así navegar en caso de error
               await Preferences.clear();
-              await this.router.navigate(['/login'], { replaceUrl: true });
+              await this.navigateToLogin();
             }
+            return false;
           }
         },
         // {

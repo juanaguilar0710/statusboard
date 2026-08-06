@@ -1,7 +1,8 @@
 import { Directive, ElementRef, EventEmitter, Output, AfterViewInit, OnDestroy } from '@angular/core';
 
 @Directive({
-  selector: '[visibilityChange]'
+  standalone: false,
+selector: '[visibilityChange]'
 })
 export class VisibilityChangeDirective implements AfterViewInit, OnDestroy {
   @Output() visibilityChange = new EventEmitter<void>();

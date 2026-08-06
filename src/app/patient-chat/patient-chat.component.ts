@@ -9,7 +9,8 @@ import { TranslateService } from '../services/translate.service';
 import { WebhookService } from '../services/webhook.service';
 
 @Component({
-  selector: 'app-patient-chat',
+  standalone: false,
+selector: 'app-patient-chat',
   templateUrl: './patient-chat.component.html',
   styleUrls: ['./patient-chat.component.scss']
 })

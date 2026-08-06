@@ -2,7 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { ModalController, NavParams } from '@ionic/angular';
 
 @Component({
-  selector: 'app-modal-select',
+  standalone: false,
+selector: 'app-modal-select',
   templateUrl: './modal-select.component.html',
   styleUrls: ['./modal-select.component.scss'],
 })

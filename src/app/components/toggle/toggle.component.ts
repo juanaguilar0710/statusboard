@@ -3,7 +3,8 @@ import { FormBuilder, FormGroup } from '@angular/forms';
 import { RequestsService } from 'src/app/api/requests.service';
 
 @Component({
-  selector: 'app-toggle',
+  standalone: false,
+selector: 'app-toggle',
   templateUrl: './toggle.component.html',
   styleUrls: ['./toggle.component.scss'],
 })
