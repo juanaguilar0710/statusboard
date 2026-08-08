@@ -13,6 +13,7 @@ import { environment } from 'src/environments/environment';
 import { DevicesService } from 'src/app/api/devices.service';
 import { NavigationEnd, Router } from '@angular/router';
 import { Subscription, firstValueFrom } from 'rxjs';
+import { ServerClockService } from 'src/app/services/server-clock.service';
 
 export interface DeviceRegistrationData {
   id: string;
@@ -94,7 +95,8 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
     private webhookService: WebhookService,
     private router: Router,
     private ngZone: NgZone,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private serverClock: ServerClockService
   ) {}
 
   async ngOnInit(): Promise<void> {
@@ -103,6 +105,7 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
     }
     this.hasInitialized = true;
     this.trackRouteState();
+    await this.serverClock.ensureSynchronized();
     await this.loadStoredDeviceRegistrationData();
     await this.ensureActivationFlowReady();
   }
@@ -168,7 +171,7 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
       manufacturer: this.deviceMetadata?.manufacturer || 'Unknown Manufacturer',
       platform: this.deviceMetadata?.platform || 'Unknown Platform',
       os_version: this.deviceMetadata?.osVersion || 'Unknown OS Version',
-      generatedAt: new Date().toISOString(),
+      generatedAt: this.serverClock.now().toISOString(),
     }).subscribe(
       (resp: any) => {
         if (resp.status === 500 && resp.data?.error?.detail === 'Monitor already registered') {
@@ -573,7 +576,9 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
         return;
       }
 
-      const nextRemainingSeconds = this.remainingSeconds - 1;
+      const nextRemainingSeconds = this.DeviceRegistrationData
+        ? this.getRemainingSecondsFromRegistration(this.DeviceRegistrationData)
+        : this.remainingSeconds - 1;
       this.updateActivationState(this.activationCode, nextRemainingSeconds);
       if (nextRemainingSeconds <= 0) {
         await this.registerAndResetCountdown();
@@ -697,7 +702,7 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
       return 300;
     }
 
-    const remainingSeconds = Math.ceil((expiresAt - Date.now()) / 1000);
+    const remainingSeconds = Math.ceil((expiresAt - this.serverClock.nowMs()) / 1000);
     return remainingSeconds > 0 ? remainingSeconds : 0;
   }
 

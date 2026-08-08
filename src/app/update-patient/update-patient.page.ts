@@ -9,6 +9,7 @@ import { Storage } from '@ionic/storage-angular';
 import { SearchableComponentComponent } from '../searchable-component/searchable-component.component';
 import { NotificationService } from '../api/notification.service';
 import { TranslateService } from '../services/translate.service';
+import { ServerClockService } from '../services/server-clock.service';
 
 @Component({
   standalone: false,
@@ -68,7 +69,8 @@ export class UpdatePatientPage implements OnInit, OnDestroy {
     private notificationService: NotificationService,
     private storage: Storage,
     private modalController: ModalController,
-    public translate: TranslateService) {
+    public translate: TranslateService,
+    private serverClock: ServerClockService) {
     const navParams = this.router.getCurrentNavigation()?.extras?.state;
     if (navParams) {
       this.patient = (navParams as any)?.patient;
@@ -450,7 +452,7 @@ export class UpdatePatientPage implements OnInit, OnDestroy {
      this.updating = true;
     this.loading = true;
     if (!this.patient.visit_canceled_at) {
-      const date = new Date();
+      const date = this.serverClock.now();
       var year = date.toLocaleString("default", { year: "numeric" });
       var month = date.toLocaleString("default", { month: "2-digit" });
       var day = date.toLocaleString("default", { day: "2-digit" });

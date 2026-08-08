@@ -20,6 +20,7 @@ import { AudioService } from '../services/audio.service';
 import { TranslateService } from '../services/translate.service';
 import { WebhookService } from '../services/webhook.service';
 import { Device } from '@capacitor/device';
+import { ServerClockService } from '../services/server-clock.service';
 
 @Component({
   standalone: false,
@@ -49,7 +50,7 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
   //create a list of 10 light pallette colors
   updating: boolean = true;
   networkStatus: string = "ONLINE";
-  lastsync: string = new Date().toLocaleString();
+  lastsync: string = '';
   deviceWasOffline: boolean = false;
   loading: boolean = false;
   disableYesterday: boolean = false;
@@ -81,7 +82,8 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
     private audioService: AudioService,
     private modalController: ModalController,
     private webhookService: WebhookService,
-    public translate: TranslateService) {
+    public translate: TranslateService,
+    private serverClock: ServerClockService) {
 
     //listen for the network status
     this.networkService.networkStatus$.subscribe((status: string) => {
@@ -105,6 +107,8 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
   }
 
   async ngOnInit() {
+    await this.serverClock.ensureSynchronized();
+    this.lastsync = this.serverClock.now().toLocaleString();
     var token = await this.logger.getTokenAdmin();
     this.requestsService.setAdminToken(token);
       this.LocaldataService.setPatients(this.patients);
@@ -229,7 +233,7 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
     });
     this.letters = this.getFirstLetterFromNames();
     this.LocaldataService.setPatients(this.allPatients);
-    this.requestsService.lastSync = new Date().toLocaleString();
+    this.requestsService.lastSync = this.serverClock.now().toLocaleString();
   }
 
   private getOperatingRoomFromSocketPayload(payload: any): any | null {
@@ -493,7 +497,7 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
         event.target.complete();
       }
       if (response.status === 200) {
-        this.lastsync = new Date().toLocaleString();
+        this.lastsync = this.serverClock.now().toLocaleString();
         this.allPatients = response.data;
         this.patientsCopy = [...this.allPatients];
         this.patients = [...this.patientsCopy];
