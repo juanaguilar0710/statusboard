@@ -1,17 +1,16 @@
 import { Injectable } from '@angular/core';
 import { Preferences } from '@capacitor/preferences';
-import { ServerClockService } from '../services/server-clock.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class LocaldataService {
 
+  today: string = `${new Date().getFullYear()}-${new Date().getMonth() + 1}-${new Date().getDate()}`;
   user: any = null;
-  isTokenExpired = (token: string) => this.serverClock.nowMs() >= (JSON.parse(atob(token.split('.')[1]))).exp * 1000;
+  isTokenExpired = (token: string) => Date.now() >= (JSON.parse(atob(token.split('.')[1]))).exp * 1000;
 
-  constructor(private serverClock: ServerClockService) {
-    void this.serverClock.ensureSynchronized();
+  constructor() {
     this.getUser().then((user: any) => {
       this.user = user;
     });
@@ -25,11 +24,6 @@ export class LocaldataService {
         value: JSON.stringify(patients)
       });
     }
-  }
-
-  private get today(): string {
-    const date = this.serverClock.now();
-    return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
   }
 
   deletePreviousPatients() {

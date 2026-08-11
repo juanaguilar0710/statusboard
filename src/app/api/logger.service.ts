@@ -1,6 +1,5 @@
 import { Injectable } from '@angular/core';
 import { Storage } from '@ionic/storage-angular';
-import { ServerClockService } from '../services/server-clock.service';
 
 @Injectable({
   providedIn: 'root'
@@ -14,7 +13,7 @@ export class LoggerService {
 
   private readonly MAX_LOG_ENTRIES = 200;
 
-  constructor(private storage: Storage, private serverClock: ServerClockService) {
+  constructor(private storage: Storage) {
     this.initialize();
   }
 
@@ -32,7 +31,7 @@ export class LoggerService {
   async addLog(action: string, details: any = {}, level: 'info' | 'success' | 'warning' | 'error' = 'info') {
     if (!this.storageInitialized) await this.initialize();
     
-    const timestamp = this.serverClock.now().toISOString();
+    const timestamp = new Date().toISOString();
     const logEntry = {
       id: this.generateId(),
       timestamp,
@@ -81,7 +80,7 @@ export class LoggerService {
 
   // Métodos auxiliares privados
   private generateId(): string {
-    return this.serverClock.nowMs().toString(36) + Math.random().toString(36).substring(2);
+    return Date.now().toString(36) + Math.random().toString(36).substring(2);
   }
 
   async setTokenAdmin(token: string, expiresIn: number): Promise<void> {
@@ -89,14 +88,14 @@ export class LoggerService {
   
     await this.storage.set(this.TOKEN_KEY_Admin, token);
     
-    const expiresAt = this.serverClock.nowMs() + (expiresIn * 1000);
+    const expiresAt = Date.now() + (expiresIn * 1000);
     await this.storage.set(this.TOKEN_EXPIRATION_KEY_Admin, expiresAt);
   }
 
   async isAdminTokenValid(): Promise<boolean> {
     const expiresAt = await this.storage.get(this.TOKEN_EXPIRATION_KEY_Admin);
     if (!expiresAt) return false;
-    const currentTime = this.serverClock.nowMs();
+    const currentTime = Date.now();
     const timeLeft = expiresAt - currentTime;
     return timeLeft > 60000;
   }

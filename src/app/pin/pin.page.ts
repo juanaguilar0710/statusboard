@@ -19,7 +19,6 @@ import { WebhookService } from '../services/webhook.service';
 import { Device } from '@capacitor/device';
 import { firstValueFrom } from 'rxjs';
 import Swal from 'sweetalert2';
-import { ServerClockService } from '../services/server-clock.service';
 
 interface DeviceTokenResponse {
   token_type: string;
@@ -74,7 +73,7 @@ export class PinPage implements OnInit, OnDestroy {
   isCheckingForUpdates: boolean = false;
   @Output() change: EventEmitter<string> = new EventEmitter<string>();
   networkStatus: string = "ONLINE";
-  lastsync: string = '';
+  lastsync: string = new Date().toLocaleString();
   image_url = "";
   branch_name = "";
   waitingRoom_name = "";
@@ -98,7 +97,6 @@ export class PinPage implements OnInit, OnDestroy {
     public translate: TranslateService,
     private deviceservice: DevicesService,
     private webhookService: WebhookService,
-    private serverClock: ServerClockService,
   ) {
     // Escuchar el estado de la red
     this.networkService.networkStatus$.subscribe((status: string) => {
@@ -229,7 +227,6 @@ export class PinPage implements OnInit, OnDestroy {
 
   deviceInfo: any = null;
    async ngOnInit() {
-    await this.serverClock.ensureSynchronized();
     await Preferences.get({ key: 'deviceRegistrationData' }).then(res => {
       this.deviceInfo = res.value ? JSON.parse(res.value) : null;
     });
@@ -237,7 +234,7 @@ export class PinPage implements OnInit, OnDestroy {
     this.appComponent.stopInactivityTracking();
     this.loading = true;
     this.isInitializing = true;
-    this.lastsync = this.requestsService.lastSync || this.serverClock.now().toLocaleString();
+    this.lastsync = this.requestsService.lastSync;
 
 
     if (localStorage.getItem('is_activation_flow') === 'true') {

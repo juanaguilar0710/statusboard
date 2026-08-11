@@ -27,7 +27,6 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
 import { TranslateService } from '../services/translate.service';
 import { Device } from '@capacitor/device';
 import { AppComponent } from '../app.component';
-import { ServerClockService } from '../services/server-clock.service';
 
 @Component({
   standalone: false,
@@ -115,8 +114,7 @@ import { ServerClockService } from '../services/server-clock.service';
               private ngZone: NgZone,
               private audioService: AudioService,
               public translate: TranslateService,
-              private appComponent: AppComponent,
-              private serverClock: ServerClockService
+              private appComponent: AppComponent
   ) {
     setTimeout(() => {
       this.timeUpdateIntervalId = setInterval(async () => {
@@ -124,7 +122,7 @@ import { ServerClockService } from '../services/server-clock.service';
         if (this.isRefreshing) return;
         const expiresAt = await this.storage.get(this.TOKEN_EXPIRATION_KEY_Admin);
         if (!expiresAt) return;
-        const timeLeft = expiresAt - this.serverClock.nowMs();
+        const timeLeft = expiresAt - Date.now();
         if (timeLeft <= 60000 && timeLeft > 0) {
           this.isRefreshing = true;
           try {
@@ -228,9 +226,6 @@ import { ServerClockService } from '../services/server-clock.service';
   }
 
   async ngOnInit() {
-    await this.serverClock.ensureSynchronized();
-    this.currentDate = this.serverClock.now();
-    this.lastKnownDayKey = this.buildDayKey(this.currentDate);
     if (!this.monitorUpdatedSub) {
       this.monitorUpdatedSub = this.requestsService.monitorUpdated$.subscribe(() => {
         console.log('[Dashboard] Recibida actualización desde monitorUpdated$. Recargando datos...');
@@ -356,8 +351,7 @@ import { ServerClockService } from '../services/server-clock.service';
   }
 
   updateTime() {
-    const now = this.serverClock.now();
-    this.currentDate = now;
+    const now = new Date();
     const currentDayKey = this.buildDayKey(now);
     if (currentDayKey !== this.lastKnownDayKey) {
       this.lastKnownDayKey = currentDayKey;
@@ -385,13 +379,13 @@ import { ServerClockService } from '../services/server-clock.service';
       this.midnightReloadTimeoutId = null;
     }
 
-    const now = this.serverClock.now();
+    const now = new Date();
     const nextMidnight = new Date(now);
     nextMidnight.setHours(24, 0, 0, 0);
 
     const delay = Math.max(nextMidnight.getTime() - now.getTime(), 1000);
     this.midnightReloadTimeoutId = setTimeout(() => {
-      const currentDayKey = this.buildDayKey(this.serverClock.now());
+      const currentDayKey = this.buildDayKey(new Date());
       if (currentDayKey !== this.lastKnownDayKey) {
         this.lastKnownDayKey = currentDayKey;
         window.location.reload();
@@ -549,7 +543,7 @@ import { ServerClockService } from '../services/server-clock.service';
               updatedPatients.push(newPatient);
             }
           });
-          this.lastsync = this.serverClock.now();
+          this.lastsync = new Date();
           this.patients = [...filteredPatients];
           this.listPatients = response.data;
           this.patientsCopy = [...filteredPatients];
@@ -944,7 +938,7 @@ import { ServerClockService } from '../services/server-clock.service';
   }
 
   addUpdatedPatient(patient: any) {
-    const now = this.serverClock.nowMs();
+    const now = Date.now();
     const expiry = now + 60000; // 60 segundos
     const updatedPatients = JSON.parse(localStorage.getItem('updatedPatients') || '[]');
 
@@ -961,14 +955,14 @@ import { ServerClockService } from '../services/server-clock.service';
     this.updatedPatientIdsCache = null;
 }
 
-getUpdatedPatients(now: number = this.serverClock.nowMs()) {
+getUpdatedPatients(now: number = Date.now()) {
   const updatedPatients = JSON.parse(localStorage.getItem('updatedPatients') || '[]');
   if (!Array.isArray(updatedPatients)) return [];
   return updatedPatients.filter((patient: any) => patient && typeof patient.expiry === 'number' && now <= patient.expiry);
 }
 
 private getUpdatedPatientIdsSnapshot(): Set<number> {
-  const now = this.serverClock.nowMs();
+  const now = Date.now();
   if (this.updatedPatientIdsCache && this.updatedPatientIdsCache.validUntil > now) {
     return this.updatedPatientIdsCache.ids;
   }
@@ -1578,7 +1572,7 @@ private isPusherConnected(): boolean {
 
   private async updatePatientList(eventType: string, patient: any) {
 
-    this.lastUpdateTime = this.serverClock.nowMs();
+    this.lastUpdateTime = Date.now();
     const index = this.findPatientIndexById(this.patients, patient?.id);
     const shouldBeVisible = this.shouldPatientBeVisible(patient.status?.id || patient.status_Id);
 
@@ -1589,7 +1583,7 @@ private isPusherConnected(): boolean {
 
           this.patients.push(updatedPatient);
           this.patientsCopy = [...this.patients];
-          this.lastsync = this.serverClock.now();
+          this.lastsync = new Date();
           this.LocaldataService.setPatients(this.patients);
           this.addUpdatedPatient(updatedPatient);
         }
@@ -1615,7 +1609,7 @@ private isPusherConnected(): boolean {
             }
 
             this.patientsCopy = [...this.patients];
-            this.lastsync = this.serverClock.now();
+            this.lastsync = new Date();
             this.LocaldataService.setPatients(this.patients);
 
             // Actualizar la lista de salas para reflejar si alguna quedó vacía
@@ -1632,8 +1626,8 @@ private isPusherConnected(): boolean {
       this.patients = this.deduplicatePatientsById(this.patients);
     this.patientsCopy = [...this.patients];
     this.LocaldataService.setPatients(this.patients);
-    this.requestsService.lastSync = this.serverClock.now().toLocaleString();
-    this.lastsync = this.serverClock.now();
+    this.requestsService.lastSync = new Date().toLocaleString();
+    this.lastsync = new Date();
   }
   ngOnDestroy() {
     console.log('[Dashboard] ngOnDestroy llamado');

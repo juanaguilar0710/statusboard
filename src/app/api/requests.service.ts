@@ -7,7 +7,6 @@ import { BehaviorSubject, Subject, catchError, from, Observable, switchMap, tap,
 import { environment } from 'src/environments/environment';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { LoggerService } from './logger.service';
-import { ServerClockService } from '../services/server-clock.service';
 
 const urlMonitor = environment.url.replace('api', 'monitor');
 
@@ -34,8 +33,8 @@ export class RequestsService {
     operatingRoomsSchedules: any = [];
     lastSync: string = '';
 
-    isTokenExpired = (token: string) => this.serverClock.nowMs() >= (JSON.parse(atob(token.split('.')[1]))).exp * 1000;
-    constructor(private router: Router,private platform: Platform,private http: HttpClient,private logger: LoggerService, private serverClock: ServerClockService) {
+    isTokenExpired = (token: string) => Date.now() >= (JSON.parse(atob(token.split('.')[1]))).exp * 1000;
+    constructor(private router: Router,private platform: Platform,private http: HttpClient,private logger: LoggerService) {
         this.init();
     }
 
@@ -261,9 +260,8 @@ export class RequestsService {
     getTodaysPatients(yesterday: boolean = false): Observable<any> {
         this.loadingPatients$.next(true);
 
-        return from(this.serverClock.ensureSynchronized()).pipe(switchMap(() => new Observable((observer) => {
+        return new Observable((observer) => {
             if (!this.token || this.token.length === 0 || this.isTokenExpired(this.token)) {
-                this.loadingPatients$.next(false);
                 observer.error({ status: 404, message: 'Token expired', redirectUrl: '/pin' });
                 console.log('status: 404, message: Token expired, redirectUrl: /pin');
 
@@ -271,13 +269,12 @@ export class RequestsService {
             }
 
             if (!this.config?.branch || !this.config?.waitingRoom) {
-                this.loadingPatients$.next(false);
                 observer.error({ status: 404, message: 'Missing configuration', redirectUrl: '/settings' });
                 console.log('status: 404, message: Missing configuration');
                 return;
             }
 
-            const date = this.serverClock.now();
+            const date = new Date();
             if (yesterday) {
                 date.setDate(date.getDate() - 1);
             }
@@ -303,7 +300,7 @@ export class RequestsService {
             CapacitorHttp.get(options)
                 .then((result) => {
                     this.adaptVisitorsResponse(result);
-                    this.lastSync = this.serverClock.now().toLocaleString();
+                    this.lastSync = new Date().toLocaleString();
                     Preferences.set({ key: 'lastSync', value: this.lastSync }).then(() => {
                         observer.next(result);
                         observer.complete();
@@ -313,7 +310,7 @@ export class RequestsService {
                 .finally(() => {
                     this.loadingPatients$.next(false);
                 });
-        })));
+        });
     }
 
 
@@ -323,9 +320,8 @@ export class RequestsService {
         const requestId = Math.random().toString(36).substring(2, 9);
 
         try {
-            await this.serverClock.ensureSynchronized();
             // Calcula la fecha formateada
-            const date = this.serverClock.now();
+            const date = new Date();
             if (yesterday) {
                 date.setDate(date.getDate() - 1);
             }
@@ -355,7 +351,7 @@ export class RequestsService {
                 branchID: this.config.branch.id,
                 roomID: this.config.waitingRoom.id,
                 headers: this.sanitizeHeaders(options.headers),
-                timestamp: this.serverClock.now().toISOString()
+                timestamp: new Date().toISOString()
             }, 'info');
 
             // Realiza la llamada HTTP
@@ -369,11 +365,11 @@ export class RequestsService {
                 status: result.status,
                 duration: `${duration}ms`,
                 dataSize: this.getVisitorsCountFromResult(result),
-                timestamp: this.serverClock.now().toISOString()
+                timestamp: new Date().toISOString()
             }, 'success');
 
             // Actualiza el estado
-            this.lastSync = this.serverClock.now().toLocaleString();
+            this.lastSync = new Date().toLocaleString();
             await Preferences.set({ key: 'lastSync', value: this.lastSync });
             this.loadingPatients$.next(false);
 
@@ -388,7 +384,7 @@ export class RequestsService {
                 error: error.error,
                 message: error.message,
                 duration: `${duration}ms`,
-                timestamp: this.serverClock.now().toISOString()
+                timestamp: new Date().toISOString()
             }, 'error');
 
             // Manejo de errores
