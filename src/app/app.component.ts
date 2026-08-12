@@ -10,6 +10,7 @@ import { BehaviorSubject } from 'rxjs';
 import { NotificationService } from './api/notification.service';
 import { ModalController, Platform } from '@ionic/angular';
 import { LoggerService } from './api/logger.service';
+import { ServerClockService } from './services/server-clock.service';
 
 import { App } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
@@ -46,6 +47,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // Live Updates polling control
   private liveUpdatePollTimer: any;
+  private clockSyncTimer: any;
   private liveUpdateInFlight = false;
   private readonly liveUpdatePollIntervalMs = 60_000; // 2 min
 
@@ -65,7 +67,8 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     private localdataService: LocaldataService,
     private notificationService: NotificationService,
     private modalController: ModalController,
-    private platform: Platform
+    private platform: Platform,
+    private serverClock: ServerClockService
   ) {
     this.init();
 
@@ -96,7 +99,11 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       }
     });
 
-    this.platform.ready().then(() => {
+    this.platform.ready().then(async () => {
+      await this.serverClock.ensureSynchronized();
+      this.clockSyncTimer = setInterval(() => {
+        void this.serverClock.ensureSynchronized(true);
+      }, 15 * 60 * 1000);
       this.resetInactivityTimer();
       this.initializeLiveUpdates();
     });
@@ -122,12 +129,13 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       this.liveUpdateStatus = 'Initializing';
       this.liveUpdateDetail = 'Setting up listeners';
       this.liveUpdateDownloaded = false;
-      this.liveUpdateLastCheck = new Date();
+      this.liveUpdateLastCheck = this.serverClock.wallNow();
       this.liveUpdateLastResult = 'Init';
       console.log('🚀 Inicializando Live Updates (recarga inmediata)...');
 
       // Verificar al volver del background
       App.addListener('resume', async () => {
+        await this.serverClock.ensureSynchronized(true);
         console.log('📱 App resumida desde background');
         await this.checkForUpdatesAndReload('resume');
       });
@@ -160,7 +168,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
           : reason === 'resume'
             ? 'On resume'
             : 'Periodic poll';
-      this.liveUpdateLastCheck = new Date();
+      this.liveUpdateLastCheck = this.serverClock.wallNow();
       this.liveUpdateLastResult = `Checking (${reason})`;
 
       const result = await LiveUpdates.sync();
@@ -292,6 +300,10 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.liveUpdatePollTimer) {
       clearInterval(this.liveUpdatePollTimer);
       this.liveUpdatePollTimer = undefined;
+    }
+    if (this.clockSyncTimer) {
+      clearInterval(this.clockSyncTimer);
+      this.clockSyncTimer = undefined;
     }
     this.pauseScreensaverVideo();
     this.stopInactivityTracking();

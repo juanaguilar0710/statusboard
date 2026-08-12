@@ -27,6 +27,7 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
 import { TranslateService } from '../services/translate.service';
 import { Device } from '@capacitor/device';
 import { AppComponent } from '../app.component';
+import { ServerClockService } from '../services/server-clock.service';
 
 @Component({
   standalone: false,
@@ -114,7 +115,8 @@ import { AppComponent } from '../app.component';
               private ngZone: NgZone,
               private audioService: AudioService,
               public translate: TranslateService,
-              private appComponent: AppComponent
+              private appComponent: AppComponent,
+              private serverClock: ServerClockService
   ) {
     setTimeout(() => {
       this.timeUpdateIntervalId = setInterval(async () => {
@@ -122,7 +124,7 @@ import { AppComponent } from '../app.component';
         if (this.isRefreshing) return;
         const expiresAt = await this.storage.get(this.TOKEN_EXPIRATION_KEY_Admin);
         if (!expiresAt) return;
-        const timeLeft = expiresAt - Date.now();
+        const timeLeft = expiresAt - this.serverClock.nowMs();
         if (timeLeft <= 60000 && timeLeft > 0) {
           this.isRefreshing = true;
           try {
@@ -226,6 +228,10 @@ import { AppComponent } from '../app.component';
   }
 
   async ngOnInit() {
+    await this.serverClock.ensureSynchronized();
+    this.currentDate = this.serverClock.wallNow();
+    this.lastsync = this.serverClock.wallNow();
+    this.lastKnownDayKey = this.buildDayKey(this.currentDate);
     if (!this.monitorUpdatedSub) {
       this.monitorUpdatedSub = this.requestsService.monitorUpdated$.subscribe(() => {
         console.log('[Dashboard] Recibida actualización desde monitorUpdated$. Recargando datos...');
@@ -351,7 +357,8 @@ import { AppComponent } from '../app.component';
   }
 
   updateTime() {
-    const now = new Date();
+    const now = this.serverClock.wallNow();
+    this.currentDate = now;
     const currentDayKey = this.buildDayKey(now);
     if (currentDayKey !== this.lastKnownDayKey) {
       this.lastKnownDayKey = currentDayKey;
@@ -379,13 +386,13 @@ import { AppComponent } from '../app.component';
       this.midnightReloadTimeoutId = null;
     }
 
-    const now = new Date();
+    const now = this.serverClock.wallNow();
     const nextMidnight = new Date(now);
     nextMidnight.setHours(24, 0, 0, 0);
 
     const delay = Math.max(nextMidnight.getTime() - now.getTime(), 1000);
     this.midnightReloadTimeoutId = setTimeout(() => {
-      const currentDayKey = this.buildDayKey(new Date());
+      const currentDayKey = this.buildDayKey(this.serverClock.wallNow());
       if (currentDayKey !== this.lastKnownDayKey) {
         this.lastKnownDayKey = currentDayKey;
         window.location.reload();
@@ -543,7 +550,7 @@ import { AppComponent } from '../app.component';
               updatedPatients.push(newPatient);
             }
           });
-          this.lastsync = new Date();
+          this.lastsync = this.serverClock.wallNow();
           this.patients = [...filteredPatients];
           this.listPatients = response.data;
           this.patientsCopy = [...filteredPatients];
@@ -938,7 +945,7 @@ import { AppComponent } from '../app.component';
   }
 
   addUpdatedPatient(patient: any) {
-    const now = Date.now();
+    const now = this.serverClock.nowMs();
     const expiry = now + 60000; // 60 segundos
     const updatedPatients = JSON.parse(localStorage.getItem('updatedPatients') || '[]');
 
@@ -955,14 +962,14 @@ import { AppComponent } from '../app.component';
     this.updatedPatientIdsCache = null;
 }
 
-getUpdatedPatients(now: number = Date.now()) {
+getUpdatedPatients(now: number = this.serverClock.nowMs()) {
   const updatedPatients = JSON.parse(localStorage.getItem('updatedPatients') || '[]');
   if (!Array.isArray(updatedPatients)) return [];
   return updatedPatients.filter((patient: any) => patient && typeof patient.expiry === 'number' && now <= patient.expiry);
 }
 
 private getUpdatedPatientIdsSnapshot(): Set<number> {
-  const now = Date.now();
+  const now = this.serverClock.nowMs();
   if (this.updatedPatientIdsCache && this.updatedPatientIdsCache.validUntil > now) {
     return this.updatedPatientIdsCache.ids;
   }
@@ -1314,7 +1321,7 @@ private async handleOperatingRoomEvent(type: 'created' | 'updated', e: any): Pro
           message: event.message,
           waitingRoomId: event.waitingRoomId,
           branchId: event.branchId,
-          timestamp: new Date().toISOString(),
+          timestamp: this.serverClock.now().toISOString(),
           processed: false
         };
 
@@ -1510,7 +1517,7 @@ private async handleOperatingRoomEvent(type: 'created' | 'updated', e: any): Pro
             clearInterval(interval);
             await this.logger.error('Max retries reached. Unable to reconnect to Pusher.', {
                 attempts: retries,
-                lastAttempt: new Date().toISOString()
+                lastAttempt: this.serverClock.now().toISOString()
             });
             console.error('Max retries reached. Unable to reconnect to Pusher.');
             return;
@@ -1531,7 +1538,7 @@ private async handleOperatingRoomEvent(type: 'created' | 'updated', e: any): Pro
                     console.log('Pusher reconnected successfully!');
                     this.logger.success('Pusher reconnected successfully', {
                         attempts: retries,
-                        reconnectedAt: new Date().toISOString()
+                        reconnectedAt: this.serverClock.now().toISOString()
                     });
                 }
             }, 1000); // Esperar 1 segundo para verificar
@@ -1540,7 +1547,7 @@ private async handleOperatingRoomEvent(type: 'created' | 'updated', e: any): Pro
             await this.logger.error('Reconnection attempt failed', {
                 attempt: retries,
                 error: error,
-                timestamp: new Date().toISOString()
+                timestamp: this.serverClock.now().toISOString()
             });
             console.error(`Reconnection attempt ${retries} failed:`, error);
         }
@@ -1572,7 +1579,7 @@ private isPusherConnected(): boolean {
 
   private async updatePatientList(eventType: string, patient: any) {
 
-    this.lastUpdateTime = Date.now();
+    this.lastUpdateTime = this.serverClock.nowMs();
     const index = this.findPatientIndexById(this.patients, patient?.id);
     const shouldBeVisible = this.shouldPatientBeVisible(patient.status?.id || patient.status_Id);
 
@@ -1583,7 +1590,7 @@ private isPusherConnected(): boolean {
 
           this.patients.push(updatedPatient);
           this.patientsCopy = [...this.patients];
-          this.lastsync = new Date();
+          this.lastsync = this.serverClock.wallNow();
           this.LocaldataService.setPatients(this.patients);
           this.addUpdatedPatient(updatedPatient);
         }
@@ -1609,7 +1616,7 @@ private isPusherConnected(): boolean {
             }
 
             this.patientsCopy = [...this.patients];
-            this.lastsync = new Date();
+            this.lastsync = this.serverClock.wallNow();
             this.LocaldataService.setPatients(this.patients);
 
             // Actualizar la lista de salas para reflejar si alguna quedó vacía
@@ -1626,8 +1633,8 @@ private isPusherConnected(): boolean {
       this.patients = this.deduplicatePatientsById(this.patients);
     this.patientsCopy = [...this.patients];
     this.LocaldataService.setPatients(this.patients);
-    this.requestsService.lastSync = new Date().toLocaleString();
-    this.lastsync = new Date();
+    this.requestsService.lastSync = this.serverClock.wallNow().toLocaleString();
+    this.lastsync = this.serverClock.wallNow();
   }
   ngOnDestroy() {
     console.log('[Dashboard] ngOnDestroy llamado');
