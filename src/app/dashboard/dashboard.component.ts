@@ -1652,21 +1652,47 @@ private isPusherConnected(): boolean {
       patient.operating_room_name === roomName
     ).length;
   }
+
+  private getPatientStatusType(patient: any): string {
+    const statusType = String(patient?.status?.type ?? '').trim().toLowerCase();
+
+    if (statusType && statusType !== 'none') {
+      return statusType;
+    }
+
+    const statusName = String(patient?.status?.name ?? patient?.status_name ?? '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim()
+      .toLowerCase();
+
+    const statusTypeByName: Record<string, string> = {
+      'en espera': 'holding',
+      'waiting': 'holding',
+      'holding': 'holding',
+      'en cirugia': 'surgery',
+      'in surgery': 'surgery',
+      'en recuperacion': 'recovery',
+      'in recovery': 'recovery',
+      'completado': 'completed',
+      'completada': 'completed',
+      'completed': 'completed',
+    };
+
+    return statusTypeByName[statusName] ?? statusType;
+  }
+
   getHoldingPatientsCount(): number {
-    //return this.patients.filter(patient => patient.status?.type === 'holding').length;
-    return this.listPatients.filter(patient => patient.status?.type === 'holding').length;
+    return this.listPatients.filter(patient => this.getPatientStatusType(patient) === 'holding').length;
   }
   getSurgeryPatientsCount(): number {
-    // return this.patients.filter(patient => patient.status?.type === 'surgery').length;
-    return this.listPatients.filter(patient => patient.status?.type === 'surgery').length;
+    return this.listPatients.filter(patient => this.getPatientStatusType(patient) === 'surgery').length;
   }
   getRecoveryPatientsCount(): number {
-    //return this.patients.filter(patient => patient.status?.type === 'recovery').length;
-    return this.listPatients.filter(patient => patient.status?.type === 'recovery').length;
+    return this.listPatients.filter(patient => this.getPatientStatusType(patient) === 'recovery').length;
   }
   getCompletedPatientsCount(): number {
-    //return this.patients.filter(patient => patient.status?.type === 'completed').length;
-    return this.listPatients.filter(patient => patient.status?.type === 'completed').length;
+    return this.listPatients.filter(patient => this.getPatientStatusType(patient) === 'completed').length;
   }
   getPatientsByRoom(roomName: string): any[] {
     return this.patients.filter(patient => patient.operating_room_name === roomName);
