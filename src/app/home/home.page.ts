@@ -1,4 +1,4 @@
-import { Component, AfterViewInit, ViewChild, OnInit, NgZone, EventEmitter, OnDestroy } from '@angular/core';
+import { ChangeDetectorRef, Component, AfterViewInit, ViewChild, OnInit, NgZone, EventEmitter, OnDestroy } from '@angular/core';
 import { AlertController, IonModal, NavController, ModalController } from '@ionic/angular';
 import { RequestsService } from '../api/requests.service';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -21,6 +21,7 @@ import { TranslateService } from '../services/translate.service';
 import { WebhookService } from '../services/webhook.service';
 import { Device } from '@capacitor/device';
 import { ServerClockService } from '../services/server-clock.service';
+import { Subscription } from 'rxjs';
 
 @Component({
   standalone: false,
@@ -46,6 +47,7 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
   letters = this.getFirstLetterFromNames();
   private webhookUnsubscribers: Array<() => void> = [];
   private webhooksInitialized = false;
+  private timeRemainingSub?: Subscription;
   operatingRooms: any = [];
   //create a list of 10 light pallette colors
   updating: boolean = true;
@@ -83,7 +85,8 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
     private modalController: ModalController,
     private webhookService: WebhookService,
     public translate: TranslateService,
-    private serverClock: ServerClockService) {
+    private serverClock: ServerClockService,
+    private cdr: ChangeDetectorRef) {
 
     //listen for the network status
     this.networkService.networkStatus$.subscribe((status: string) => {
@@ -107,18 +110,33 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
   }
 
   async ngOnInit() {
+    this.timeRemaining = this.appComponent.timeRemaining$.value;
+    setTimeout(() => {
+      if (!this.timeRemainingSub) {
+        this.timeRemainingSub = this.appComponent.timeRemaining$.subscribe(time => {
+          this.updateView(() => {
+            this.timeRemaining = time;
+          });
+        });
+      }
+    });
+
     await this.serverClock.ensureSynchronized();
-    this.lastsync = this.serverClock.wallNow().toLocaleString();
+    const initialLastSync = this.serverClock.wallNow().toLocaleString();
     var token = await this.logger.getTokenAdmin();
     this.requestsService.setAdminToken(token);
       this.LocaldataService.setPatients(this.patients);
-      this.appComponent.timeRemaining$.subscribe(time => {
-        this.timeRemaining = time;
+      const user = await this.LocaldataService.getUser();
+      const username = JSON.parse(localStorage.getItem('user')!);
+      const storedConfiguration = await this.LocaldataService.getConfiguration();
+      const configuration = await this.syncMonitorConfiguration(storedConfiguration);
+
+      this.updateView(() => {
+        this.lastsync = initialLastSync;
+        this.user = user;
+        this.username = username;
+        this.configuration = configuration;
       });
-      this.user = await this.LocaldataService.getUser();
-      this.username = JSON.parse(localStorage.getItem('user')!);
-      this.configuration = await this.LocaldataService.getConfiguration();
-      this.configuration = await this.syncMonitorConfiguration(this.configuration);
       console.log('Configuration:', this.configuration);
 
       // Verificar screensaver al iniciar
@@ -154,6 +172,13 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
         });
       });
       this.letters = this.getFirstLetterFromNames();
+  }
+
+  private updateView(update: () => void): void {
+    this._ngZone.run(() => {
+      update();
+      this.cdr.detectChanges();
+    });
   }
 
   private async syncMonitorConfiguration(currentConfig: any): Promise<any> {
@@ -418,6 +443,8 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    this.timeRemainingSub?.unsubscribe();
+    this.timeRemainingSub = undefined;
     // this.webhookUnsubscribers.forEach((unsubscribe) => unsubscribe());
     // this.webhookUnsubscribers = [];
     // this.webhooksInitialized = false;
@@ -477,11 +504,13 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
     this.updating = true;
     this.LocaldataService.getPatients().then(response => {
       if (response) {
-        this.allPatients = response;
-        this.patientsCopy = [...this.allPatients];
-        this.patients = [...this.patientsCopy];
-        this.updating = false;
-        this.letters = this.getFirstLetterFromNames();
+        this.updateView(() => {
+          this.allPatients = response;
+          this.patientsCopy = [...this.allPatients];
+          this.patients = [...this.patientsCopy];
+          this.updating = false;
+          this.letters = this.getFirstLetterFromNames();
+        });
         this.getTodaysPatientsFromServer(event);
       } else {
         this.getTodaysPatientsFromServer();
@@ -497,13 +526,16 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
         event.target.complete();
       }
       if (response.status === 200) {
-        this.lastsync = this.serverClock.wallNow().toLocaleString();
-        this.allPatients = response.data;
-        this.patientsCopy = [...this.allPatients];
-        this.patients = [...this.patientsCopy];
-        this.letters = this.getFirstLetterFromNames();
+        this.updateView(() => {
+          this.lastsync = this.serverClock.wallNow().toLocaleString();
+          this.allPatients = response.data;
+          this.patientsCopy = [...this.allPatients];
+          this.patients = [...this.patientsCopy];
+          this.letters = this.getFirstLetterFromNames();
+          this.viewYesterdaysPatients = yesterday;
+          this.updating = false;
+        });
         this.LocaldataService.setPatients(response.data);
-        this.viewYesterdaysPatients = yesterday;
       } else {
         this.notificationService.showInfo(response.data.message, 5000);
         if (response.status === 401) {
@@ -511,9 +543,14 @@ export class HomePage implements AfterViewInit, OnInit, OnDestroy {
           Preferences.remove({ key: 'user' });
           this.router.navigate(['/pin'], { replaceUrl: true });
         }
+        this.updateView(() => {
+          this.updating = false;
+        });
       }
-      this.updating = false;
     },(error:any) => {
+      this.updateView(() => {
+        this.updating = false;
+      });
       if (event) {
         event.target.complete();
       }

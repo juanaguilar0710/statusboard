@@ -64,7 +64,7 @@
       <button type="button" class="btn-cancel" (click)="cancel()" [disabled]="loading">
         {{ 'addMember.cancel' | translate }}
       </button>
-      <button type="button" class="btn-save" (click)="save()" [disabled]="loading || memberForm.invalid">
+      <button type="button" class="btn-save primary-action-button" (click)="save()" [disabled]="loading || memberForm.invalid">
         <span *ngIf="!loading">{{ 'addMember.save' | translate }}</span>
         <span *ngIf="loading" class="loading-text">
           <ion-spinner name="crescent"></ion-spinner>

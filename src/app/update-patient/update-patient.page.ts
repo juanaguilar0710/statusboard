@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { ChangeDetectorRef, Component, NgZone, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { FormBuilder } from '@angular/forms';
 import { NavigationBehaviorOptions, Router } from '@angular/router';
 import { RequestsService } from '../api/requests.service';
@@ -22,7 +22,7 @@ export class UpdatePatientPage implements OnInit, OnDestroy {
   @ViewChild('commentsPopover') commentsPopover: any | undefined;
   @ViewChild('modalCancelSurgery') modalCancelSurgery: IonModal | undefined;
 
-  loading: boolean = false;
+  loading: boolean = true;
   patient: any = null;
   comments: any[] = [];
   operatingRooms: any[] = [];
@@ -70,7 +70,9 @@ export class UpdatePatientPage implements OnInit, OnDestroy {
     private storage: Storage,
     private modalController: ModalController,
     public translate: TranslateService,
-    private serverClock: ServerClockService) {
+    private serverClock: ServerClockService,
+    private ngZone: NgZone,
+    private cdr: ChangeDetectorRef) {
     const navParams = this.router.getCurrentNavigation()?.extras?.state;
     if (navParams) {
       this.patient = (navParams as any)?.patient;
@@ -86,6 +88,13 @@ export class UpdatePatientPage implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.modalCancelSurgery?.dismiss();
     this.modal?.dismiss();
+  }
+
+  private updateView(update: () => void): void {
+    this.ngZone.run(() => {
+      update();
+      this.cdr.detectChanges();
+    });
   }
 
 
@@ -363,7 +372,9 @@ export class UpdatePatientPage implements OnInit, OnDestroy {
         if (element != null) {
           element?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
         }
-        this.loading = false;
+        this.updateView(() => {
+          this.loading = false;
+        });
       }, 150);
     }
   }

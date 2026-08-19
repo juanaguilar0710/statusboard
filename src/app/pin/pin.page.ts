@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, NgZone, OnInit, Output, OnDestroy } from '@angular/core';
+import { ChangeDetectorRef, Component, EventEmitter, Input, NgZone, OnInit, Output, OnDestroy } from '@angular/core';
 import { RequestsService } from '../api/requests.service';
 import { Router } from '@angular/router';
 import { Preferences, RemoveOptions } from '@capacitor/preferences';
@@ -99,6 +99,7 @@ export class PinPage implements OnInit, OnDestroy {
     private deviceservice: DevicesService,
     private webhookService: WebhookService,
     private serverClock: ServerClockService,
+    private cdr: ChangeDetectorRef,
   ) {
     // Escuchar el estado de la red
     this.networkService.networkStatus$.subscribe((status: string) => {
@@ -124,13 +125,28 @@ export class PinPage implements OnInit, OnDestroy {
   }
 
   async dismissLoading() {
-    if (!this.loading) return;  // Solo intentar cerrar si está abierto
-    this.loading = false;
+    this.updateView(() => {
+      this.loading = false;
+    });
+    await this.dismissLoadingOverlayIfPresent();
+  }
+
+  private async dismissLoadingOverlayIfPresent(): Promise<void> {
     try {
-      await this.loadingController.dismiss();
+      const overlay = await this.loadingController.getTop();
+      if (overlay) {
+        await overlay.dismiss();
+      }
     } catch (error) {
       console.error('Error al intentar cerrar el overlay:', error);
     }
+  }
+
+  private updateView(update: () => void): void {
+    this._ngZone.run(() => {
+      update();
+      this.cdr.detectChanges();
+    });
   }
 
   emitEvent() {
@@ -230,25 +246,29 @@ export class PinPage implements OnInit, OnDestroy {
   deviceInfo: any = null;
    async ngOnInit() {
     await this.serverClock.ensureSynchronized();
-    await Preferences.get({ key: 'deviceRegistrationData' }).then(res => {
-      this.deviceInfo = res.value ? JSON.parse(res.value) : null;
-    });
+    const registrationResponse = await Preferences.get({ key: 'deviceRegistrationData' });
+    const deviceInfo = registrationResponse.value ? JSON.parse(registrationResponse.value) : null;
 
     this.appComponent.stopInactivityTracking();
-    this.loading = true;
-    this.isInitializing = true;
-    this.lastsync = this.requestsService.lastSync || this.serverClock.wallNow().toLocaleString();
+    this.updateView(() => {
+      this.deviceInfo = deviceInfo;
+      this.loading = true;
+      this.isInitializing = true;
+      this.lastsync = this.requestsService.lastSync || this.serverClock.wallNow().toLocaleString();
+    });
 
 
     if (localStorage.getItem('is_activation_flow') === 'true') {
 
       // Estamos en el flujo de activación, no requerimos config previa.
       setTimeout(() => {
-        this.image_url = 'assets/logos/DTouchmedia_Black.png';
-        this.branch_name = 'Activación de Dispositivo';
-        this.waitingRoom_name = 'Ingrese su PIN para continuar';
-        this.isInitializing = false;
-        this.loading = false;
+        this.updateView(() => {
+          this.image_url = 'assets/logos/DTouchmedia_Black.png';
+          this.branch_name = 'Activación de Dispositivo';
+          this.waitingRoom_name = 'Ingrese su PIN para continuar';
+          this.isInitializing = false;
+          this.loading = false;
+        });
       }, 1000);
 
        const event = localStorage.getItem('event')
@@ -280,16 +300,18 @@ export class PinPage implements OnInit, OnDestroy {
     if (String(this.configResponse.aplication) === "1") {
       // Tablet: no redirige, espera PIN y luego va a /home
       setTimeout(() => {
-        this.image_url = this.requestsService.config?.branch?.image_url ?? 'assets/logos/logotipo_placeholder.png';
-        this.branch_name = this.requestsService.config?.branch?.name ?? "";
-        this.waitingRoom_name = this.requestsService.config?.waitingRoom?.name ?? "";
-        if (this.configResponse?.is_enabled === false) {
-          this.appComponent.showScreensaver();
-        } else {
-          this.appComponent.hideScreensaver();
-        }
-        this.isInitializing = false;
-        this.loading = false;
+        this.updateView(() => {
+          this.image_url = this.requestsService.config?.branch?.image_url ?? 'assets/logos/logotipo_placeholder.png';
+          this.branch_name = this.requestsService.config?.branch?.name ?? "";
+          this.waitingRoom_name = this.requestsService.config?.waitingRoom?.name ?? "";
+          if (this.configResponse?.is_enabled === false) {
+            this.appComponent.showScreensaver();
+          } else {
+            this.appComponent.hideScreensaver();
+          }
+          this.isInitializing = false;
+          this.loading = false;
+        });
       }, 2500);
 
     } else if (String(this.configResponse.aplication) === "2" || String(this.configResponse.aplication) === "3") {
@@ -564,7 +586,7 @@ async deleteCurrentMonitor() {
       this.handleInput("clear");
       this.loading = false;
       try {
-        await this.loadingController.dismiss();
+        await this.dismissLoadingOverlayIfPresent();
       } catch (dismissError) {
         console.error('Error al intentar cerrar el loading:', dismissError);
       }
@@ -646,7 +668,7 @@ async deleteCurrentMonitor() {
     } catch (error: any) {
         console.log(error);
         this.loading = false;
-        this.loadingController.dismiss();
+        await this.dismissLoadingOverlayIfPresent();
         this.handleInput("clear");
         this.notificationService.showError(this.translate.instant('pin.incorrectPin') + ' / ' + (error?.error?.detail || error.message || 'Error'), 6000);
     }
@@ -741,8 +763,10 @@ async deleteCurrentMonitor() {
 
     await this.logger.setTokenAdmin(accessToken, payload.expires_in ?? 31535999);
 
-    this.loading = false;
-    this.loadingController.dismiss();
+    this.updateView(() => {
+      this.loading = false;
+    });
+    await this.dismissLoadingOverlayIfPresent();
     const destination = appMode === '2' || appMode === '3' ? '/dashboard' : '/home';
     await this.router.navigate([destination], { replaceUrl: true });
   }
