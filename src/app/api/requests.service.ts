@@ -20,6 +20,7 @@ export class RequestsService {
     ExpiresIn:any
     refreshTokenKey:any
     private adminToken: string | null = null;
+    private monitorReauthenticationInFlight: Promise<void> | null = null;
     timeRemaining$ = new BehaviorSubject<number>(20);
     startTimer$ = new BehaviorSubject<boolean>(false);
     logout$ = new BehaviorSubject<boolean>(false);
@@ -48,19 +49,23 @@ export class RequestsService {
         try {
           const adminResponse = await Preferences.get({ key: 'admin' });
 
-                    if (adminResponse.value) {
-                        this.setAdminToken(this.token);
-                    }
+          if (adminResponse.value) {
+            const admin = JSON.parse(adminResponse.value);
+            this.setAdminToken(admin?.token ?? admin?.jwt?.access_token ?? admin?.access_token ?? null);
+          }
 
           const configResponse = await Preferences.get({ key: 'config' });
 
           if (configResponse.value) {
-                        this.setConfig(JSON.parse(configResponse.value));
+            const config = JSON.parse(configResponse.value);
+            this.setConfig(config);
+            if (config?.token) this.setAdminToken(config.token);
           }
 
           const userResponse = await Preferences.get({ key: 'user' });
-                    if (userResponse.value) {
-                        this.setToken(this.token);
+          if (userResponse.value && !this.token) {
+            const user = JSON.parse(userResponse.value);
+            this.setToken(user?.jwt?.access_token ?? user?.access_token ?? null);
           }
 
           const lastSyncResponse = await Preferences.get({ key: 'lastSync' });
@@ -95,6 +100,30 @@ export class RequestsService {
 
     getToken() {
         return this.token;
+    }
+
+    /**
+     * Reinicia el handshake del monitor. El componente de activacion conserva
+     * el device_id, ejecuta /api/recover, espera monitor.confirmed, canjea el
+     * temp_token y vuelve al dashboard con el nuevo token.
+     */
+    reauthenticateMonitor(): Promise<void> {
+      if (this.monitorReauthenticationInFlight) return this.monitorReauthenticationInFlight;
+
+      this.monitorReauthenticationInFlight = (async () => {
+        this.setAdminToken(null);
+        await this.logger.clearAdminAuthData();
+        if (!this.router.url.startsWith('/login')) {
+          await this.router.navigate(['/login'], {
+            replaceUrl: true,
+            state: { recoverMonitor: true }
+          });
+        }
+      })().finally(() => {
+        this.monitorReauthenticationInFlight = null;
+      });
+
+      return this.monitorReauthenticationInFlight;
     }
 
     setAdminToken(token: string | null) {
@@ -162,7 +191,6 @@ export class RequestsService {
     }
 
     async refreshToken(token: string | null) {
-         console.log('dentro de refresh antes de enviar peticion: ' + token);
             let objRefresh = {
                 grant_type: environment.oauthObj.grantTypeRefresh,
                 client_id: environment.oauthObj.clientId,
@@ -178,8 +206,6 @@ export class RequestsService {
                 data: objRefresh
             };
             const response: HttpResponse = await CapacitorHttp.post(options);
-            console.log(response);
-
             if (response.status != 200) {
 
                 this.logger.addLog('refreshToken', {
@@ -358,6 +384,10 @@ export class RequestsService {
 
             // Realiza la llamada HTTP
             const result = await CapacitorHttp.get(options);
+            if (result.status === 401) {
+              await this.reauthenticateMonitor();
+              throw result;
+            }
             this.adaptVisitorsResponse(result);
             const duration = Date.now() - startTime;
 
@@ -555,7 +585,6 @@ export class RequestsService {
             }
 
             const options = {
-              // url: `${environment.url}${environment.waitingRooms}/${this.config.waitingRoom.id}${environment.operatingroomsschedules}`,
               url: urlMonitor + '/api' + environment.operatingroomsschedules,
               headers: {
                 'Content-Type': 'application/json',

@@ -7,10 +7,13 @@ import {
   HttpResponse,
   HttpErrorResponse
 } from '@angular/common/http';
-import { Observable, throwError } from 'rxjs';
-import { tap } from 'rxjs/operators';
+import { Observable, from, throwError } from 'rxjs';
+import { catchError, switchMap, tap } from 'rxjs/operators';
 import { LoggerService } from '../api/logger.service';
 import { RequestsService } from '../api/requests.service';
+import { environment } from 'src/environments/environment';
+
+const urlMonitor = environment.url.replace('api', 'monitor');
 
 @Injectable()
 export class LoggingInterceptor implements HttpInterceptor {
@@ -43,8 +46,7 @@ export class LoggingInterceptor implements HttpInterceptor {
     },'info');
 
     return next.handle(authReq).pipe(
-      tap(
-        (event: HttpEvent<any>) => {
+      tap((event: HttpEvent<any>) => {
           if (event instanceof HttpResponse) {
             const duration = Date.now() - startTime;
             this.logger.addLog(`HTTP Response: ${req.method} ${req.url}`, {
@@ -54,10 +56,8 @@ export class LoggingInterceptor implements HttpInterceptor {
               response: this.sanitizeData(event.body)
             },'success');
           }
-        },
-        (error: HttpErrorResponse) => {
-          console.log(error);
-
+        }),
+      catchError((error: HttpErrorResponse) => {
           const duration = Date.now() - startTime;
           this.logger.addLog(`HTTP Error: ${req.method} ${req.url}`, {
             requestId,
@@ -67,17 +67,14 @@ export class LoggingInterceptor implements HttpInterceptor {
             ...(error.error && { errorDetails: this.sanitizeData(error.error) })
           },'error');
 
-           let obj = {
-              message: error.error.message || error.statusText,
-              status: error.status,
-              body: error.error,
-              ok: error.ok
-            };
+          if (error.status === 401 && req.url.startsWith(urlMonitor)) {
+            return from(this.authService.reauthenticateMonitor()).pipe(
+              switchMap(() => throwError(() => error))
+            );
+          }
 
-              return throwError(obj);
-
-        }
-      )
+          return throwError(() => error);
+        })
     );
   }
 

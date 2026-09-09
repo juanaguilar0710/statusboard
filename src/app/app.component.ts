@@ -249,6 +249,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       await this.storage.create();
       const userResponse = await Preferences.get({ key: 'user' });
       if (!userResponse.value) {
+        await this.router.navigate(['/login'], { replaceUrl: true });
         this.hasNavigated = true;
         return;
       }
@@ -269,14 +270,9 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       } else {
         const token = tokenAdmin;
         if (token && this.localdataService.isTokenExpired(token)) {
-          const newToken = await this.requestsService.refreshToken(token);
-          if (newToken?.status === 200) {
-            this.requestsService.setAdminToken(newToken.data?.jwt.access_token);
-            await Preferences.set({
-              key: 'admin',
-              value: JSON.stringify(newToken.data),
-            });
-          }
+          await this.requestsService.reauthenticateMonitor();
+          this.hasNavigated = true;
+          return;
         } else {
           if (token) {
             this.requestsService.setAdminToken(token);

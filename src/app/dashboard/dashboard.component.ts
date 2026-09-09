@@ -251,10 +251,15 @@ import { ServerClockService } from '../services/server-clock.service';
             this.config = JSON.parse(response.value);
             this.requestsService.setToken(this.config.token);
             this.requestsService.setAdminToken(this.config.token);
+            this.requestsService.setConfig(this.config);
 
             try {
               if (this.config.token) {
                 const monitorResp = await this.devicesService.getMonitorData(this.config.token);
+                if (monitorResp.status === 401) {
+                  await this.requestsService.reauthenticateMonitor();
+                  return;
+                }
                 if (monitorResp.status === 200 && monitorResp.data?.data) {
                   const mData = monitorResp.data.data;
                   this.config.monitor_id = mData.id;
@@ -295,6 +300,15 @@ import { ServerClockService } from '../services/server-clock.service';
       .catch((error) => {
         console.error('Error al leer Preferences:', error);
       });
+     if (!this.config?.token || !this.requestsService.config?.branch || !this.requestsService.config?.waitingRoom) {
+       await this.navigateToLogin();
+       this.isLoading = false;
+       return;
+     }
+     if (this.router.url.startsWith('/login')) {
+       this.isLoading = false;
+       return;
+     }
      await this.updateTime();
        this.scheduleMidnightRefresh();
      await this.startlists();
@@ -436,50 +450,18 @@ import { ServerClockService } from '../services/server-clock.service';
   private isRefreshingToken = false;
 
   async refreshToken(skipReload: boolean = false){
-    this.logger.addLog('Inicio refresco de token', {}, 'info')
-      if (this.isRefreshingToken) return;
-        this.isRefreshingToken = true;
-        try {
-          const token = await this.logger.getTokenAdmin();
-          this.requestsService.refreshToken(token).then(async resp =>{
-            console.log(resp);
-            if (resp?.status === 200) {
-              this.config.token = resp.data?.access_token
-              this.requestsService.setToken(resp.data.access_token);
-              this.requestsService.setRefreshToken(resp.data.refresh_token);
-              this.logger.setTokenAdmin(
-                resp.data.access_token,
-                resp.data.expires_in
-              );
-              this.requestsService.setAdminToken(resp.data.access_token);
-              await Preferences.set({
-                key: 'config',
-                value: JSON.stringify(this.config),
-              });
-
-              if (!skipReload) {
-                setTimeout(() => {
-                  this.notificationService.showInfo('Token refresh.',3000);
-                  this.startlists()
-                }, 3000);
-              }
-              this.logger.addLog('Refresco de token exitoso', {}, 'success')
-            }
-            if (resp?.status === 500) {
-              console.error('Error 500 al refrescar token');
-              this.logger.addLog('Error 500 refrescando token', resp, 'error');
-              // No recargar, dejar que el usuario intente manualmente
-            }
-            if (resp?.status === 401) {
-              console.log(resp);
-              this.logger.addLog('Error refrescando el token', resp, 'error')
-            }
-          }).catch(resp => {
-            this.logger.addLog('Error refrescando el token', resp, 'error')
-          });
-        } finally {
-          this.isRefreshingToken = false;
-        }
+    this.logger.addLog('Inicio reautenticacion del monitor', { skipReload }, 'info')
+    if (this.isRefreshingToken) return;
+    this.isRefreshingToken = true;
+    try {
+      await this.requestsService.reauthenticateMonitor();
+      this.logger.addLog('Flujo de recuperacion del monitor iniciado', {}, 'success');
+    } catch (error) {
+      this.logger.addLog('Error iniciando recuperacion del monitor', error, 'error');
+      throw error;
+    } finally {
+      this.isRefreshingToken = false;
+    }
   }
 
   private getOperatingRooms = false;
@@ -494,6 +476,12 @@ import { ServerClockService } from '../services/server-clock.service';
         await this.logger.addLog('Iniciando petición getOperatingRooms', {}, 'info');
         // Remover await en subscribe - no se deben mezclar
         this.requestsService.getOperatingRoomsDevices().subscribe(async (response: any) => {
+          if(response.status === 401){
+            await this.logger.addLog('Token de monitor rechazado', { response }, 'warning');
+            this.getOperatingRooms = false;
+            await this.requestsService.reauthenticateMonitor();
+            return;
+          }
           if(response.status == 500 || response.status == 403){
             if(response.status == 403 || response.data.error.code == 1000){
               console.log('aqui');
