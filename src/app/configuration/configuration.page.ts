@@ -8,7 +8,8 @@ import { LoggerService } from '../api/logger.service';
 import { TranslateService } from '../services/translate.service';
 
 @Component({
-  selector: 'app-configuration',
+  standalone: false,
+selector: 'app-configuration',
   templateUrl: './configuration.page.html',
   styleUrls: ['./configuration.page.scss'],
 })

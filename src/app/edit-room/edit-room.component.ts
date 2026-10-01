@@ -11,7 +11,8 @@ import { AddMemberModalComponent } from '../add-member-modal/add-member-modal.co
 
 
 @Component({
-  selector: 'app-edit-room',
+  standalone: false,
+selector: 'app-edit-room',
   templateUrl: './edit-room.component.html',
   styleUrls: ['./edit-room.component.scss'],
 })

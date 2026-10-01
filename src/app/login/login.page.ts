@@ -13,7 +13,8 @@ import { sync } from '@capacitor/live-updates';
 
 
 @Component({
-  selector: 'app-login',
+  standalone: false,
+selector: 'app-login',
   templateUrl: './login.page.html',
   styleUrls: ['./login.page.scss'],
 })
@@ -56,7 +57,7 @@ export class LoginPage implements OnInit {
     const savedLanguage = languageResponse.value;
     const savedDeviceRegistration = resetDeviceRegistration ? null : deviceRegistrationResponse.value;
 
-    Preferences.clear();
+    await Preferences.clear();
     localStorage.clear();
 
     // Restaurar el idioma si existía, si no usar inglés por defecto

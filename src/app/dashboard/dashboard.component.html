@@ -107,7 +107,7 @@
 
           <div class="headerCount portal-header-count" (click)="headerClicked()">
             <div class="row">
-              <div class="col-12 date2">{{ currentDate | date: 'd MMMM Y' : 'en' }} {{currentTime}}</div>
+              <div class="col-12 date2">{{ currentDate | date: 'd MMMM y' : 'en' }} {{ currentTime || '' }}</div>
             </div>
             <div class="row">
               <div class="col-6">
@@ -125,7 +125,7 @@
 
             <!-- <div class="content-wrapper" (click)="headerClicked()"> -->
               <!-- <div class="date1" (click)="headerClicked()">{{ currentDate | date: 'EEEE,' : 'en' }}</div> -->
-              <!-- <div class="date2" (click)="headerClicked()">{{ currentDate | date: 'd MMMM Y' : 'en' }}{{currentTime}}</div> -->
+              <!-- <div class="date2" (click)="headerClicked()">{{ currentDate | date: 'd MMMM y' : 'en' }}{{ currentTime || '' }}</div> -->
               <!-- <div class="hour" (click)="headerClicked()">{{ currentTime }}</div> -->
             <!-- </div> -->
             <!-- <div class="count-wrapper"> -->

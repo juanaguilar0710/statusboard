@@ -4,7 +4,8 @@ import { ModalController, NavParams } from '@ionic/angular';
 import { TranslateService } from '../services/translate.service';
 
 @Component({
-  selector: 'app-searchable-component',
+  standalone: false,
+selector: 'app-searchable-component',
   templateUrl: './searchable-component.component.html',
   styleUrls: ['./searchable-component.component.scss'],
 })

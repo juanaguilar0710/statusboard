@@ -34,10 +34,7 @@
         </div>
 
         <div class="flex-fill">
-          <!-- <ion-button [disabled]="loading" class="w-100 classButton" color="success" (click)="createPatient()"
-            [disabled]="form.invalid" class="legacy-create-button">Create</ion-button> -->
-
-            <ion-button [disabled]="loading" color="success" class="w-100 classButton" (click)="createPatient()">
+            <ion-button [disabled]="loading" color="primary" class="w-100 classButton primary-action-button" (click)="createPatient()">
               <span class="btn-label-white">{{ 'newPatient.create' | translate }}</span>
             </ion-button>
 

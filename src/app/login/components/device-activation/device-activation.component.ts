@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, NgZone, OnDestroy, OnInit } from '@angular/core';
 import { App } from '@capacitor/app';
 import { Device } from '@capacitor/device';
 import { Capacitor } from '@capacitor/core';
@@ -13,6 +13,7 @@ import { environment } from 'src/environments/environment';
 import { DevicesService } from 'src/app/api/devices.service';
 import { NavigationEnd, Router } from '@angular/router';
 import { Subscription, firstValueFrom } from 'rxjs';
+import { ServerClockService } from 'src/app/services/server-clock.service';
 
 export interface DeviceRegistrationData {
   id: string;
@@ -53,6 +54,7 @@ interface DeviceTokenResponse {
 }
 
 @Component({
+  standalone: false,
   selector: 'app-device-activation',
   templateUrl: './device-activation.component.html',
   styleUrls: ['./device-activation.component.scss']
@@ -91,16 +93,19 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
     private notificationService: NotificationService,
     private logger: LoggerService,
     private webhookService: WebhookService,
-    private router: Router
+    private router: Router,
+    private ngZone: NgZone,
+    private cdr: ChangeDetectorRef,
+    private serverClock: ServerClockService
   ) {}
 
   async ngOnInit(): Promise<void> {
     if (this.hasInitialized) {
       return;
     }
-    DeviceActivationComponent.registrationRequestInFlight = false;
     this.hasInitialized = true;
     this.trackRouteState();
+    await this.serverClock.ensureSynchronized();
     await this.loadStoredDeviceRegistrationData();
     await this.ensureActivationFlowReady();
   }
@@ -166,7 +171,7 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
       manufacturer: this.deviceMetadata?.manufacturer || 'Unknown Manufacturer',
       platform: this.deviceMetadata?.platform || 'Unknown Platform',
       os_version: this.deviceMetadata?.osVersion || 'Unknown OS Version',
-      generatedAt: new Date().toISOString(),
+      generatedAt: this.serverClock.now().toISOString(),
     }).subscribe(
       (resp: any) => {
         if (resp.status === 500 && resp.data?.error?.detail === 'Monitor already registered') {
@@ -274,7 +279,7 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
 
     const remainingSeconds = this.getRemainingSecondsFromRegistration(this.DeviceRegistrationData);
     if (remainingSeconds > 0 && this.hasValidRegistrationData(this.DeviceRegistrationData)) {
-      this.remainingSeconds = remainingSeconds;
+      this.updateActivationState(this.activationCode, remainingSeconds);
       this.startCodeCountdown();
       return;
     }
@@ -315,8 +320,8 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
       this.handleDeviceWebhookEvent('confirmed', event);
     });
 
-    // NO guardamos los unsubscribers - permitir que la conexión persista para PIN o Dashboard
-    // this.webhookUnsubscribers.push(unsubscribeAllEvents, unsubscribeSave);
+    // Guardamos los unsubscribers para no duplicar eventos al volver a esta pantalla.
+    this.webhookUnsubscribers.push(unsubscribeAllEvents, unsubscribeSave);
   }
 
   private handleDeviceWebhookEvent(type: 'confirmed' | 'update' | 'delete', event: any): void {
@@ -358,8 +363,7 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
         await Preferences.remove({ key: this.DEVICE_REGISTRATION_STORAGE_KEY });
         console.warn('[DeviceActivation] loadStoredDeviceRegistrationData invalid payload removed', parsed);
         this.DeviceRegistrationData = null;
-        this.activationCode = '------';
-        this.remainingSeconds = 300;
+        this.updateActivationState('------', 300);
         return;
       }
       this.applyRegistrationData(parsed, false);
@@ -378,11 +382,15 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
         return;
       }
 
+      this.tokenRequestInProgress = true;
+
       const eventPayload = event?.monitor || event || {};
       const IdDevice = eventPayload?.id || eventPayload?.monitor_id || null;
-      const tempToken = localStorage.getItem('tempToken') || this.DeviceRegistrationData?.temp_token || '';
+      // El token de register/recover es de un solo uso y siempre debe tener
+      // prioridad sobre cualquier valor residual de una sesión anterior.
+      const tempToken = this.DeviceRegistrationData?.temp_token || localStorage.getItem('tempToken') || '';
       localStorage.setItem('tempToken', tempToken || '');
-      localStorage.setItem('event', JSON.stringify(event));
+      localStorage.setItem('event', JSON.stringify(eventPayload));
       if (!IdDevice || !tempToken) {
         console.error('[DeviceActivation] requestTokenFromConfirmation missing IdDevice or tempToken', {
           IdDevice,
@@ -390,6 +398,7 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
           eventPayload,
           event,
         });
+        this.tokenRequestInProgress = false;
         return;
       }
       // Si view_mode === 1, redirigimos a la pantalla de PIN y pausamos la solicitud de token aquí
@@ -398,16 +407,16 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
         // Guardamos un flag para que la vista de PIN sepa que está en versión "Device Activation"
         localStorage.setItem('is_activation_flow', 'true');
         // Check platform and use run inside zone if necessary for Angular Routing in WebHooks callbacks
-        this.router.navigate(['/pin'], { replaceUrl: true }).then(navResult => {
+        this.ngZone.run(() => this.router.navigate(['/pin'], { replaceUrl: true })).then(navResult => {
             console.log('Navigation to /pin result:', navResult);
         }).catch(err => {
             console.error('Error navigating to /pin:', err);
+            this.tokenRequestInProgress = false;
         });
 
         return;
       }
 
-      this.tokenRequestInProgress = true;
       this.stopCodeCountdown();
 
       const tokenResponse = await firstValueFrom(this.deviceservice.requestDeviceToken(IdDevice, {
@@ -455,6 +464,7 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
     const room = monitor?.room;
     if (!accessToken || !monitor || !room?.id || !room?.branch_id) {
       console.error('[DeviceActivation] applyTokenResponseConfiguration invalid payload', payload);
+      this.tokenRequestInProgress = false;
       return;
     }
 
@@ -523,7 +533,7 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
     this.webhookUnsubscribers = [];
 
     const destination = appMode === '2' || appMode === '3' ? '/dashboard' : '/pin';
-    await this.router.navigate([destination], { replaceUrl: true });
+    await this.ngZone.run(() => this.router.navigate([destination], { replaceUrl: true }));
   }
 
   private trackRouteState(): void {
@@ -566,8 +576,9 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
         return;
       }
 
-      this.remainingSeconds -= 1;
-      if (this.remainingSeconds <= 0) {
+      const nextRemainingSeconds = this.remainingSeconds - 1;
+      this.updateActivationState(this.activationCode, nextRemainingSeconds);
+      if (nextRemainingSeconds <= 0) {
         await this.registerAndResetCountdown();
       }
     }, 1000);
@@ -619,8 +630,7 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.activationCode = '------';
-    this.remainingSeconds = 300;
+    this.updateActivationState('------', 300);
     const started = this.registerDeviceManually();
 
     if (!started) {
@@ -663,8 +673,8 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
 
     this.DeviceRegistrationData = data;
     this.useRecoverOnly = true;
-    this.activationCode = data.confirmation_code;
-    this.remainingSeconds = this.getRemainingSecondsFromRegistration(data);
+    localStorage.setItem('tempToken', data.temp_token);
+    this.updateActivationState(data.confirmation_code, this.getRemainingSecondsFromRegistration(data));
 
     if (this.isCodeScreenActive()) {
       this.startCodeCountdown();
@@ -690,8 +700,18 @@ export class DeviceActivationComponent implements OnInit, OnDestroy {
       return 300;
     }
 
-    const remainingSeconds = Math.ceil((expiresAt - Date.now()) / 1000);
+    const remainingSeconds = Math.ceil((expiresAt - this.serverClock.nowMs()) / 1000);
     return remainingSeconds > 0 ? remainingSeconds : 0;
+  }
+
+  private updateActivationState(code: string, remainingSeconds: number): void {
+    this.ngZone.run(() => {
+      queueMicrotask(() => {
+        this.activationCode = code;
+        this.remainingSeconds = remainingSeconds;
+        this.cdr.markForCheck();
+      });
+    });
   }
 
   private async collectDeviceMetadata(): Promise<any> {

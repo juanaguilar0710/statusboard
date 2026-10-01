@@ -7,6 +7,7 @@ import { BehaviorSubject, Subject, catchError, from, Observable, switchMap, tap,
 import { environment } from 'src/environments/environment';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { LoggerService } from './logger.service';
+import { ServerClockService } from '../services/server-clock.service';
 
 const urlMonitor = environment.url.replace('api', 'monitor');
 
@@ -19,6 +20,7 @@ export class RequestsService {
     ExpiresIn:any
     refreshTokenKey:any
     private adminToken: string | null = null;
+    private monitorReauthenticationInFlight: Promise<void> | null = null;
     timeRemaining$ = new BehaviorSubject<number>(20);
     startTimer$ = new BehaviorSubject<boolean>(false);
     logout$ = new BehaviorSubject<boolean>(false);
@@ -33,8 +35,8 @@ export class RequestsService {
     operatingRoomsSchedules: any = [];
     lastSync: string = '';
 
-    isTokenExpired = (token: string) => Date.now() >= (JSON.parse(atob(token.split('.')[1]))).exp * 1000;
-    constructor(private router: Router,private platform: Platform,private http: HttpClient,private logger: LoggerService) {
+    isTokenExpired = (token: string) => this.serverClock.nowMs() >= (JSON.parse(atob(token.split('.')[1]))).exp * 1000;
+    constructor(private router: Router,private platform: Platform,private http: HttpClient,private logger: LoggerService, private serverClock: ServerClockService) {
         this.init();
     }
 
@@ -47,19 +49,23 @@ export class RequestsService {
         try {
           const adminResponse = await Preferences.get({ key: 'admin' });
 
-                    if (adminResponse.value) {
-                        this.setAdminToken(this.token);
-                    }
+          if (adminResponse.value) {
+            const admin = JSON.parse(adminResponse.value);
+            this.setAdminToken(admin?.token ?? admin?.jwt?.access_token ?? admin?.access_token ?? null);
+          }
 
           const configResponse = await Preferences.get({ key: 'config' });
 
           if (configResponse.value) {
-                        this.setConfig(JSON.parse(configResponse.value));
+            const config = JSON.parse(configResponse.value);
+            this.setConfig(config);
+            if (config?.token) this.setAdminToken(config.token);
           }
 
           const userResponse = await Preferences.get({ key: 'user' });
-                    if (userResponse.value) {
-                        this.setToken(this.token);
+          if (userResponse.value && !this.token) {
+            const user = JSON.parse(userResponse.value);
+            this.setToken(user?.jwt?.access_token ?? user?.access_token ?? null);
           }
 
           const lastSyncResponse = await Preferences.get({ key: 'lastSync' });
@@ -94,6 +100,30 @@ export class RequestsService {
 
     getToken() {
         return this.token;
+    }
+
+    /**
+     * Reinicia el handshake del monitor. El componente de activacion conserva
+     * el device_id, ejecuta /api/recover, espera monitor.confirmed, canjea el
+     * temp_token y vuelve al dashboard con el nuevo token.
+     */
+    reauthenticateMonitor(): Promise<void> {
+      if (this.monitorReauthenticationInFlight) return this.monitorReauthenticationInFlight;
+
+      this.monitorReauthenticationInFlight = (async () => {
+        this.setAdminToken(null);
+        await this.logger.clearAdminAuthData();
+        if (!this.router.url.startsWith('/login')) {
+          await this.router.navigate(['/login'], {
+            replaceUrl: true,
+            state: { recoverMonitor: true }
+          });
+        }
+      })().finally(() => {
+        this.monitorReauthenticationInFlight = null;
+      });
+
+      return this.monitorReauthenticationInFlight;
     }
 
     setAdminToken(token: string | null) {
@@ -161,7 +191,6 @@ export class RequestsService {
     }
 
     async refreshToken(token: string | null) {
-         console.log('dentro de refresh antes de enviar peticion: ' + token);
             let objRefresh = {
                 grant_type: environment.oauthObj.grantTypeRefresh,
                 client_id: environment.oauthObj.clientId,
@@ -177,8 +206,6 @@ export class RequestsService {
                 data: objRefresh
             };
             const response: HttpResponse = await CapacitorHttp.post(options);
-            console.log(response);
-
             if (response.status != 200) {
 
                 this.logger.addLog('refreshToken', {
@@ -260,7 +287,7 @@ export class RequestsService {
     getTodaysPatients(yesterday: boolean = false): Observable<any> {
         this.loadingPatients$.next(true);
 
-        return new Observable((observer) => {
+        return from(this.serverClock.ensureSynchronized()).pipe(switchMap(() => new Observable((observer) => {
             if (!this.token || this.token.length === 0 || this.isTokenExpired(this.token)) {
                 observer.error({ status: 404, message: 'Token expired', redirectUrl: '/pin' });
                 console.log('status: 404, message: Token expired, redirectUrl: /pin');
@@ -274,7 +301,7 @@ export class RequestsService {
                 return;
             }
 
-            const date = new Date();
+            const date = this.serverClock.wallNow();
             if (yesterday) {
                 date.setDate(date.getDate() - 1);
             }
@@ -300,7 +327,7 @@ export class RequestsService {
             CapacitorHttp.get(options)
                 .then((result) => {
                     this.adaptVisitorsResponse(result);
-                    this.lastSync = new Date().toLocaleString();
+                    this.lastSync = this.serverClock.wallNow().toLocaleString();
                     Preferences.set({ key: 'lastSync', value: this.lastSync }).then(() => {
                         observer.next(result);
                         observer.complete();
@@ -310,7 +337,7 @@ export class RequestsService {
                 .finally(() => {
                     this.loadingPatients$.next(false);
                 });
-        });
+        })));
     }
 
 
@@ -320,8 +347,9 @@ export class RequestsService {
         const requestId = Math.random().toString(36).substring(2, 9);
 
         try {
+            await this.serverClock.ensureSynchronized();
             // Calcula la fecha formateada
-            const date = new Date();
+            const date = this.serverClock.wallNow();
             if (yesterday) {
                 date.setDate(date.getDate() - 1);
             }
@@ -351,11 +379,15 @@ export class RequestsService {
                 branchID: this.config.branch.id,
                 roomID: this.config.waitingRoom.id,
                 headers: this.sanitizeHeaders(options.headers),
-                timestamp: new Date().toISOString()
+                timestamp: this.serverClock.now().toISOString()
             }, 'info');
 
             // Realiza la llamada HTTP
             const result = await CapacitorHttp.get(options);
+            if (result.status === 401) {
+              await this.reauthenticateMonitor();
+              throw result;
+            }
             this.adaptVisitorsResponse(result);
             const duration = Date.now() - startTime;
 
@@ -365,11 +397,11 @@ export class RequestsService {
                 status: result.status,
                 duration: `${duration}ms`,
                 dataSize: this.getVisitorsCountFromResult(result),
-                timestamp: new Date().toISOString()
+                timestamp: this.serverClock.now().toISOString()
             }, 'success');
 
             // Actualiza el estado
-            this.lastSync = new Date().toLocaleString();
+            this.lastSync = this.serverClock.wallNow().toLocaleString();
             await Preferences.set({ key: 'lastSync', value: this.lastSync });
             this.loadingPatients$.next(false);
 
@@ -384,7 +416,7 @@ export class RequestsService {
                 error: error.error,
                 message: error.message,
                 duration: `${duration}ms`,
-                timestamp: new Date().toISOString()
+                timestamp: this.serverClock.now().toISOString()
             }, 'error');
 
             // Manejo de errores
@@ -516,7 +548,7 @@ export class RequestsService {
                     url: options.url,
                     status: response.status,
                     data: response.data,
-                    timestamp: new Date().toISOString(),
+                    timestamp: this.serverClock.now().toISOString(),
                   },
                   'success'
                 );
@@ -529,7 +561,7 @@ export class RequestsService {
                     status: error.status,
                     error: error.error,
                     message: error.message,
-                    timestamp: new Date().toISOString(),
+                    timestamp: this.serverClock.now().toISOString(),
                   },
                   'error'
                 );
@@ -553,7 +585,6 @@ export class RequestsService {
             }
 
             const options = {
-              // url: `${environment.url}${environment.waitingRooms}/${this.config.waitingRoom.id}${environment.operatingroomsschedules}`,
               url: urlMonitor + '/api' + environment.operatingroomsschedules,
               headers: {
                 'Content-Type': 'application/json',
@@ -570,7 +601,7 @@ export class RequestsService {
                     url: options.url,
                     status: response.status,
                     data: response.data,
-                    timestamp: new Date().toISOString(),
+                    timestamp: this.serverClock.now().toISOString(),
                   },
                   'success'
                 );
@@ -583,7 +614,7 @@ export class RequestsService {
                     status: error.status,
                     error: error.error,
                     message: error.message,
-                    timestamp: new Date().toISOString(),
+                    timestamp: this.serverClock.now().toISOString(),
                   },
                   'error'
                 );
@@ -619,7 +650,7 @@ export class RequestsService {
           {
             status: error.status,
             message: 'Token inválido o expirado',
-            timestamp: new Date().toISOString(),
+            timestamp: this.serverClock.now().toISOString(),
           },
           'warning'
         );

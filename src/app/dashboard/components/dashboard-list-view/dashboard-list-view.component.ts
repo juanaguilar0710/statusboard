@@ -2,7 +2,8 @@ import { Component, Input } from '@angular/core';
 import { TranslateService } from 'src/app/services/translate.service';
 
 @Component({
-  selector: 'app-dashboard-list-view',
+  standalone: false,
+selector: 'app-dashboard-list-view',
   templateUrl: './dashboard-list-view.component.html',
   styleUrls: [
     './dashboard-list-view.component.scss',

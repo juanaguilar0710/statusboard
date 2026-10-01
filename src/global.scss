@@ -133,10 +133,24 @@ app-next-to-surgery {
   }
 
   button.alert-button.alert-button-confirm {
-    background-color: var(--ion-color-primary);
-    color: var(--ion-color-success-contrast);
+    background: linear-gradient(90deg, #1e1491 0%, #1366dd 56%, #0094ff 100%);
+    color: #ffffff;
     width: 120px;
     height: 70px;
+  }
+
+  ion-button.primary-action-button {
+    --background: linear-gradient(90deg, #1e1491 0%, #1366dd 56%, #0094ff 100%);
+    --background-hover: linear-gradient(90deg, #17107a 0%, #1057bd 56%, #007fdc 100%);
+    --background-activated: linear-gradient(90deg, #17107a 0%, #1057bd 56%, #007fdc 100%);
+    --color: #ffffff;
+    --box-shadow: 0 12px 26px rgba(17, 102, 220, 0.28);
+  }
+
+  button.primary-action-button {
+    background: linear-gradient(90deg, #1e1491 0%, #1366dd 56%, #0094ff 100%) !important;
+    color: #ffffff;
+    box-shadow: 0 12px 26px rgba(17, 102, 220, 0.28);
   }
 
   button.alert-button.alert-button-cancel {

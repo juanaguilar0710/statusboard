@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { ChangeDetectorRef, Component, NgZone, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { FormBuilder } from '@angular/forms';
 import { NavigationBehaviorOptions, Router } from '@angular/router';
 import { RequestsService } from '../api/requests.service';
@@ -9,9 +9,11 @@ import { Storage } from '@ionic/storage-angular';
 import { SearchableComponentComponent } from '../searchable-component/searchable-component.component';
 import { NotificationService } from '../api/notification.service';
 import { TranslateService } from '../services/translate.service';
+import { ServerClockService } from '../services/server-clock.service';
 
 @Component({
-  selector: 'app-update-patient',
+  standalone: false,
+selector: 'app-update-patient',
   templateUrl: './update-patient.page.html',
   styleUrls: ['./update-patient.page.scss'],
 })
@@ -20,7 +22,7 @@ export class UpdatePatientPage implements OnInit, OnDestroy {
   @ViewChild('commentsPopover') commentsPopover: any | undefined;
   @ViewChild('modalCancelSurgery') modalCancelSurgery: IonModal | undefined;
 
-  loading: boolean = false;
+  loading: boolean = true;
   patient: any = null;
   comments: any[] = [];
   operatingRooms: any[] = [];
@@ -67,7 +69,10 @@ export class UpdatePatientPage implements OnInit, OnDestroy {
     private notificationService: NotificationService,
     private storage: Storage,
     private modalController: ModalController,
-    public translate: TranslateService) {
+    public translate: TranslateService,
+    private serverClock: ServerClockService,
+    private ngZone: NgZone,
+    private cdr: ChangeDetectorRef) {
     const navParams = this.router.getCurrentNavigation()?.extras?.state;
     if (navParams) {
       this.patient = (navParams as any)?.patient;
@@ -83,6 +88,13 @@ export class UpdatePatientPage implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.modalCancelSurgery?.dismiss();
     this.modal?.dismiss();
+  }
+
+  private updateView(update: () => void): void {
+    this.ngZone.run(() => {
+      update();
+      this.cdr.detectChanges();
+    });
   }
 
 
@@ -360,7 +372,9 @@ export class UpdatePatientPage implements OnInit, OnDestroy {
         if (element != null) {
           element?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
         }
-        this.loading = false;
+        this.updateView(() => {
+          this.loading = false;
+        });
       }, 150);
     }
   }
@@ -449,7 +463,7 @@ export class UpdatePatientPage implements OnInit, OnDestroy {
      this.updating = true;
     this.loading = true;
     if (!this.patient.visit_canceled_at) {
-      const date = new Date();
+      const date = this.serverClock.wallNow();
       var year = date.toLocaleString("default", { year: "numeric" });
       var month = date.toLocaleString("default", { month: "2-digit" });
       var day = date.toLocaleString("default", { day: "2-digit" });

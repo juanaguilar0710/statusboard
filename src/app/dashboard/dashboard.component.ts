@@ -1,4 +1,4 @@
-import { AfterViewInit, ChangeDetectorRef, Component, OnInit, AfterViewChecked, ElementRef, ViewChild } from '@angular/core';
+import { AfterViewInit, ChangeDetectorRef, Component, OnInit, AfterViewChecked, ElementRef, NgZone, OnDestroy, ViewChild } from '@angular/core';
 import { LocaldataService } from '../api/localdata.service';
 import { DevicesService } from '../api/devices.service';
 import { RequestsService } from '../api/requests.service';
@@ -27,15 +27,17 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
 import { TranslateService } from '../services/translate.service';
 import { Device } from '@capacitor/device';
 import { AppComponent } from '../app.component';
+import { ServerClockService } from '../services/server-clock.service';
 
 @Component({
+  standalone: false,
   selector: 'app-dashboard',
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss'],
 })
 
 
-  export class DashboardComponent  implements OnInit, AfterViewChecked {
+  export class DashboardComponent  implements OnInit, AfterViewChecked, OnDestroy {
     @ViewChild('audio') miBoton!: ElementRef<HTMLButtonElement>;
   operatingRooms: any[] = [];
   patients: any[] = [];
@@ -84,12 +86,15 @@ import { AppComponent } from '../app.component';
   private timeUpdateIntervalId: any;
   private pageRoomsIntervalId: any;
   private pusherMonitorIntervalId: any;
+  private midnightReloadTimeoutId: any;
+  private lastKnownDayKey: string = this.buildDayKey(new Date());
   private monitorUpdatedSub?: Subscription;
   isLoading = true; // Variable para controlar el estado de loading
   totales:any;
   private dataLoaded = false; // Flag para controlar si los datos fueron cargados
   private viewChecked = false; // Flag para evitar bucles infinitos en ngAfterViewChecked
   private readonly TOKEN_EXPIRATION_KEY_Admin = 'auth_token_expiration_admin';
+  private isLoggingOut = false;
 
   // 🎤 Sistema de cola de speech
   private readonly SPEECH_QUEUE_KEY = 'speech_queue';
@@ -107,17 +112,19 @@ import { AppComponent } from '../app.component';
               private storage: Storage,
               private logger: LoggerService,
               private cdr: ChangeDetectorRef,
+              private ngZone: NgZone,
               private audioService: AudioService,
               public translate: TranslateService,
-              private appComponent: AppComponent
+              private appComponent: AppComponent,
+              private serverClock: ServerClockService
   ) {
     setTimeout(() => {
       this.timeUpdateIntervalId = setInterval(async () => {
-        this.updateTime();
+        this.runUiTimerUpdate(() => this.updateTime());
         if (this.isRefreshing) return;
         const expiresAt = await this.storage.get(this.TOKEN_EXPIRATION_KEY_Admin);
         if (!expiresAt) return;
-        const timeLeft = expiresAt - Date.now();
+        const timeLeft = expiresAt - this.serverClock.nowMs();
         if (timeLeft <= 60000 && timeLeft > 0) {
           this.isRefreshing = true;
           try {
@@ -131,9 +138,7 @@ import { AppComponent } from '../app.component';
       }, 1000);
 
       this.pageRoomsIntervalId = setInterval(() => {
-        this.changePageRooms();
-        const event = new MouseEvent('mousemove');
-        document.dispatchEvent(event);
+        this.runUiTimerUpdate(() => this.changePageRooms());
       }, environment.timeRoomsPerPage);
         this.checkNetworkStatus();
         this.listenToNetworkChanges();
@@ -223,6 +228,10 @@ import { AppComponent } from '../app.component';
   }
 
   async ngOnInit() {
+    await this.serverClock.ensureSynchronized();
+    this.currentDate = this.serverClock.wallNow();
+    this.lastsync = this.serverClock.wallNow();
+    this.lastKnownDayKey = this.buildDayKey(this.currentDate);
     if (!this.monitorUpdatedSub) {
       this.monitorUpdatedSub = this.requestsService.monitorUpdated$.subscribe(() => {
         console.log('[Dashboard] Recibida actualización desde monitorUpdated$. Recargando datos...');
@@ -242,10 +251,15 @@ import { AppComponent } from '../app.component';
             this.config = JSON.parse(response.value);
             this.requestsService.setToken(this.config.token);
             this.requestsService.setAdminToken(this.config.token);
+            this.requestsService.setConfig(this.config);
 
             try {
               if (this.config.token) {
                 const monitorResp = await this.devicesService.getMonitorData(this.config.token);
+                if (monitorResp.status === 401) {
+                  await this.requestsService.reauthenticateMonitor();
+                  return;
+                }
                 if (monitorResp.status === 200 && monitorResp.data?.data) {
                   const mData = monitorResp.data.data;
                   this.config.monitor_id = mData.id;
@@ -286,7 +300,17 @@ import { AppComponent } from '../app.component';
       .catch((error) => {
         console.error('Error al leer Preferences:', error);
       });
+     if (!this.config?.token || !this.requestsService.config?.branch || !this.requestsService.config?.waitingRoom) {
+       await this.navigateToLogin();
+       this.isLoading = false;
+       return;
+     }
+     if (this.router.url.startsWith('/login')) {
+       this.isLoading = false;
+       return;
+     }
      await this.updateTime();
+       this.scheduleMidnightRefresh();
      await this.startlists();
 
      this.requestsService.patientsStats(this.requestsService.config.branch.id, this.requestsService.config.waitingRoom.id).subscribe(resp => {
@@ -347,19 +371,50 @@ import { AppComponent } from '../app.component';
   }
 
   updateTime() {
-    const now = new Date();
-    const hours = now.getHours();
-    const minutes = now.getMinutes();
+    const now = this.serverClock.wallNow();
+    this.currentDate = now;
+    const currentDayKey = this.buildDayKey(now);
+    if (currentDayKey !== this.lastKnownDayKey) {
+      this.lastKnownDayKey = currentDayKey;
+      window.location.reload();
+      return;
+    }
+
     this.currentTime = now.toLocaleTimeString('es-ES', {
       hour: 'numeric',
       minute: '2-digit',
       hour12: true,
     }).replace(' ', ' ').toUpperCase();
-    if (hours === 23 && minutes === 59) {
-      setTimeout(() => {
-        window.location.reload();
-      }, 60000);
+  }
+
+  private buildDayKey(date: Date): string {
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    return `${year}-${month}-${day}`;
+  }
+
+  private scheduleMidnightRefresh() {
+    if (this.midnightReloadTimeoutId) {
+      clearTimeout(this.midnightReloadTimeoutId);
+      this.midnightReloadTimeoutId = null;
     }
+
+    const now = this.serverClock.wallNow();
+    const nextMidnight = new Date(now);
+    nextMidnight.setHours(24, 0, 0, 0);
+
+    const delay = Math.max(nextMidnight.getTime() - now.getTime(), 1000);
+    this.midnightReloadTimeoutId = setTimeout(() => {
+      const currentDayKey = this.buildDayKey(this.serverClock.wallNow());
+      if (currentDayKey !== this.lastKnownDayKey) {
+        this.lastKnownDayKey = currentDayKey;
+        window.location.reload();
+        return;
+      }
+
+      this.scheduleMidnightRefresh();
+    }, delay);
   }
 
   async startlists(){
@@ -395,50 +450,18 @@ import { AppComponent } from '../app.component';
   private isRefreshingToken = false;
 
   async refreshToken(skipReload: boolean = false){
-    this.logger.addLog('Inicio refresco de token', {}, 'info')
-      if (this.isRefreshingToken) return;
-        this.isRefreshingToken = true;
-        try {
-          const token = await this.logger.getTokenAdmin();
-          this.requestsService.refreshToken(token).then(async resp =>{
-            console.log(resp);
-            if (resp?.status === 200) {
-              this.config.token = resp.data?.access_token
-              this.requestsService.setToken(resp.data.access_token);
-              this.requestsService.setRefreshToken(resp.data.refresh_token);
-              this.logger.setTokenAdmin(
-                resp.data.access_token,
-                resp.data.expires_in
-              );
-              this.requestsService.setAdminToken(resp.data.access_token);
-              await Preferences.set({
-                key: 'config',
-                value: JSON.stringify(this.config),
-              });
-
-              if (!skipReload) {
-                setTimeout(() => {
-                  this.notificationService.showInfo('Token refresh.',3000);
-                  this.startlists()
-                }, 3000);
-              }
-              this.logger.addLog('Refresco de token exitoso', {}, 'success')
-            }
-            if (resp?.status === 500) {
-              console.error('Error 500 al refrescar token');
-              this.logger.addLog('Error 500 refrescando token', resp, 'error');
-              // No recargar, dejar que el usuario intente manualmente
-            }
-            if (resp?.status === 401) {
-              console.log(resp);
-              this.logger.addLog('Error refrescando el token', resp, 'error')
-            }
-          }).catch(resp => {
-            this.logger.addLog('Error refrescando el token', resp, 'error')
-          });
-        } finally {
-          this.isRefreshingToken = false;
-        }
+    this.logger.addLog('Inicio reautenticacion del monitor', { skipReload }, 'info')
+    if (this.isRefreshingToken) return;
+    this.isRefreshingToken = true;
+    try {
+      await this.requestsService.reauthenticateMonitor();
+      this.logger.addLog('Flujo de recuperacion del monitor iniciado', {}, 'success');
+    } catch (error) {
+      this.logger.addLog('Error iniciando recuperacion del monitor', error, 'error');
+      throw error;
+    } finally {
+      this.isRefreshingToken = false;
+    }
   }
 
   private getOperatingRooms = false;
@@ -453,6 +476,12 @@ import { AppComponent } from '../app.component';
         await this.logger.addLog('Iniciando petición getOperatingRooms', {}, 'info');
         // Remover await en subscribe - no se deben mezclar
         this.requestsService.getOperatingRoomsDevices().subscribe(async (response: any) => {
+          if(response.status === 401){
+            await this.logger.addLog('Token de monitor rechazado', { response }, 'warning');
+            this.getOperatingRooms = false;
+            await this.requestsService.reauthenticateMonitor();
+            return;
+          }
           if(response.status == 500 || response.status == 403){
             if(response.status == 403 || response.data.error.code == 1000){
               console.log('aqui');
@@ -509,7 +538,7 @@ import { AppComponent } from '../app.component';
               updatedPatients.push(newPatient);
             }
           });
-          this.lastsync = new Date();
+          this.lastsync = this.serverClock.wallNow();
           this.patients = [...filteredPatients];
           this.listPatients = response.data;
           this.patientsCopy = [...filteredPatients];
@@ -542,15 +571,17 @@ import { AppComponent } from '../app.component';
   startCarousel() {
     this.updatePaginationDetails();
     this.intervalId = setInterval(() => {
-      this.getRoomsWithPatients().forEach(room => {
-        const patientsInRoom = this.filterPatientsByRoom(room.name);
-        if (patientsInRoom.length > this.pageSize) {
-          const currentGroup = this.currentGroups[room.name] || 0;
-          this.totalGroups = Math.ceil(patientsInRoom.length / this.pageSize);
-          this.currentGroups[room.name] = (currentGroup + 1) % this.totalGroups;
-        }
+      this.runUiTimerUpdate(() => {
+        this.getRoomsWithPatients().forEach(room => {
+          const patientsInRoom = this.filterPatientsByRoom(room.name);
+          if (patientsInRoom.length > this.pageSize) {
+            const currentGroup = this.currentGroups[room.name] || 0;
+            this.totalGroups = Math.ceil(patientsInRoom.length / this.pageSize);
+            this.currentGroups[room.name] = (currentGroup + 1) % this.totalGroups;
+          }
+        });
+        this.updatePaginationDetails();
       });
-      this.updatePaginationDetails();
     }, environment.timeForCardsWhitPatients);
   }
   updatePaginationDetails() {
@@ -567,7 +598,14 @@ import { AppComponent } from '../app.component';
     clearInterval(this.intervalId);
   }
   getRoomsWithPatients(): any[] {
+    if (this.isLoggingOut) {
+      return [];
+    }
+
     this.roomsWithPatients = this.roomsWithPatients || [];
+    this.operatingRooms = Array.isArray(this.operatingRooms) ? this.operatingRooms : [];
+    this.patients = Array.isArray(this.patients) ? this.patients : [];
+
         // Filtrar salas usando shouldShowRoom para consistencia
         const filteredRooms = this.operatingRooms.filter(room => this.shouldShowRoom(room));
 
@@ -643,15 +681,17 @@ import { AppComponent } from '../app.component';
     }
     this.countdown = environment.timeRoomsPerPageWhitPatients / 1000;
     this.intervalIdForPages = setInterval(() => {
-      if (this.countdown > 1) {
-        this.countdown--;
-      } else {
-        this.changePageRoomsWhitPatients();
-        this.updatePaginationDetails();
-        this.updatePatientPaginationDetails();
-        this.changePatientPage();
-        this.countdown = environment.timeRoomsPerPageWhitPatients / 1000;
-      }
+      this.runUiTimerUpdate(() => {
+        if (this.countdown > 1) {
+          this.countdown--;
+        } else {
+          this.changePageRoomsWhitPatients();
+          this.updatePaginationDetails();
+          this.updatePatientPaginationDetails();
+          this.changePatientPage();
+          this.countdown = environment.timeRoomsPerPageWhitPatients / 1000;
+        }
+      });
     }, 1000);
   }
   changePageRooms() {
@@ -666,6 +706,10 @@ import { AppComponent } from '../app.component';
     }
   }
   changePageRoomsWhitPatients() {
+  if (this.isLoggingOut) {
+    return;
+  }
+
   const roomsWithPatients = this.getRoomsWithPatients();
   if (roomsWithPatients.length === 0) {
     this.totalPagesWhitPatients = 0;
@@ -682,6 +726,18 @@ import { AppComponent } from '../app.component';
   }
   this.totalPagesCurrentPatients = environment.currentPageWhitPatients;
 }
+
+  private runUiTimerUpdate(update: () => void): void {
+    if (this.isLoggingOut) {
+      return;
+    }
+
+    this.ngZone.run(() => {
+      update();
+      this.cdr.markForCheck();
+    });
+  }
+
   getRoomsForCurrentPage() {
     const filteredRooms = this.operatingRooms?.filter(room => this.shouldShowRoom(room)) || [];
     const start = environment.currentPage * environment.roomsPerPage;
@@ -877,7 +933,7 @@ import { AppComponent } from '../app.component';
   }
 
   addUpdatedPatient(patient: any) {
-    const now = Date.now();
+    const now = this.serverClock.nowMs();
     const expiry = now + 60000; // 60 segundos
     const updatedPatients = JSON.parse(localStorage.getItem('updatedPatients') || '[]');
 
@@ -894,14 +950,14 @@ import { AppComponent } from '../app.component';
     this.updatedPatientIdsCache = null;
 }
 
-getUpdatedPatients(now: number = Date.now()) {
+getUpdatedPatients(now: number = this.serverClock.nowMs()) {
   const updatedPatients = JSON.parse(localStorage.getItem('updatedPatients') || '[]');
   if (!Array.isArray(updatedPatients)) return [];
   return updatedPatients.filter((patient: any) => patient && typeof patient.expiry === 'number' && now <= patient.expiry);
 }
 
 private getUpdatedPatientIdsSnapshot(): Set<number> {
-  const now = Date.now();
+  const now = this.serverClock.nowMs();
   if (this.updatedPatientIdsCache && this.updatedPatientIdsCache.validUntil > now) {
     return this.updatedPatientIdsCache.ids;
   }
@@ -1183,7 +1239,7 @@ private async handleOperatingRoomEvent(type: 'created' | 'updated', e: any): Pro
           duration: 'long',
           position: 'top'
         });
-        await this.router.navigate(['/login'], { replaceUrl: true });
+        await this.navigateToLogin();
         setTimeout(() => window.location.reload(), 100);
       }
     });
@@ -1253,7 +1309,7 @@ private async handleOperatingRoomEvent(type: 'created' | 'updated', e: any): Pro
           message: event.message,
           waitingRoomId: event.waitingRoomId,
           branchId: event.branchId,
-          timestamp: new Date().toISOString(),
+          timestamp: this.serverClock.now().toISOString(),
           processed: false
         };
 
@@ -1449,7 +1505,7 @@ private async handleOperatingRoomEvent(type: 'created' | 'updated', e: any): Pro
             clearInterval(interval);
             await this.logger.error('Max retries reached. Unable to reconnect to Pusher.', {
                 attempts: retries,
-                lastAttempt: new Date().toISOString()
+                lastAttempt: this.serverClock.now().toISOString()
             });
             console.error('Max retries reached. Unable to reconnect to Pusher.');
             return;
@@ -1470,7 +1526,7 @@ private async handleOperatingRoomEvent(type: 'created' | 'updated', e: any): Pro
                     console.log('Pusher reconnected successfully!');
                     this.logger.success('Pusher reconnected successfully', {
                         attempts: retries,
-                        reconnectedAt: new Date().toISOString()
+                        reconnectedAt: this.serverClock.now().toISOString()
                     });
                 }
             }, 1000); // Esperar 1 segundo para verificar
@@ -1479,7 +1535,7 @@ private async handleOperatingRoomEvent(type: 'created' | 'updated', e: any): Pro
             await this.logger.error('Reconnection attempt failed', {
                 attempt: retries,
                 error: error,
-                timestamp: new Date().toISOString()
+                timestamp: this.serverClock.now().toISOString()
             });
             console.error(`Reconnection attempt ${retries} failed:`, error);
         }
@@ -1511,7 +1567,7 @@ private isPusherConnected(): boolean {
 
   private async updatePatientList(eventType: string, patient: any) {
 
-    this.lastUpdateTime = Date.now();
+    this.lastUpdateTime = this.serverClock.nowMs();
     const index = this.findPatientIndexById(this.patients, patient?.id);
     const shouldBeVisible = this.shouldPatientBeVisible(patient.status?.id || patient.status_Id);
 
@@ -1522,7 +1578,7 @@ private isPusherConnected(): boolean {
 
           this.patients.push(updatedPatient);
           this.patientsCopy = [...this.patients];
-          this.lastsync = new Date();
+          this.lastsync = this.serverClock.wallNow();
           this.LocaldataService.setPatients(this.patients);
           this.addUpdatedPatient(updatedPatient);
         }
@@ -1548,7 +1604,7 @@ private isPusherConnected(): boolean {
             }
 
             this.patientsCopy = [...this.patients];
-            this.lastsync = new Date();
+            this.lastsync = this.serverClock.wallNow();
             this.LocaldataService.setPatients(this.patients);
 
             // Actualizar la lista de salas para reflejar si alguna quedó vacía
@@ -1565,8 +1621,8 @@ private isPusherConnected(): boolean {
       this.patients = this.deduplicatePatientsById(this.patients);
     this.patientsCopy = [...this.patients];
     this.LocaldataService.setPatients(this.patients);
-    this.requestsService.lastSync = new Date().toLocaleString();
-    this.lastsync = new Date();
+    this.requestsService.lastSync = this.serverClock.wallNow().toLocaleString();
+    this.lastsync = this.serverClock.wallNow();
   }
   ngOnDestroy() {
     console.log('[Dashboard] ngOnDestroy llamado');
@@ -1584,21 +1640,47 @@ private isPusherConnected(): boolean {
       patient.operating_room_name === roomName
     ).length;
   }
+
+  private getPatientStatusType(patient: any): string {
+    const statusType = String(patient?.status?.type ?? '').trim().toLowerCase();
+
+    if (statusType && statusType !== 'none') {
+      return statusType;
+    }
+
+    const statusName = String(patient?.status?.name ?? patient?.status_name ?? '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim()
+      .toLowerCase();
+
+    const statusTypeByName: Record<string, string> = {
+      'en espera': 'holding',
+      'waiting': 'holding',
+      'holding': 'holding',
+      'en cirugia': 'surgery',
+      'in surgery': 'surgery',
+      'en recuperacion': 'recovery',
+      'in recovery': 'recovery',
+      'completado': 'completed',
+      'completada': 'completed',
+      'completed': 'completed',
+    };
+
+    return statusTypeByName[statusName] ?? statusType;
+  }
+
   getHoldingPatientsCount(): number {
-    //return this.patients.filter(patient => patient.status?.type === 'holding').length;
-    return this.listPatients.filter(patient => patient.status?.type === 'holding').length;
+    return this.listPatients.filter(patient => this.getPatientStatusType(patient) === 'holding').length;
   }
   getSurgeryPatientsCount(): number {
-    // return this.patients.filter(patient => patient.status?.type === 'surgery').length;
-    return this.listPatients.filter(patient => patient.status?.type === 'surgery').length;
+    return this.listPatients.filter(patient => this.getPatientStatusType(patient) === 'surgery').length;
   }
   getRecoveryPatientsCount(): number {
-    //return this.patients.filter(patient => patient.status?.type === 'recovery').length;
-    return this.listPatients.filter(patient => patient.status?.type === 'recovery').length;
+    return this.listPatients.filter(patient => this.getPatientStatusType(patient) === 'recovery').length;
   }
   getCompletedPatientsCount(): number {
-    //return this.patients.filter(patient => patient.status?.type === 'completed').length;
-    return this.listPatients.filter(patient => patient.status?.type === 'completed').length;
+    return this.listPatients.filter(patient => this.getPatientStatusType(patient) === 'completed').length;
   }
   getPatientsByRoom(roomName: string): any[] {
     return this.patients.filter(patient => patient.operating_room_name === roomName);
@@ -1690,6 +1772,11 @@ private isPusherConnected(): boolean {
 
   // Método para limpiar recursos antes del logout
   private cleanupBeforeLogout() {
+    if (this.isLoggingOut) {
+      return;
+    }
+
+    this.isLoggingOut = true;
     console.log('[Dashboard] Limpiando recursos antes del logout...');
 
     // 1. Desconectar Pusher/Echo
@@ -1724,6 +1811,10 @@ private isPusherConnected(): boolean {
       clearInterval(this.intervalIdForPages);
       this.intervalIdForPages = null;
     }
+    if (this.midnightReloadTimeoutId) {
+      clearTimeout(this.midnightReloadTimeoutId);
+      this.midnightReloadTimeoutId = null;
+    }
 
     // 3. Desuscribirse de observables
     if (this.monitorUpdatedSub) {
@@ -1741,6 +1832,10 @@ private isPusherConnected(): boolean {
     console.log('[Dashboard] Limpieza completada');
   }
 
+  private async navigateToLogin(): Promise<void> {
+    await this.router.navigateByUrl('/login', { replaceUrl: true });
+  }
+
   async presentAlert() {
     const alert = await this.alertController.create({
       header: 'Admin Options',
@@ -1750,6 +1845,9 @@ private isPusherConnected(): boolean {
           text: 'Login',
           handler: async () => {
             try {
+              await alert.dismiss();
+              await new Promise(resolve => setTimeout(resolve, 0));
+
               // Limpiar recursos antes de navegar
               this.cleanupBeforeLogout();
 
@@ -1759,13 +1857,14 @@ private isPusherConnected(): boolean {
               // Limpiar storage y navegar
               await Preferences.clear();
               this.logger.clearAdminAuthData();
-              await this.router.navigate(['/login'], { replaceUrl: true });
+              await this.navigateToLogin();
             } catch (error) {
               console.error('Error en logout:', error);
               // Aún así navegar en caso de error
               await Preferences.clear();
-              await this.router.navigate(['/login'], { replaceUrl: true });
+              await this.navigateToLogin();
             }
+            return false;
           }
         },
         // {

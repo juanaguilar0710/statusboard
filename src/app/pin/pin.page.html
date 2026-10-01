@@ -113,7 +113,7 @@
         <ion-icon [name]="isCheckingForUpdates ? 'hourglass-outline' : 'cloud-download-outline'"></ion-icon>
       </button>
       <h6 class="info pin-version-label">{{ 'pin.version' | translate }} {{version}}</h6>
-      <h6 class="info pin-version-label">{{this.deviceInfo.device_id}}</h6>
+      <h6 class="info pin-version-label">{{this.deviceInfo?.device_id}}</h6>
     </div>
   </div>
 

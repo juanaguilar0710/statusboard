@@ -8,7 +8,8 @@ import { NotificationService } from '../api/notification.service';
 import { TranslateService } from '../services/translate.service';
 
 @Component({
-  selector: 'app-new-patient',
+  standalone: false,
+selector: 'app-new-patient',
   templateUrl: './new-patient.page.html',
   styleUrls: ['./new-patient.page.scss'],
 })

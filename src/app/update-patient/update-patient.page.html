@@ -273,7 +273,7 @@
         <ion-button color="danger" class="w-100 mx-4 classButton" size="large" (click)="cancel()">
           <span>{{ 'updatePatient.cancel' | translate }}</span>
         </ion-button>
-        <ion-button color="success" class="w-100 mx-4 classButton" size="large" (click)="updatePatient()">
+        <ion-button color="primary" class="w-100 mx-4 classButton primary-action-button" size="large" (click)="updatePatient()">
           <span class="btn-label-white">{{ 'updatePatient.update' | translate }}</span>
         </ion-button>
       </div>
@@ -296,7 +296,7 @@
           <ion-button class="w-100 classButton confirm-btn" color="danger" (click)="noCancel()">{{ 'updatePatient.no' | translate }}</ion-button>
         </div>
         <div class="flex-fill text-center confirm-col">
-          <ion-button class="w-100 classButton confirm-btn" color="primary" (click)="yesCancel()">{{ 'updatePatient.yes' | translate }}</ion-button>
+          <ion-button class="w-100 classButton confirm-btn primary-action-button" color="primary" (click)="yesCancel()">{{ 'updatePatient.yes' | translate }}</ion-button>
         </div>
       </div>
     </ion-content>

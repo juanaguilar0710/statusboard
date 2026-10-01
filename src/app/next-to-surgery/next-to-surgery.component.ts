@@ -3,7 +3,8 @@ import { RequestsService } from '../api/requests.service';
 import { AlertController, IonModal, ModalController, PopoverController } from '@ionic/angular';
 
 @Component({
-  selector: 'app-next-to-surgery',
+  standalone: false,
+selector: 'app-next-to-surgery',
   templateUrl: './next-to-surgery.component.html',
   styleUrls: ['./next-to-surgery.component.scss'],
 })

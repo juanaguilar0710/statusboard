@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, HostListener, OnInit, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { NavigationEnd, Router } from '@angular/router';
 import { Preferences } from '@capacitor/preferences';
 import { RequestsService } from './api/requests.service';
@@ -10,16 +10,19 @@ import { BehaviorSubject } from 'rxjs';
 import { NotificationService } from './api/notification.service';
 import { ModalController, Platform } from '@ionic/angular';
 import { LoggerService } from './api/logger.service';
+import { ServerClockService } from './services/server-clock.service';
 
 import { App } from '@capacitor/app';
+import { Capacitor } from '@capacitor/core';
 import * as LiveUpdates from '@capacitor/live-updates';
 
 @Component({
+  standalone: false,
   selector: 'app-root',
   templateUrl: 'app.component.html',
   styleUrls: ['app.component.scss'],
 })
-export class AppComponent implements OnInit, AfterViewInit {
+export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
   @ViewChild('screensaverVideo') private screensaverVideo?: ElementRef<HTMLVideoElement>;
 
@@ -44,6 +47,7 @@ export class AppComponent implements OnInit, AfterViewInit {
 
   // Live Updates polling control
   private liveUpdatePollTimer: any;
+  private clockSyncTimer: any;
   private liveUpdateInFlight = false;
   private readonly liveUpdatePollIntervalMs = 60_000; // 2 min
 
@@ -63,7 +67,8 @@ export class AppComponent implements OnInit, AfterViewInit {
     private localdataService: LocaldataService,
     private notificationService: NotificationService,
     private modalController: ModalController,
-    private platform: Platform
+    private platform: Platform,
+    private serverClock: ServerClockService
   ) {
     this.init();
 
@@ -94,7 +99,11 @@ export class AppComponent implements OnInit, AfterViewInit {
       }
     });
 
-    this.platform.ready().then(() => {
+    this.platform.ready().then(async () => {
+      await this.serverClock.ensureSynchronized();
+      this.clockSyncTimer = setInterval(() => {
+        void this.serverClock.ensureSynchronized(true);
+      }, 15 * 60 * 1000);
       this.resetInactivityTimer();
       this.initializeLiveUpdates();
     });
@@ -110,16 +119,23 @@ export class AppComponent implements OnInit, AfterViewInit {
    * Inicializa Live Updates y recarga inmediatamente cuando haya una nueva versión
    */
   private async initializeLiveUpdates(): Promise<void> {
+    if (!Capacitor.isNativePlatform()) {
+      this.liveUpdateStatus = 'Unavailable';
+      this.liveUpdateDetail = 'Native app only';
+      return;
+    }
+
     try {
       this.liveUpdateStatus = 'Initializing';
       this.liveUpdateDetail = 'Setting up listeners';
       this.liveUpdateDownloaded = false;
-      this.liveUpdateLastCheck = new Date();
+      this.liveUpdateLastCheck = this.serverClock.wallNow();
       this.liveUpdateLastResult = 'Init';
       console.log('🚀 Inicializando Live Updates (recarga inmediata)...');
 
       // Verificar al volver del background
       App.addListener('resume', async () => {
+        await this.serverClock.ensureSynchronized(true);
         console.log('📱 App resumida desde background');
         await this.checkForUpdatesAndReload('resume');
       });
@@ -152,7 +168,7 @@ export class AppComponent implements OnInit, AfterViewInit {
           : reason === 'resume'
             ? 'On resume'
             : 'Periodic poll';
-      this.liveUpdateLastCheck = new Date();
+      this.liveUpdateLastCheck = this.serverClock.wallNow();
       this.liveUpdateLastResult = `Checking (${reason})`;
 
       const result = await LiveUpdates.sync();
@@ -233,6 +249,7 @@ export class AppComponent implements OnInit, AfterViewInit {
       await this.storage.create();
       const userResponse = await Preferences.get({ key: 'user' });
       if (!userResponse.value) {
+        await this.router.navigate(['/login'], { replaceUrl: true });
         this.hasNavigated = true;
         return;
       }
@@ -253,14 +270,9 @@ export class AppComponent implements OnInit, AfterViewInit {
       } else {
         const token = tokenAdmin;
         if (token && this.localdataService.isTokenExpired(token)) {
-          const newToken = await this.requestsService.refreshToken(token);
-          if (newToken?.status === 200) {
-            this.requestsService.setAdminToken(newToken.data?.jwt.access_token);
-            await Preferences.set({
-              key: 'admin',
-              value: JSON.stringify(newToken.data),
-            });
-          }
+          await this.requestsService.reauthenticateMonitor();
+          this.hasNavigated = true;
+          return;
         } else {
           if (token) {
             this.requestsService.setAdminToken(token);
@@ -281,6 +293,14 @@ export class AppComponent implements OnInit, AfterViewInit {
 
   ngOnDestroy() {
     clearTimeout(this.screensaverPlayRetryTimeout);
+    if (this.liveUpdatePollTimer) {
+      clearInterval(this.liveUpdatePollTimer);
+      this.liveUpdatePollTimer = undefined;
+    }
+    if (this.clockSyncTimer) {
+      clearInterval(this.clockSyncTimer);
+      this.clockSyncTimer = undefined;
+    }
     this.pauseScreensaverVideo();
     this.stopInactivityTracking();
     App.removeAllListeners();
